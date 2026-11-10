@@ -1,7 +1,7 @@
 # API.md — REST API Contract
 
 **Product:** Cold Chain Decision Intelligence Platform (Transport Simulation)  
-**API version:** `v1` | **Document version:** 1.0.0 | **Status:** Proposed / contract-first MVP  
+**API version:** `v1` | **Document version:** 1.0.1 | **Status:** Proposed / contract-first MVP
 **Date:** 2026-11-11 | **References:** `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`, `ARCHITECTUR.md`
 
 > This is a human-readable contract for building the MVP, not a deployed API. Generate an OpenAPI 3.1 spec from implemented FastAPI schemas and verify it matches this document. Example identifiers, data and amounts are synthetic and do not constitute approved food-quality thresholds.
@@ -577,3 +577,11 @@ Run generated OpenAPI schema validation and TypeScript client compilation in CI.
 - **Open design choices:** exact OIDC provider/callback route, PDF delivery mode, member invitation delivery, tenant retention defaults, domain-policy evidence fields, and production limits must be documented by ADR and customer security review before onboarding real cargo records.
 
 **Implementation warning:** A `200/APPROVED` decision means the permitted **workflow proposal** was reviewed. It is not a declaration that perishable goods are safe to consume, and it must never dispatch an automatic transport or release command in MVP.
+
+## Sprint 0 implementation boundary (1.0.1)
+Only health/live and health/ready are implemented in S0. All business endpoints above remain planned.
+Health responses are {"status":"alive"} and {"status":"ready"}; readiness returns 503 problem JSON when PostgreSQL, Redis or the private evidence bucket is unavailable.
+Error type uses `urn:cold-chain:error:<lowercase_code>` until a documentation domain exists.
+Missing If-Match returns 428 PRECONDITION_REQUIRED. Shipment create also requires Idempotency-Key (as specified in section 5).
+Cursor payload includes tenant, query scope (including filters), created_at and id. It is opaque, not an authorization grant; every query still enforces membership and tenant ownership.
+See [S0 ADR](adr/0001-foundation.md) for contract reconciliation and durable idempotency conventions.

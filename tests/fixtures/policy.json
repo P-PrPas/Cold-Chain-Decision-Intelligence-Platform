@@ -1,0 +1,11 @@
+{
+  "synthetic_only": true,
+  "status": "DRAFT",
+  "schema_version": "synthetic-oracle-1",
+  "min_c": "2",
+  "max_c": "8",
+  "max_gap_seconds": 600,
+  "warning_at_seconds": 300,
+  "critical_at_seconds": 600,
+  "probability": "unknown"
+}
