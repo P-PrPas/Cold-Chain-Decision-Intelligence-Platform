@@ -1,0 +1,58 @@
+{
+  "normal": {
+    "in_band_seconds": 600,
+    "out_of_band_seconds": 0,
+    "unknown_seconds": 0,
+    "status": "NORMAL",
+    "note": "Half-open intervals; no final-sample tail."
+  },
+  "warning": {
+    "in_band_seconds": 300,
+    "out_of_band_seconds": 300,
+    "unknown_seconds": 0,
+    "status": "WARNING",
+    "note": "Half-open intervals; no final-sample tail."
+  },
+  "critical": {
+    "in_band_seconds": 0,
+    "out_of_band_seconds": 600,
+    "unknown_seconds": 0,
+    "status": "CRITICAL",
+    "note": "Half-open intervals; no final-sample tail."
+  },
+  "gaps": {
+    "in_band_seconds": 0,
+    "out_of_band_seconds": 0,
+    "unknown_seconds": 1200,
+    "status": "INDETERMINATE",
+    "note": "Half-open intervals; no final-sample tail."
+  },
+  "irregular": {
+    "in_band_seconds": 300,
+    "out_of_band_seconds": 120,
+    "unknown_seconds": 0,
+    "status": "NORMAL",
+    "note": "Half-open intervals; no final-sample tail."
+  },
+  "duplicates": {
+    "in_band_seconds": 0,
+    "out_of_band_seconds": 0,
+    "unknown_seconds": 0,
+    "status": "INVALID",
+    "note": "No aggregate durations for invalid or ambiguous sensor inputs."
+  },
+  "unknown_timezone": {
+    "in_band_seconds": 0,
+    "out_of_band_seconds": 0,
+    "unknown_seconds": 0,
+    "status": "TIMEZONE_REQUIRED",
+    "note": "No aggregate durations for invalid or ambiguous sensor inputs."
+  },
+  "multi_sensor_conflict": {
+    "in_band_seconds": 0,
+    "out_of_band_seconds": 0,
+    "unknown_seconds": 0,
+    "status": "INDETERMINATE",
+    "note": "No aggregate durations for invalid or ambiguous sensor inputs."
+  }
+}

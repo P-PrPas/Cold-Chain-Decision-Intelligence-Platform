@@ -330,3 +330,6 @@ PR link, CI run, screenshots where useful, migration ID.
 - [ ] All P0 tasks DONE; incomplete P1 explicitly deferred with approved limitation.
 
 **Release decision:** PM + Tech Lead + QA Domain Owner sign off independently. This document is an implementation plan, not evidence of completed features or product safety validation.
+
+## Execution update
+S0 CC-001?CC-005: IN_REVIEW once S0 PR is opened; technical implementation submitted, owner acceptance pending. S1?S6 remain TODO. Current agent implements directly; owner reviews; no automatic merge. See EXECUTION.md and VERIFICATION-S0.md.

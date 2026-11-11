@@ -1,7 +1,7 @@
 # DATABASE.md — Physical Data Model & Persistence Contract
 
 **Product:** Cold Chain Decision Intelligence Platform / Transport Simulation  
-**Target:** MVP v1.0 · **Version:** 1.0.0 · **Status:** Proposed for Sprint-0 review  
+**Target:** MVP v1.0 · **Version:** 1.0.1 · **Status:** Proposed for Sprint-0 review
 **Date:** 2026-11-11 · **DBMS:** PostgreSQL 16+ · **ORM:** SQLAlchemy 2 · **Migration:** Alembic  
 **References:** `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`, `ARCHITECTUR.md`, `API.md`, `AGENT.md`, `claude.md`
 
@@ -102,7 +102,7 @@ All tenant tables below have `organization_id`, `created_at` (where applicable),
 ### 4.3 Shipments and datasets
 
 **`shipments`**
-- `id`, `organization_id`, `reference TEXT NOT NULL`, `product_id UUID NOT NULL`, `origin TEXT NOT NULL`, `destination TEXT NOT NULL`, `departure_at TIMESTAMPTZ`, `estimated_arrival_at TIMESTAMPTZ`, `carrier TEXT`, `vehicle_reference TEXT`, `batch_lot TEXT`, `quantity NUMERIC(18,3)`, `quantity_unit TEXT`, `cargo_value NUMERIC(18,2)`, `currency CHAR(3)`, `status TEXT NOT NULL CHECK IN ('DRAFT','READY','IN_TRANSIT','ARRIVED','CLOSED','CANCELLED')`, `revision`, `created_at`, `updated_at`.
+- `id`, `organization_id`, `reference TEXT NOT NULL`, `product_id UUID NOT NULL`, `origin JSONB NOT NULL`, `destination JSONB NOT NULL`, `departure_at TIMESTAMPTZ`, `estimated_arrival_at TIMESTAMPTZ`, `carrier TEXT`, `vehicle_reference TEXT`, `batch_reference TEXT`, `quantity NUMERIC(18,3)`, `quantity_unit TEXT`, `cargo_value NUMERIC(18,2)`, `currency CHAR(3)`, `status TEXT NOT NULL CHECK IN ('DRAFT','READY','IN_TRANSIT','ARRIVED','CLOSED','CANCELLED')`, `revision`, `created_at`, `updated_at`.
 - `UNIQUE (organization_id,reference)`; composite FK product; CHECK arrival > departure where both present; CHECK positive quantity if supplied.
 - Shipment operational status **distinct** from QA decision disposition.
 
@@ -277,7 +277,7 @@ Start with B-tree. For 100k-row MVP uploads, PostgreSQL ordinary tables are suff
 6. Submit: freeze decision snapshot, store digest, queue audit and optional report artifact.
 7. Retention: configure by contract and law, protect legal holds, distinguish tenant deletion from evidence retention; backup expiry and signed object URL expiry governed separately.
 
-**Data gap semantics:** zero-order hold from reading to next reading only up to allowed max gap, then unknown; do not estimate duration by row count. Reject naive timestamps until explicit source timezone provided. Multiple sensors can be analyzed individually and combined only under a documented QA-approved aggregation policy.
+**Data gap semantics:** zero-order hold only when the entire adjacent interval is within the allowed max gap; otherwise the entire interval is UNKNOWN; do not estimate duration by row count. Reject naive timestamps until explicit source timezone provided. Multiple sensors can be analyzed individually and combined only under a documented QA-approved aggregation policy.
 
 ## 10. Transactions, concurrency, idempotency
 

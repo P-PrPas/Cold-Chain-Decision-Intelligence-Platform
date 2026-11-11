@@ -1,0 +1,58 @@
+[
+  {
+    "reference": "SYNTHETIC-NORMAL",
+    "product": "Synthetic strawberry",
+    "fixture": "normal.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-WARNING",
+    "product": "Synthetic strawberry",
+    "fixture": "warning.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-CRITICAL",
+    "product": "Synthetic strawberry",
+    "fixture": "critical.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-GAPS",
+    "product": "Synthetic strawberry",
+    "fixture": "gaps.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-IRREGULAR",
+    "product": "Synthetic strawberry",
+    "fixture": "irregular.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-DUPLICATES",
+    "product": "Synthetic strawberry",
+    "fixture": "duplicates.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-UNKNOWN_TIMEZONE",
+    "product": "Synthetic strawberry",
+    "fixture": "unknown_timezone.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  },
+  {
+    "reference": "SYNTHETIC-MULTI_SENSOR_CONFLICT",
+    "product": "Synthetic strawberry",
+    "fixture": "multi_sensor_conflict.csv",
+    "cargo_value": "1000.00",
+    "currency": "THB"
+  }
+]
