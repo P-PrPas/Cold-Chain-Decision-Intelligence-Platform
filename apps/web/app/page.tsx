@@ -16,7 +16,7 @@ export default function Home() {
           clear proposal to QA.
         </p>
         <div className="hero-actions">
-          <Link className="button" href="/demo">
+          <Link className="button" href="/studio">
             Try interactive demo <span aria-hidden="true">&rarr;</span>
           </Link>
           <a href="#workflow">Explore the workflow</a>
@@ -47,7 +47,7 @@ export default function Home() {
         <p className="notice">
           Next action: reconcile missing readings before making a proposal.
         </p>
-        <Link href="/demo?shipment=DEMO-003">Inspect this example</Link>
+        <Link href="/studio?shipment=DEMO-003">Inspect this example</Link>
       </section>
       <section id="workflow" className="workflow-cards">
         {[
