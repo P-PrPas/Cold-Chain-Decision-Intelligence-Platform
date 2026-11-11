@@ -49,14 +49,22 @@ def test_window_is_pinned_and_changed_trip_requires_reanalysis(platform):
 
 
 @pytest.mark.parametrize(
-    "fixture,arrival,unknown",
-    [("partial_trip", "2026-01-02T00:00:00Z", 85800), ("final_hot", "2026-01-01T00:10:00Z", 0)],
+    "fixture,arrival,unknown,classification,eligibility",
+    [
+        ("partial_trip", "2026-01-02T00:00:00Z", 85800, "INDETERMINATE", "INSUFFICIENT_DATA"),
+        ("final_hot", "2026-01-01T00:10:00Z", 0, "INDETERMINATE", "INSUFFICIENT_DATA"),
+        ("late_arrival_hot", "2026-01-01T00:10:00Z", 0, "INDETERMINATE", "INSUFFICIENT_DATA"),
+        ("loading_hot", "2026-01-01T00:10:00Z", 0, "INDETERMINATE", "INSUFFICIENT_DATA"),
+        ("bracketed_boundaries", "2026-01-01T00:10:00Z", 0, "NORMAL", "ELIGIBLE"),
+    ],
 )
-def test_incomplete_evidence_api_cannot_make_release_eligible(platform, fixture, arrival, unknown):
+def test_window_evidence_api_release_eligibility(
+    platform, fixture, arrival, unknown, classification, eligibility
+):
     result = prepare(platform, fixture, arrival)
     client, _, engine = platform
     analysis = client.get("/api/v1/analyses/" + result["analysis"]["id"]).json()["analysis"]
-    assert analysis["classification"] == "INDETERMINATE"
+    assert analysis["classification"] == classification
     assert analysis["summary"]["unknown_seconds"] == unknown
     response = client.post(
         f"/api/v1/shipments/{result['shipment']['id']}/simulations",
@@ -71,9 +79,7 @@ def test_incomplete_evidence_api_cannot_make_release_eligible(platform, fixture,
         "/api/v1/simulations/" + response.json()["simulation"]["id"] + "/scenarios"
     ).json()["items"]
     assert all(
-        s["eligibility"] == "INSUFFICIENT_DATA"
-        for s in scenarios
-        if s["type"] == "CONTINUE_DELIVERY"
+        s["eligibility"] == eligibility for s in scenarios if s["type"] == "CONTINUE_DELIVERY"
     )
 
 
