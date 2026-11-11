@@ -195,3 +195,70 @@ class Outbox(TenantEntity, Base):
     job_id: Mapped[str]
     status: Mapped[str] = mapped_column(default="PENDING")
     attempt_count: Mapped[int] = mapped_column(default=0)
+
+
+class ReferenceDocument(TenantEntity, Base):
+    __tablename__ = "reference_documents"
+    __table_args__ = (UniqueConstraint("organization_id", "id"),)
+    object_key: Mapped[str]
+    sha256: Mapped[str]
+    filename: Mapped[str]
+    uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class Policy(TenantEntity, Base):
+    __tablename__ = "quality_policy_versions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        UniqueConstraint("organization_id", "policy_key", "version"),
+        ForeignKeyConstraint(
+            ["organization_id", "product_id"], ["products.organization_id", "products.id"]
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "reference_document_id"],
+            ["reference_documents.organization_id", "reference_documents.id"],
+        ),
+        CheckConstraint(
+            "status IN ('DRAFT','PENDING_REVIEW','APPROVED','RETIRED')", name="policy_status"
+        ),
+    )
+    product_id: Mapped[str]
+    policy_key: Mapped[str]
+    version: Mapped[int]
+    status: Mapped[str] = mapped_column(default="DRAFT")
+    rules: Mapped[dict[str, Any]] = mapped_column(JSONType)
+    reference_document_id: Mapped[str | None]
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    effective_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    approved_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    content_sha256: Mapped[str | None]
+    revision: Mapped[int] = mapped_column(default=1)
+
+
+class Analysis(TenantEntity, Base):
+    __tablename__ = "analysis_runs"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        ForeignKeyConstraint(
+            ["organization_id", "shipment_id"], ["shipments.organization_id", "shipments.id"]
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "dataset_id"],
+            ["temperature_datasets.organization_id", "temperature_datasets.id"],
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "policy_version_id"],
+            ["quality_policy_versions.organization_id", "quality_policy_versions.id"],
+        ),
+    )
+    shipment_id: Mapped[str]
+    dataset_id: Mapped[str]
+    policy_version_id: Mapped[str]
+    selected_sensor_ids: Mapped[list[str]] = mapped_column(JSONType)
+    status: Mapped[str] = mapped_column(default="QUEUED")
+    engine_version: Mapped[str] = mapped_column(default="1.0.0")
+    input_sha256: Mapped[str]
+    result: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))

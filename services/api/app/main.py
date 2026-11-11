@@ -21,11 +21,13 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 
+from app.analyses import router as analyses_router
 from app.config import Settings
 from app.contracts import Problem, ProblemBody
 from app.datasets import router as datasets_router
 from app.db import connect
 from app.identity import router as identity_router
+from app.policies import router as policies_router
 from app.shipments import router as shipments_router
 
 logger = logging.getLogger(__name__)
@@ -94,6 +96,8 @@ def create_app() -> FastAPI:
     app.include_router(identity_router)
     app.include_router(shipments_router)
     app.include_router(datasets_router)
+    app.include_router(policies_router)
+    app.include_router(analyses_router)
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:

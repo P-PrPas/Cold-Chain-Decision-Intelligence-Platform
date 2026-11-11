@@ -19,3 +19,5 @@ See PR evidence and docs/VERIFICATION-S0.md for actual commands/results. S0 may 
 S1 implementation: SQLAlchemy core + Alembic, OIDC/session/CSRF, tenant/RBAC, shipment/product endpoints and Web workspace. Tests: 17 passing, Ruff/mypy and Web checks. Docker migration/identity smoke in progress.
 
 S2: immutable S3 uploads, dataset versions, strict CSV normalization, per-row provenance, DB job/outbox with RQ worker, upload/mapping UI and sample-only chart. 27 API tests pass; mypy passes. Docker engine was unavailable after disk exhaustion; restart requested, live verification pending.
+
+S3: versioned policy author/review/retire, private reference uploads, independent-QA guard, deterministic half-open excursion analysis and evidence UI. 30 tests pass including full synthetic upload -> policy review -> analysis, negative role/tenant and immutable approved-policy API checks. Ruff/mypy and Web checks pass.

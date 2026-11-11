@@ -1,6 +1,51 @@
 {
   "components": {
     "schemas": {
+      "AnalysisInput": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "format": "uuid",
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "policy_version_id": {
+            "format": "uuid",
+            "title": "Policy Version Id",
+            "type": "string"
+          },
+          "selected_sensor_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Selected Sensor Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dataset_id",
+          "policy_version_id",
+          "selected_sensor_ids"
+        ],
+        "title": "AnalysisInput",
+        "type": "object"
+      },
+      "Body_reference_api_v1_reference_documents_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_reference_api_v1_reference_documents_post",
+        "type": "object"
+      },
       "Body_upload_api_v1_shipments__shipment_id__temperature_datasets_post": {
         "properties": {
           "conflicting_duplicate_mode": {
@@ -39,6 +84,71 @@
           "mapping"
         ],
         "title": "Body_upload_api_v1_shipments__shipment_id__temperature_datasets_post",
+        "type": "object"
+      },
+      "Bounds": {
+        "additionalProperties": false,
+        "properties": {
+          "max_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max C"
+          },
+          "min_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min C"
+          }
+        },
+        "title": "Bounds",
+        "type": "object"
+      },
+      "Constraint": {
+        "additionalProperties": false,
+        "properties": {
+          "effect": {
+            "enum": [
+              "HARD_BLOCK",
+              "REVIEW_REQUIRED",
+              "ADVISORY"
+            ],
+            "title": "Effect",
+            "type": "string"
+          },
+          "scenario_type": {
+            "enum": [
+              "CONTINUE_DELIVERY",
+              "HOLD_INSPECTION",
+              "CONDITIONAL_REROUTE",
+              "REJECT_QUARANTINE_DISPOSE"
+            ],
+            "title": "Scenario Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scenario_type",
+          "effect"
+        ],
+        "title": "Constraint",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -105,6 +215,111 @@
           }
         },
         "title": "Login",
+        "type": "object"
+      },
+      "Note": {
+        "additionalProperties": false,
+        "properties": {
+          "approval_note": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Note"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "title": "Note",
+        "type": "object"
+      },
+      "PolicyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "effective_from": {
+            "format": "date-time",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective To"
+          },
+          "policy_key": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Policy Key",
+            "type": "string"
+          },
+          "product_id": {
+            "format": "uuid",
+            "title": "Product Id",
+            "type": "string"
+          },
+          "reference_document_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Document Id"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/Rules"
+          },
+          "version": {
+            "exclusiveMinimum": 0.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "product_id",
+          "policy_key",
+          "version",
+          "effective_from",
+          "rules"
+        ],
+        "title": "PolicyInput",
         "type": "object"
       },
       "ProblemBody": {
@@ -205,6 +420,100 @@
           "category"
         ],
         "title": "ProductInput",
+        "type": "object"
+      },
+      "Rules": {
+        "additionalProperties": false,
+        "properties": {
+          "action_constraints": {
+            "items": {
+              "$ref": "#/components/schemas/Constraint"
+            },
+            "maxItems": 20,
+            "title": "Action Constraints",
+            "type": "array"
+          },
+          "continuous_effect": {
+            "default": "REVIEW_REQUIRED",
+            "enum": [
+              "HARD_BLOCK",
+              "REVIEW_REQUIRED",
+              "ADVISORY"
+            ],
+            "title": "Continuous Effect",
+            "type": "string"
+          },
+          "continuous_excursion_limit_seconds": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Continuous Excursion Limit Seconds"
+          },
+          "cumulative_effect": {
+            "default": "HARD_BLOCK",
+            "enum": [
+              "HARD_BLOCK",
+              "REVIEW_REQUIRED",
+              "ADVISORY"
+            ],
+            "title": "Cumulative Effect",
+            "type": "string"
+          },
+          "cumulative_excursion_limit_seconds": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative Excursion Limit Seconds"
+          },
+          "max_valid_sampling_gap_seconds": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 86400.0,
+            "title": "Max Valid Sampling Gap Seconds",
+            "type": "integer"
+          },
+          "required_sensor_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Required Sensor Ids",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "temperature_bounds": {
+            "$ref": "#/components/schemas/Bounds"
+          },
+          "unknown_gap_effect": {
+            "const": "REVIEW_REQUIRED",
+            "default": "REVIEW_REQUIRED",
+            "title": "Unknown Gap Effect",
+            "type": "string"
+          }
+        },
+        "required": [
+          "required_sensor_ids",
+          "max_valid_sampling_gap_seconds",
+          "temperature_bounds"
+        ],
+        "title": "Rules",
         "type": "object"
       },
       "ShipmentInput": {
@@ -406,6 +715,90 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/analyses/{analysis_id}": {
+      "get": {
+        "operationId": "analysis_api_v1_analyses__analysis_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Analysis Api V1 Analyses  Analysis Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analysis"
+      }
+    },
+    "/api/v1/analyses/{analysis_id}/excursions": {
+      "get": {
+        "operationId": "excursions_api_v1_analyses__analysis_id__excursions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Excursions Api V1 Analyses  Analysis Id  Excursions Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Excursions"
+      }
+    },
     "/api/v1/auth/callback": {
       "get": {
         "operationId": "callback_api_v1_auth_callback_get",
@@ -830,6 +1223,330 @@
         "summary": "Update Product"
       }
     },
+    "/api/v1/quality-policies": {
+      "get": {
+        "operationId": "policies_api_v1_quality_policies_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "product_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Product Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Policies Api V1 Quality Policies Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Policies"
+      },
+      "post": {
+        "operationId": "create_api_v1_quality_policies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api V1 Quality Policies Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/v1/quality-policies/{policy_id}": {
+      "get": {
+        "operationId": "policy_api_v1_quality_policies__policy_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Policy Api V1 Quality Policies  Policy Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Policy"
+      },
+      "patch": {
+        "operationId": "edit_api_v1_quality_policies__policy_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Edit Api V1 Quality Policies  Policy Id  Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit"
+      }
+    },
+    "/api/v1/quality-policies/{policy_id}/{action}": {
+      "post": {
+        "operationId": "transition_api_v1_quality_policies__policy_id___action__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Policy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Note"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Transition Api V1 Quality Policies  Policy Id   Action  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transition"
+      }
+    },
+    "/api/v1/reference-documents": {
+      "post": {
+        "operationId": "reference_api_v1_reference_documents_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_reference_api_v1_reference_documents_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Reference Api V1 Reference Documents Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reference"
+      }
+    },
     "/api/v1/shipments": {
       "get": {
         "operationId": "shipments_api_v1_shipments_get",
@@ -1067,6 +1784,58 @@
           }
         },
         "summary": "Update Shipment"
+      }
+    },
+    "/api/v1/shipments/{shipment_id}/analyses": {
+      "post": {
+        "operationId": "create_api_v1_shipments__shipment_id__analyses_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shipment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shipment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api V1 Shipments  Shipment Id  Analyses Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
       }
     },
     "/api/v1/shipments/{shipment_id}/temperature-datasets": {

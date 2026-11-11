@@ -228,7 +228,7 @@ Create **DRAFT version** tied to product:
 {
   "product_id": "<product-uuid>",
   "policy_key": "STRAWBERRY_STANDARD",
-  "version": "1.0.0",
+  "version": 1,
   "reference_document_id": "<document-uuid>",
   "effective_from": "2026-11-11T00:00:00Z",
   "rules": {
@@ -591,3 +591,6 @@ Auth login/callback/logout/me, organization current/members read, product CRUD a
 
 ## S2 implementation
 CSV upload uses UPLOADED (not QUEUED) dataset status, with a separate QUEUED job. Validation errors yield INVALID; infrastructure failures yield failed jobs. Raw readings are paginated, maximum 100 per page; aggregated resolution is explicitly rejected until min/max-envelope aggregation is implemented. Error samples are capped at 100 with errors_truncated indicator.
+
+## S3 implementation
+Policy version is a positive integer (aligned with DB), not semantic version text. POST /reference-documents uploads private evidence for policy approval. Rules include explicit continuous_effect and cumulative_effect; defaults are REVIEW_REQUIRED and HARD_BLOCK respectively. Unknown gaps cannot grant clearance. Dataset sampling times must lie within the policy effective interval. Analysis selects exactly required sensors; unspecified extra sensors produce INDETERMINATE. Excursions and gaps are pinned JSON result arrays on analysis_runs, not separately mutable tables.

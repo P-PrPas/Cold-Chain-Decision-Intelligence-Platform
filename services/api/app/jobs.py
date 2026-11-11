@@ -58,6 +58,10 @@ def execute(db: Session, job: Job, store: Store) -> None:
                     for row in rows
                 ],
             )
+    elif job.type == "ANALYSIS":
+        from app.analyses import execute_analysis
+
+        execute_analysis(db, job)
     else:
         raise ValueError("UNKNOWN_JOB")
     job.status = "COMPLETED"

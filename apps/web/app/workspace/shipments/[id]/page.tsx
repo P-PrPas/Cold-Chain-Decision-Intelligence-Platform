@@ -1,5 +1,6 @@
 "use client";
 import { use, useEffect, useState } from "react";
+import AnalysisPanel from "../../analysis-panel";
 import TemperaturePanel from "../../temperature-panel";
 import { api, write, type Item } from "../../api";
 export default function ShipmentDetail({
@@ -81,6 +82,11 @@ export default function ShipmentDetail({
           </label>
           <p>Operational state never implies QA approval.</p>
           <TemperaturePanel shipmentId={id} org={org} />
+          <AnalysisPanel
+            shipmentId={id}
+            productId={String(item.product_id)}
+            org={org}
+          />
           <section id="workflow">
             <h2>Evidence workflow</h2>
             <p>
