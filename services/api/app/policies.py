@@ -34,11 +34,11 @@ class Note(Strict):
 
 
 @router.post("/reference-documents", status_code=201)
-async def reference(
+def reference(
     request: Request, db: DB, current: Current, file: UploadFile = File(...)
 ) -> dict[str, Any]:
     permit(current, "ADMIN", "QA")
-    content = await file.read(10 * 1024 * 1024 + 1)
+    content = file.file.read(10 * 1024 * 1024 + 1)
     if len(content) > 10 * 1024 * 1024:
         raise Problem(413, "FILE_TOO_LARGE", "Reference exceeds 10 MB")
     if not content:
