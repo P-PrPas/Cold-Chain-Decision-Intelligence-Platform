@@ -7,7 +7,7 @@ import {
 import type { ReactNode } from "react";
 import "./globals.css";
 import { I18nProvider } from "./i18n-provider";
-import { SiteFooter, SiteHeader, SkipLink } from "./site-chrome";
+import { SiteFooter, SiteHeader } from "./site-chrome";
 
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -50,9 +50,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <I18nProvider>
-          <SkipLink />
           <SiteHeader />
-          <div id="content">{children}</div>
+          {children}
           <SiteFooter />
         </I18nProvider>
       </body>
