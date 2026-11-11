@@ -1,0 +1,25 @@
+html {
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  background: #f3f6f5;
+  color: #132e2b;
+  font-family: Arial, sans-serif;
+}
+main {
+  max-width: 960px;
+  margin: 10vh auto;
+  padding: 24px;
+}
+h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  letter-spacing: -0.04em;
+}
+p {
+  line-height: 1.7;
+}
+section {
+  border-top: 2px solid #167369;
+  padding-top: 24px;
+}
