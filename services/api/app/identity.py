@@ -32,7 +32,13 @@ async def provider(request: Request) -> Any:
         client_secret=settings.oidc_client_secret,
         server_metadata_url=(settings.oidc_backchannel or settings.oidc_issuer).rstrip("/")
         + "/.well-known/openid-configuration",
-        client_kwargs={"scope": "openid email profile", "code_challenge_method": "S256"},
+        client_kwargs={
+            "scope": "openid email profile",
+            "code_challenge_method": "S256",
+            "token_endpoint_auth_method": "client_secret_basic"
+            if settings.oidc_client_secret
+            else "none",
+        },
     )
     client = oauth.create_client("idp")
     metadata = await client.load_server_metadata()
