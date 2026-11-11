@@ -177,12 +177,14 @@ button:disabled {
   outline-offset: 4px;
 }
 .app-header {
-  height: 84px;
+  min-height: 84px;
   border-bottom: 1px solid var(--line);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4vw;
+  row-gap: 4px;
+  padding: 6px 4vw;
 }
 .brand {
   display: flex;
@@ -211,7 +213,9 @@ button:disabled {
 }
 .app-header nav {
   display: flex;
-  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 30px;
   align-items: center;
   font-size: 13px;
 }
@@ -543,7 +547,7 @@ li button {
   }
   .app-header {
     padding: 0 16px;
-    height: 68px;
+    min-height: 68px;
   }
   .hero-actions {
     align-items: start;
@@ -1582,4 +1586,20 @@ tr[data-selected="true"] td:first-child {
   min-width: 640px;
   width: 100%;
   height: auto;
+}
+
+/* Narrow phones: header wraps to two rows instead of overflowing; the mark stays visible. */
+@media (max-width: 400px) {
+  .app-header {
+    min-height: 56px;
+    padding: 6px 12px;
+  }
+  .app-header nav {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .theme-label {
+    display: none;
+  }
 }

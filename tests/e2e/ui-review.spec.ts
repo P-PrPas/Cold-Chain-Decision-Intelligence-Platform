@@ -52,6 +52,8 @@ for (const width of [1440, 768, 375, 320]) {
     if (width <= 760)
       await page.getByRole("button", { name: "Adjust assumptions" }).click();
     const delay = page.getByRole("slider", { name: "Additional delay slider" });
+    // The sheet scrolls on small screens; bring the control into view first.
+    await delay.scrollIntoViewIfNeeded();
     const controlBox = (await delay.boundingBox())!;
     expect(controlBox.y + controlBox.height).toBeLessThan(900);
     const canvas = await viewport.locator("canvas").elementHandle();
