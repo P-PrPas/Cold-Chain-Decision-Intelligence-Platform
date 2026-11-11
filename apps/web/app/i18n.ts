@@ -1,3 +1,4 @@
+import { landingEn, landingTh } from "./i18n-landing";
 import { studioEn, studioTh } from "./i18n-studio";
 
 export const LANGS = ["en", "th"] as const;
@@ -64,6 +65,7 @@ const en = {
   provCalculated: "Calculated",
   provEstimated: "Estimated",
   ...studioEn,
+  ...landingEn,
 } as const;
 
 export type Dict = { [K in keyof typeof en]: string };
@@ -128,6 +130,7 @@ const th: Dict = {
   provCalculated: "คำนวณแล้ว",
   provEstimated: "ประมาณการ",
   ...studioTh,
+  ...landingTh,
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, th };
