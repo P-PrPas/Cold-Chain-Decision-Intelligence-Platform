@@ -98,7 +98,7 @@ def dispatch(db: Session, queue: Any) -> None:
         select(Outbox).where(Outbox.status == "PENDING").with_for_update(skip_locked=True).limit(25)
     ):
         queue.enqueue(
-            run_job, event.job_id, event.organization_id, job_timeout=300, result_ttl=3600
+            "app.jobs.run_job", event.job_id, event.organization_id, job_timeout=300, result_ttl=3600
         )
         event.status = "DELIVERED"
         event.attempt_count += 1
