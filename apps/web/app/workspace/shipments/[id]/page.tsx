@@ -11,6 +11,7 @@ export default function ShipmentDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const [completedAnalysis, setCompletedAnalysis] = useState("");
   const [item, setItem] = useState<Item | null>(null);
   const [error, setError] = useState("");
   const [org, setOrg] = useState("");
@@ -83,14 +84,33 @@ export default function ShipmentDetail({
             </select>
           </label>
           <p>Operational state never implies QA approval.</p>
-          <TemperaturePanel shipmentId={id} org={org} />
-          <AnalysisPanel
-            shipmentId={id}
-            productId={String(item.product_id)}
-            org={org}
-          />
-          <SimulationPanel shipmentId={id} org={org} />
-          <DecisionPanel org={org} />
+          <nav className="step-nav" aria-label="Shipment workflow">
+            <a href="#evidence">01 Evidence</a>
+            <a href="#analysis">02 Analysis</a>
+            <a href="#simulation">03 Simulation</a>
+            <a href="#review">04 QA & reports</a>
+          </nav>
+          <div id="evidence">
+            <TemperaturePanel shipmentId={id} org={org} />
+          </div>
+          <div id="analysis">
+            <AnalysisPanel
+              shipmentId={id}
+              productId={String(item.product_id)}
+              onCompleted={setCompletedAnalysis}
+              org={org}
+            />
+          </div>
+          <div id="simulation">
+            <SimulationPanel
+              shipmentId={id}
+              org={org}
+              completedAnalysis={completedAnalysis}
+            />
+          </div>
+          <div id="review">
+            <DecisionPanel org={org} />
+          </div>
         </>
       )}
     </main>

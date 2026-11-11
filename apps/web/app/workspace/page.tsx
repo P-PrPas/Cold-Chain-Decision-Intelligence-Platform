@@ -84,10 +84,20 @@ export default function Workspace() {
   return (
     <main>
       <Link href="/">Cold Chain</Link>
-      <h1>Shipments</h1>
+      <span className="eyebrow">OPERATIONS / WORKSPACE</span>
+      <h1>
+        Your cold chain.
+        <br />
+        <em>One clear view.</em>
+      </h1>
       <p>
         Synthetic development workspace. No safety certification or autonomous
         release.
+      </p>
+      <p>
+        <Link className="button" href="/demo">
+          Try demo with prepared data
+        </Link>
       </p>
       {error && (
         <p role="alert">
@@ -163,7 +173,7 @@ export default function Workspace() {
           )}
           <h2>Create shipment</h2>
           {roles.some((r) => ["ADMIN", "LOGISTICS"].includes(r)) ? (
-            <form onSubmit={create}>
+            <form className="shipment-form" onSubmit={create}>
               <label>
                 Reference
                 <input name="reference" required />
@@ -212,7 +222,7 @@ export default function Workspace() {
           )}
           <h2>Shipment list</h2>
           {!busy && shipments.length === 0 && <p>No shipments yet.</p>}
-          <ul>
+          <ul className="shipment-list">
             {shipments.map((s) => (
               <li key={String(s.id)}>
                 <a href={`/workspace/shipments/${s.id}?org=${org}`}>

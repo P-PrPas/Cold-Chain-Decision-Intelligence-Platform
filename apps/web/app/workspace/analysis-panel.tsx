@@ -42,9 +42,11 @@ export default function AnalysisPanel({
   shipmentId,
   productId,
   org,
+  onCompleted,
 }: {
   shipmentId: string;
   productId: string;
+  onCompleted?: (id: string) => void;
   org: string;
 }) {
   const [policies, setPolicies] = useState<Item[]>([]);
@@ -92,6 +94,7 @@ export default function AnalysisPanel({
             setJob("");
             setBusy(false);
             setAnalysis((await api(`/analyses/${analysisId}`, org)).analysis);
+            if (data.job.status === "COMPLETED") onCompleted?.(analysisId);
           }
         })
         .catch((e) => {
@@ -101,7 +104,7 @@ export default function AnalysisPanel({
         });
     }, 1500);
     return () => clearInterval(timer);
-  }, [job, org, analysisId]);
+  }, [job, org, analysisId, onCompleted]);
   async function editDraft(event: FormEvent<HTMLFormElement>, policy: Item) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
