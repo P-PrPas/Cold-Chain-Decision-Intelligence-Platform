@@ -218,8 +218,17 @@ def shipments(
     status: str | None = None,
     reference: str | None = None,
     product_id: UUID | None = None,
+    from_at: UTCDateTime | None = Query(None, alias="from"),
+    to_at: UTCDateTime | None = Query(None, alias="to"),
+    sort: Literal["created_at"] = "created_at",
 ) -> dict[str, Any]:
     filters = []
+    if from_at and to_at and from_at >= to_at:
+        raise Problem(422, "VALIDATION_ERROR", "Invalid departure interval")
+    if from_at:
+        filters.append(Shipment.departure_at >= from_at)
+    if to_at:
+        filters.append(Shipment.departure_at < to_at)
     if status:
         filters.append(Shipment.status == status)
     if reference:
@@ -232,7 +241,7 @@ def shipments(
         Shipment,
         limit,
         cursor,
-        f"shipments:{status}:{reference}:{product_id}",
+        f"shipments:{status}:{reference}:{product_id}:{from_at}:{to_at}:{sort}",
         filters,
     )
 

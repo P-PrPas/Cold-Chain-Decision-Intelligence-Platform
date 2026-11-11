@@ -51,7 +51,7 @@ services:
       CC_SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET}
       CC_SECURE_COOKIES: "false"
       CC_SYNTHETIC_ONLY: "true"
-    command: ["sh", "-c", "alembic upgrade head && python -m app.bootstrap && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    command: ["sh", "-c", "alembic upgrade head && python -m app.bootstrap && uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log"]
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       postgres: {condition: service_healthy}

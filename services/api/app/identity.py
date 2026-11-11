@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Annotated, Any
 
 from authlib.integrations.starlette_client import OAuth  # type: ignore[import-untyped]
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -12,6 +12,7 @@ from app.access import DB, Current, audit, authenticated, digest, permit
 from app.contracts import Problem
 from app.db import now
 from app.models import LoginSession, MemberRole, Membership, Organization, User
+from app.shipments import page
 
 router = APIRouter(prefix="/api/v1")
 
@@ -152,24 +153,16 @@ def organization(db: DB, current: Current) -> dict[str, Any]:
 
 
 @router.get("/organizations/current/members")
-def members(db: DB, current: Current) -> dict[str, Any]:
+def members(
+    db: DB, current: Current, limit: int = Query(25, ge=1, le=100), cursor: str | None = None
+) -> dict[str, Any]:
     permit(current, "ADMIN")
-    return {
-        "items": [
-            {
-                "id": item.id,
-                "user_id": item.user_id,
-                "status": item.status,
-                "roles": list(
-                    db.scalars(select(MemberRole.role).where(MemberRole.membership_id == item.id))
-                ),
-            }
-            for item in db.scalars(
-                select(Membership).where(Membership.organization_id == current.organization_id)
-            )
-        ],
-        "next_cursor": None,
-    }
+    result = page(db, current, Membership, limit, cursor, "members", [])
+    for item in result["items"]:
+        item["roles"] = list(
+            db.scalars(select(MemberRole.role).where(MemberRole.membership_id == item["id"]))
+        )
+    return result
 
 
 class MemberInput(BaseModel):

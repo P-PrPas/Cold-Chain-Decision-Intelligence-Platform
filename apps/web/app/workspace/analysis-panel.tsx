@@ -29,6 +29,8 @@ export default function AnalysisPanel({
   const [analysis, setAnalysis] = useState<Item | null>(null);
   const [job, setJob] = useState("");
   const [analysisId, setAnalysisId] = useState("");
+  const [roles, setRoles] = useState<string[]>([]);
+  const canAuthor = roles.includes("ADMIN") || roles.includes("QA");
   async function refresh() {
     const [p, d] = await Promise.all([
       api(`/quality-policies?product_id=${productId}`, org),
@@ -41,10 +43,16 @@ export default function AnalysisPanel({
     Promise.all([
       api(`/quality-policies?product_id=${productId}`, org),
       api(`/shipments/${shipmentId}/temperature-datasets`, org),
+      api("/auth/me"),
     ])
-      .then(([p, d]) => {
+      .then(([p, d, me]) => {
         setPolicies(p.items);
         setDatasets(d.items);
+        setRoles(
+          me.memberships.find(
+            (m: { organization_id: string }) => m.organization_id === org,
+          )?.roles || [],
+        );
       })
       .catch((e) => setError(String(e)));
   }, [org, productId, shipmentId]);
@@ -67,6 +75,36 @@ export default function AnalysisPanel({
     }, 1500);
     return () => clearInterval(timer);
   }, [job, org, analysisId]);
+  async function editDraft(event: FormEvent<HTMLFormElement>, policy: Item) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setError("");
+    try {
+      await api(
+        `/quality-policies/${policy.id}`,
+        org,
+        write(
+          "PATCH",
+          {
+            product_id: productId,
+            policy_key: policy.policy_key,
+            version: policy.version,
+            reference_document_id: form.get("reference") || null,
+            effective_from: form.get("effective_from"),
+            effective_to: form.get("effective_to") || null,
+            rules: JSON.parse(String(form.get("rules"))),
+          },
+          `"policy-r${policy.revision}"`,
+        ),
+      );
+      await refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -152,59 +190,61 @@ export default function AnalysisPanel({
       >
         Refresh policies and datasets
       </button>
-      <details>
-        <summary>Author a draft policy</summary>
-        <label>
-          Reference document
-          <input
-            type="file"
-            onChange={async (e) => {
-              if (!e.target.files?.[0]) return;
-              const form = new FormData();
-              form.set("file", e.target.files[0]);
-              try {
-                const result = await api("/reference-documents", org, {
-                  method: "POST",
-                  body: form,
-                });
-                setReference(result.reference_document.id);
-              } catch (error) {
-                setError(String(error));
-              }
-            }}
-          />
-        </label>
-        <p>Reference: {reference || "Not uploaded"}</p>
-        <form onSubmit={create}>
+      {canAuthor && (
+        <details>
+          <summary>Author a draft policy</summary>
           <label>
-            Policy key
-            <input name="key" required />
-          </label>
-          <label>
-            Version
+            Reference document
             <input
-              name="version"
-              type="number"
-              min="1"
-              defaultValue="1"
-              required
+              type="file"
+              onChange={async (e) => {
+                if (!e.target.files?.[0]) return;
+                const form = new FormData();
+                form.set("file", e.target.files[0]);
+                try {
+                  const result = await api("/reference-documents", org, {
+                    method: "POST",
+                    body: form,
+                  });
+                  setReference(result.reference_document.id);
+                } catch (error) {
+                  setError(String(error));
+                }
+              }}
             />
           </label>
-          <label>
-            Effective from
-            <input name="effective" type="datetime-local" required />
-          </label>
-          <label>
-            Versioned rules (JSON)
-            <textarea
-              rows={14}
-              value={rules}
-              onChange={(e) => setRules(e.target.value)}
-            />
-          </label>
-          <button disabled={busy}>Save draft</button>
-        </form>
-      </details>
+          <p>Reference: {reference || "Not uploaded"}</p>
+          <form onSubmit={create}>
+            <label>
+              Policy key
+              <input name="key" required />
+            </label>
+            <label>
+              Version
+              <input
+                name="version"
+                type="number"
+                min="1"
+                defaultValue="1"
+                required
+              />
+            </label>
+            <label>
+              Effective from
+              <input name="effective" type="datetime-local" required />
+            </label>
+            <label>
+              Versioned rules (JSON)
+              <textarea
+                rows={14}
+                value={rules}
+                onChange={(e) => setRules(e.target.value)}
+              />
+            </label>
+            <button disabled={busy}>Save draft</button>
+          </form>
+        </details>
+      )}
       <ul>
         {policies.map((p) => (
           <li key={String(p.id)}>
@@ -213,7 +253,49 @@ export default function AnalysisPanel({
               <summary>Rule evidence</summary>
               <pre>{JSON.stringify(p.rules, null, 2)}</pre>
             </details>
-            {p.status === "DRAFT" && (
+            {p.status === "DRAFT" && canAuthor && (
+              <details>
+                <summary>Edit draft v{String(p.version)}</summary>
+                <form
+                  key={String(p.revision)}
+                  onSubmit={(event) => void editDraft(event, p)}
+                >
+                  <label>
+                    Reference document ID
+                    <input
+                      name="reference"
+                      defaultValue={String(p.reference_document_id || "")}
+                    />
+                  </label>
+                  <label>
+                    Effective from (UTC)
+                    <input
+                      name="effective_from"
+                      required
+                      defaultValue={String(p.effective_from)}
+                    />
+                  </label>
+                  <label>
+                    Effective to (UTC, optional)
+                    <input
+                      name="effective_to"
+                      defaultValue={String(p.effective_to || "")}
+                    />
+                  </label>
+                  <label>
+                    Draft rules (JSON)
+                    <textarea
+                      name="rules"
+                      rows={14}
+                      required
+                      defaultValue={JSON.stringify(p.rules, null, 2)}
+                    />
+                  </label>
+                  <button disabled={busy}>Save draft changes</button>
+                </form>
+              </details>
+            )}
+            {p.status === "DRAFT" && canAuthor && (
               <button
                 disabled={busy}
                 onClick={() => void transition(p, "submit-review")}
@@ -221,7 +303,7 @@ export default function AnalysisPanel({
                 Submit review
               </button>
             )}
-            {p.status === "PENDING_REVIEW" && (
+            {p.status === "PENDING_REVIEW" && roles.includes("QA") && (
               <button
                 disabled={busy}
                 onClick={() => void transition(p, "approve")}
@@ -229,7 +311,7 @@ export default function AnalysisPanel({
                 QA approve
               </button>
             )}
-            {p.status === "APPROVED" && (
+            {p.status === "APPROVED" && roles.includes("QA") && (
               <button
                 disabled={busy}
                 onClick={() => void transition(p, "retire")}

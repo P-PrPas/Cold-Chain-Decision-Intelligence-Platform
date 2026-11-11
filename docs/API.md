@@ -200,7 +200,7 @@ Response `201`:
 Validation: unique per organization; `departure_at < estimated_arrival_at`; positive/zero cargo values; ISO currency. Request omitted `organization_id` intentionally: backend derives it.
 
 ### GET `/shipments`
-Query: `status`, `product_id`, `reference`, `from`, `to`, `limit`, `cursor`, `sort` (`created_at` or `updated_at`, descending by default). Response paginated `items: [shipment]`.
+Query: `status`, `product_id`, `reference`, `from`, `to`, `limit`, `cursor`, `sort` (`created_at`, descending). `from`/`to` filter departure times as an inclusive/exclusive UTC interval. Response paginated `items: [shipment]`. The candidate explicitly rejects `updated_at` sorting: it uses immutable creation-time keysets so edits cannot silently move records between pages (ADR 0003).
 
 ### GET `/shipments/{shipment_id}`
 Response `{ "shipment": { ... } }`, header `ETag: "shipment-r3"`; includes `latest_dataset_id`, `latest_analysis_id` as optional refs, but prior decisions still pin their own versions.

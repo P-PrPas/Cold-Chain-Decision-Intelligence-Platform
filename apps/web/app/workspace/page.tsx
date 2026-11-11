@@ -113,7 +113,11 @@ export default function Workspace() {
           </button>
           <label>
             Organization
-            <select value={org} onChange={(e) => setOrg(e.target.value)}>
+            <select
+              aria-label="Organization"
+              value={org}
+              onChange={(e) => setOrg(e.target.value)}
+            >
               <option value="">Select organization</option>
               {members.map((m) => (
                 <option
@@ -166,7 +170,7 @@ export default function Workspace() {
               </label>
               <label>
                 Product
-                <select name="product" required>
+                <select aria-label="Product" name="product" required>
                   <option value="">Select product</option>
                   {products.map((p) => (
                     <option key={String(p.id)} value={String(p.id)}>
