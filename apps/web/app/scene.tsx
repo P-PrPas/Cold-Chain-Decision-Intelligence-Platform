@@ -17,6 +17,7 @@ export default function Scene({
   eligibility = "Not evaluated",
   context = "Scenario illustration",
   missing,
+  compact = false,
 }: {
   scenario?: string;
   origin?: string;
@@ -28,6 +29,7 @@ export default function Scene({
   eligibility?: string;
   context?: string;
   missing?: string;
+  compact?: boolean;
 }) {
   const [mode, setMode] = useState<"3D" | "2D">("3D"),
     [zoom, setZoom] = useState(1),
@@ -53,10 +55,37 @@ export default function Scene({
     "Controlled inspection facility",
     "Isolation / quarantine facility",
   ];
+  const engine = useRef<ReturnType<
+    typeof import("./network-renderer").mountNetwork
+  > | null>(null);
+  const latest = useRef({
+    target,
+    zoom,
+    destinationLabel: "",
+    delay: delay || "0",
+    acceptance,
+  });
+  useEffect(() => {
+    const destinationLabel =
+      target === 4
+        ? "Inspection"
+        : target === 5
+          ? "Quarantine"
+          : target === 3
+            ? "Alternative receiver"
+            : destination.slice(0, 24);
+    latest.current = {
+      target,
+      zoom,
+      destinationLabel,
+      delay: delay || "0",
+      acceptance,
+    };
+    engine.current?.update(latest.current);
+  }, [target, zoom, destination, delay, acceptance]);
   useEffect(() => {
     if (mode !== "3D" || !host.current) return;
     let cancelled = false;
-    let dispose: (() => void) | undefined;
     const element = host.current;
     const fail = () => {
       setFailure(
@@ -66,22 +95,29 @@ export default function Scene({
     };
     const contextLost = (e: Event) => {
       e.preventDefault();
-      fail();
+      if (!cancelled) fail();
     };
     element.addEventListener("webglcontextlost", contextLost, true);
     import("./network-renderer")
       .then((m) => {
-        if (!cancelled) dispose = m.mountNetwork(element, target, zoom);
+        if (cancelled) return;
+        engine.current = m.mountNetwork(
+          element,
+          latest.current.target,
+          latest.current.zoom,
+        );
+        engine.current.update(latest.current);
       })
       .catch(() => {
         if (!cancelled) fail();
       });
     return () => {
       cancelled = true;
-      dispose?.();
       element.removeEventListener("webglcontextlost", contextLost, true);
+      engine.current?.dispose();
+      engine.current = null;
     };
-  }, [mode, target, zoom]);
+  }, [mode]);
   return (
     <section className="network-explorer" aria-label="Simulation explorer">
       <div className="section-heading">
@@ -132,32 +168,9 @@ export default function Scene({
       </div>
       {failure && <p role="status">{failure}</p>}
       <p className="notice">
-        Schematic scenario, not live GPS or time-based simulation. Dashed line:
-        original route. Solid cyan line: proposed path.
+        Schematic, not GPS. Dashed: original route; solid: selected path. No
+        time playback.
       </p>
-      {mode === "3D" ? (
-        <div
-          ref={host}
-          className="network-canvas"
-          role="img"
-          aria-label={`Schematic ${scenarioNames[scenario]} from ${origin}, through the decision point, to ${names[target]}. See numbered locations below.`}
-        />
-      ) : (
-        <ol className="route-steps">
-          <li>{origin}</li>
-          <li>Decision point (not GPS)</li>
-          <li>{names[target]}</li>
-        </ol>
-      )}
-      <ol className="network-legend">
-        {names.map((name, i) => (
-          <li key={i} className={i === target ? "selected-location" : ""}>
-            <span>{i + 1}</span>
-            {name}
-            {i === target && <strong> / Proposed destination</strong>}
-          </li>
-        ))}
-      </ol>
       <div className="evidence-summary">
         <span>
           Cost:{" "}
@@ -176,6 +189,32 @@ export default function Scene({
           Eligibility: <strong>{eligibility.replaceAll("_", " ")}</strong>
         </span>
       </div>
+      {mode === "3D" ? (
+        <div
+          ref={host}
+          className="network-canvas"
+          role="img"
+          aria-label={`Schematic ${scenarioNames[scenario]} from ${origin}, through the decision point, to ${names[target]}. See numbered locations below.`}
+        />
+      ) : (
+        <ol className="route-steps">
+          <li>{origin}</li>
+          <li>Decision point (not GPS)</li>
+          <li>{names[target]}</li>
+        </ol>
+      )}
+      <details open={!compact}>
+        <summary>Locations and route key</summary>
+        <ol className="network-legend">
+          {names.map((name, i) => (
+            <li key={i} className={i === target ? "selected-location" : ""}>
+              <span>{i + 1}</span>
+              {name}
+              {i === target && <strong> / Proposed destination</strong>}
+            </li>
+          ))}
+        </ol>
+      </details>
       <p>
         Receiver acceptance: {acceptance}.{" "}
         {missing

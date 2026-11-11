@@ -29,6 +29,31 @@ export default function ShipmentDetail({
   const [item, setItem] = useState<Item | null>(null);
   const [error, setError] = useState("");
   const [org, setOrg] = useState("");
+  const historyRequest = useRef(0);
+  const refreshWorkflow = useCallback(async () => {
+    const request = ++historyRequest.current;
+    const organization =
+      new URLSearchParams(window.location.search).get("org") || "";
+    try {
+      const data = await api(`/shipments/${id}/workflow`, organization);
+      if (request === historyRequest.current) {
+        setSavedWorkflow(data);
+        setWorkflowError("");
+      }
+    } catch (e) {
+      if (request === historyRequest.current)
+        setWorkflowError(
+          `Saved history could not refresh. Retry history. ${String(e)}`,
+        );
+    }
+  }, [id]);
+  const analysisCompleted = useCallback(
+    (analysis: string) => {
+      selectAnalysis(analysis);
+      if (analysis) void refreshWorkflow();
+    },
+    [selectAnalysis, refreshWorkflow],
+  );
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const selected =
@@ -45,9 +70,10 @@ export default function ShipmentDetail({
     const organization =
       new URLSearchParams(window.location.search).get("org") || "";
     const version = selectionVersion.current;
+    const request = ++historyRequest.current;
     api(`/shipments/${id}/workflow`, organization)
       .then((data) => {
-        if (!active) return;
+        if (!active || request !== historyRequest.current) return;
         setSavedWorkflow(data);
         const a = data.analysis;
         const run = data.simulation;
@@ -150,6 +176,13 @@ export default function ShipmentDetail({
           </details>
           <section className="saved-workflow">
             <h2>Saved workflow</h2>
+            <button
+              type="button"
+              className="quiet"
+              onClick={() => void refreshWorkflow()}
+            >
+              Refresh saved history
+            </button>
             {workflowError ? (
               <p role="alert">
                 Cannot load saved history. Reload this page to retry.{" "}
@@ -177,13 +210,19 @@ export default function ShipmentDetail({
                   {(savedWorkflow.analysis as Item)?.created_at
                     ? new Date(
                         String((savedWorkflow.analysis as Item).created_at),
-                      ).toLocaleString()
+                      ).toLocaleString("en-GB", {
+                        timeZone: "UTC",
+                        timeZoneName: "short",
+                      })
                     : "None"}
                   . Completed simulation:{" "}
                   {(savedWorkflow.simulation as Item)?.created_at
                     ? new Date(
                         String((savedWorkflow.simulation as Item).created_at),
-                      ).toLocaleString()
+                      ).toLocaleString("en-GB", {
+                        timeZone: "UTC",
+                        timeZoneName: "short",
+                      })
                     : "None"}
                   .
                 </p>
@@ -243,7 +282,7 @@ export default function ShipmentDetail({
                 <AnalysisPanel
                   shipmentId={id}
                   productId={String(item.product_id)}
-                  onCompleted={selectAnalysis}
+                  onCompleted={analysisCompleted}
                   org={org}
                 />
               </details>
@@ -264,6 +303,7 @@ export default function ShipmentDetail({
                 destination={String(
                   (item.destination as Item)?.name || "Original receiver",
                 )}
+                onSaved={refreshWorkflow}
                 onPropose={setProposal}
               />
             ) : (
@@ -271,7 +311,13 @@ export default function ShipmentDetail({
             )}
           </div>
           <div id="review" tabIndex={-1} aria-label="Proposal and QA review">
-            <DecisionPanel org={org} shipmentId={id} proposal={proposal} />
+            <DecisionPanel
+              key={`${org}:${id}`}
+              org={org}
+              shipmentId={id}
+              proposal={proposal}
+              onSaved={refreshWorkflow}
+            />
           </div>
         </>
       )}

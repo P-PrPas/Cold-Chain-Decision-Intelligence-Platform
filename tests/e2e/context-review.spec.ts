@@ -1,3 +1,4 @@
+import { freshAssumptions } from "../../apps/web/app/simulation-assumptions";
 import { test, expect } from "@playwright/test";
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
 test("organization responses cannot overwrite the current scope; server search and pagination", async ({
@@ -125,7 +126,18 @@ test("changing analysis clears old results and proposal; failed recalculation st
         },
       };
     else if (path.endsWith("/simulations/r1"))
-      json = { simulation: { id: "r1", analysis_id: "a1", parameters: {} } };
+      json = {
+        simulation: {
+          id: "r1",
+          analysis_id: "a1",
+          parameters: {
+            ...freshAssumptions(),
+            analysis_id: "a1",
+            dataset_id: "data",
+            policy_version_id: "policy",
+          },
+        },
+      };
     else if (path.endsWith("/scenarios"))
       json = {
         items: [
@@ -155,6 +167,21 @@ test("changing analysis clears old results and proposal; failed recalculation st
   await expect(
     page.getByText("Selected proposal: Continue delivery"),
   ).toBeVisible();
+  await page
+    .getByRole("group", { name: "Select scenario" })
+    .getByRole("button", { name: "Hold for inspection" })
+    .click();
+  await expect(
+    page.getByText("Selected proposal: Continue delivery"),
+  ).not.toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Simulation explorer" }),
+  ).toContainText("Draft preview (not saved)");
+  await page
+    .getByRole("group", { name: "Select scenario" })
+    .getByRole("button", { name: "Continue delivery", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Prepare proposal" }).click();
   await page.locator("#analysis > details > summary").click();
   await page.getByLabel("Resume a recent analysis").selectOption("a2");
   await expect(
@@ -163,7 +190,7 @@ test("changing analysis clears old results and proposal; failed recalculation st
   await expect(
     page.getByRole("button", { name: "Prepare proposal" }),
   ).not.toBeVisible();
-  await expect(page.getByText(/No completed run/)).toBeVisible();
+  await expect(page.getByText(/New scenario baseline:/)).toBeVisible();
   await page
     .getByRole("button", { name: "Run simulation", exact: true })
     .click();

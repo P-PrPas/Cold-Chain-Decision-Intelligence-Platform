@@ -2,6 +2,8 @@
 
 This iteration is a review candidate, not certification of a premium production release.
 
+The follow-up to review of `1fad788` makes demo 3D-first, restores full saved assumptions, refreshes saved history after mutations, and adds non-persistent engine preview. See the [current factor/preview contract](FACTOR_PREVIEW_CONTRACT.md) and [Docker footprint report](DOCKER_FOOTPRINT.md). The R01–R12 notes and timing sample below describe the preceding iteration; they are retained as historical evidence, not a claim that later scene geometry has identical timing.
+
 Production-build screenshots: [desktop simulation](review-evidence/simulation-desktop.png) and [375 px simulation](review-evidence/simulation-mobile.png).
 
 ## Data and workflow
