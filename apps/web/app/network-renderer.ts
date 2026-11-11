@@ -141,7 +141,7 @@ export function mountNetwork(
     el.textContent = String(i + 1);
     el.setAttribute("aria-hidden", "true");
     host.appendChild(el);
-    return { el, point: new THREE.Vector3(x, 2.1, z) };
+    return { el, point: new THREE.Vector3(x, i === 1 ? 1.4 : 2.4, z) };
   });
   function draw() {
     const drawStart = performance.now();
@@ -149,7 +149,7 @@ export function mountNetwork(
       h = host.clientHeight;
     renderer.setSize(w, h);
     const aspect = w / h;
-    const halfHeight = Math.max(8, 8 / aspect);
+    const halfHeight = Math.max(5.7, 7.2 / aspect);
     camera.left = -halfHeight * aspect;
     camera.right = halfHeight * aspect;
     camera.top = halfHeight;
@@ -197,15 +197,33 @@ export function mountNetwork(
       el.className =
         i === target || i === 1
           ? "network-marker network-name"
-          : "network-marker";
+          : "network-marker network-secondary";
       el.textContent =
         i === 1
           ? "Decision point"
           : i === target
-            ? `${state.destinationLabel} / +${state.delay} min`
-            : String(i + 1);
+            ? state.destinationLabel
+            : [
+                "Origin",
+                "Decision",
+                "Receiver",
+                "Alternative",
+                "Inspection",
+                "Quarantine",
+              ][i];
       el.title = i === target ? `Receiver assumption: ${state.acceptance}` : "";
     });
+    const acceptance = state.acceptance.toUpperCase();
+    if (pads[3])
+      (pads[3].material as THREE.MeshStandardMaterial).color.setHex(
+        acceptance === "ACCEPTED"
+          ? 0x318477
+          : acceptance === "REJECTED"
+            ? 0xa65c50
+            : 0x685d49,
+      );
+    if (target === 3)
+      labels[3].el.textContent = `${acceptance === "ACCEPTED" ? "✓" : acceptance === "REJECTED" ? "×" : "?"} Alternative receiver`;
     draw();
   }
   return {

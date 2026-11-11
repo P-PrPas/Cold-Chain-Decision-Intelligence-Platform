@@ -9,6 +9,7 @@ import {
   freshAssumptions,
   totalCost,
   sameAssumptions,
+  draftErrors,
 } from "../simulation-assumptions";
 
 type Result = {
@@ -52,7 +53,8 @@ export default function SimulationPanel({
   const epoch = useRef(0),
     locked = useRef(false);
   const key = draft ? JSON.stringify(draft) : "";
-  const current = result?.key === key ? result : null;
+  const valid = !!draft && Object.keys(draftErrors(draft)).length === 0;
+  const current = valid && result?.key === key ? result : null;
   const selectedDraft = draft?.scenarios.find((s) => s.type === selected);
   const selectedResult = current?.items.find((s) => s.type === selected);
   useEffect(() => {
@@ -125,7 +127,7 @@ export default function SimulationPanel({
     };
   }, [initialRun, completedAnalysis, shipmentId, org]);
   useEffect(() => {
-    if (!key || savedResult.current?.key === key || saving) return;
+    if (!valid || !key || savedResult.current?.key === key || saving) return;
     const payload: Assumptions = JSON.parse(key);
     let active = true;
     const controller = new AbortController();
@@ -161,7 +163,7 @@ export default function SimulationPanel({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key, retry, org, shipmentId, saving]);
+  }, [key, retry, org, shipmentId, saving, valid]);
   function change(value: Assumptions) {
     setDraft(value);
     if (savedResult.current?.key === JSON.stringify(value))
@@ -175,7 +177,7 @@ export default function SimulationPanel({
     onPropose(null);
   }
   async function save() {
-    if (!draft || locked.current) return;
+    if (!draft || !valid || locked.current) return;
     locked.current = true;
     setSaving(true);
     setError("");
@@ -284,7 +286,14 @@ export default function SimulationPanel({
               ? `${shipmentLabel || shipmentId} / Run ${current.run.slice(0, 8)}`
               : `${shipmentLabel || shipmentId} / Draft preview (not saved)`
           }
-          cost={totalCost(selectedDraft)}
+          baselineCost={totalCost(
+            baseline.scenarios.find((s) => s.type === selected),
+          )}
+          baselineDelay={String(
+            baseline.scenarios.find((s) => s.type === selected)
+              ?.estimated_delay_minutes ?? 0,
+          )}
+          cost={totalCost(selectedDraft, draft.currency)}
           delay={String(selectedDraft?.estimated_delay_minutes ?? 0)}
           currency={draft.currency}
           acceptance={selectedDraft?.receiver_acceptance}
@@ -310,20 +319,26 @@ export default function SimulationPanel({
             }
           />
           <p role="status">
-            {saving
-              ? "Simulation processing..."
-              : current
-                ? current.kind === "saved"
-                  ? "Saved result matches these assumptions."
-                  : "Engine preview matches these assumptions. Save a run before preparing a proposal."
-                : previewStatus || "Waiting to calculate preview..."}
+            {!valid
+              ? "Fix the highlighted assumptions before calculating or saving."
+              : saving
+                ? "Simulation processing..."
+                : current
+                  ? current.kind === "saved"
+                    ? "Saved result matches these assumptions."
+                    : "Engine preview matches these assumptions. Save a run before preparing a proposal."
+                  : previewStatus || "Waiting to calculate preview..."}
           </p>
-          {!current && !saving && (
+          {!current && !saving && valid && (
             <button type="button" onClick={() => setRetry((v) => v + 1)}>
               Retry preview
             </button>
           )}
-          <button type="button" disabled={saving} onClick={() => void save()}>
+          <button
+            type="button"
+            disabled={saving || !valid}
+            onClick={() => void save()}
+          >
             {baselineRun ? "Recalculate as a new run" : "Run simulation"}
           </button>
           {current?.kind === "saved" &&
