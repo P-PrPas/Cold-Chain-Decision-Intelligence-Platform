@@ -10,20 +10,8 @@ const LANG_LABEL: Record<Lang, string> = { en: "EN", th: "ไทย" };
 export function SkipLink() {
   const t = useT();
   return (
-    <a
-      className="skip-link"
-      href="#content"
-      onClick={(e) => {
-        // The page owns its own <main>; point the link at it and move focus there.
-        const main = document.querySelector("main");
-        if (!main) return;
-        e.preventDefault();
-        main.id = "content";
-        main.tabIndex = -1;
-        main.focus();
-        main.scrollIntoView();
-      }}
-    >
+    // Every page's <main> carries id="content".
+    <a className="skip-link" href="#content">
       {t("skipToContent")}
     </a>
   );

@@ -271,7 +271,7 @@ function StudioShipment({
   const illustrative = selected === shipment.recommended;
 
   return (
-    <main className="studio" data-studio>
+    <main className="studio" id="content" data-studio>
       <header className="studio-head">
         <div className="studio-id">
           <h1>
