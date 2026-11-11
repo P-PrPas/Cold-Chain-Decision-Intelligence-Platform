@@ -188,7 +188,7 @@ Input: normalized readings of a selected sensor, a single APPROVED effective pol
 6. Merge consecutive out-of-band intervals into continuous excursion events; known-compliant intervals or unknown gaps terminate an event. Never bridge unknown gaps.
 7. Sum actual seconds of valid out-of-band intervals; compare both maximum continuous and cumulative durations using the explicit policy `duration_limit_comparison: AT_OR_ABOVE`. A confirmed HARD_BLOCK always yields CRITICAL; retain unknown evidence separately. Otherwise missing evidence yields INDETERMINATE.
 8. Multi-sensor: evaluate per sensor; organizational product policy must specify primary/required sensors and aggregation rule. Conflicting/unspecified sensors require QA and yield INDETERMINATE unless a confirmed HARD_BLOCK takes precedence.
-9. Engine 1.1.0 pins departure/estimated arrival at analysis creation. Per required sensor, all uncovered leading/trailing time is UNKNOWN without extrapolation. A final out-of-range observation (or one followed by a long unknown gap) has no inferred exposure duration but matches R-DATA and prevents release eligibility. Individual event severity uses event duration, not the run's aggregate classification. See ADR 0004.
+9. Engine 1.2.0 pins departure/estimated arrival but retains all readings. Real bracketing observations allow clipping their interval to the window, provided their original spacing satisfies the gap limit. Genuinely uncovered boundaries remain UNKNOWN without extrapolation. Every outside-window hot observation, a hot reading at ETA, or a final hot observation matches R-DATA; all readings contribute to min/max. Durations are integer seconds. Individual event severity uses clipped event duration, not aggregate classification. See ADR 0004.
 
 ### Pseudocode
 ```python
@@ -283,7 +283,7 @@ stateDiagram-v2
   PENDING_QA --> CHANGES_REQUESTED: QA requests changes
   CHANGES_REQUESTED --> DRAFT: new revision
   PENDING_QA --> SUPERSEDED: correction submitted atomically
-  APPROVED --> SUPERSEDED: correction submitted atomically
+  APPROVED --> SUPERSEDED: QA approves replacement atomically
   CHANGES_REQUESTED --> SUPERSEDED: correction submitted atomically
 ```
 

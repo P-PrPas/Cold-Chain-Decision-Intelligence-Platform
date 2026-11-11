@@ -60,6 +60,39 @@ def test_distinct_decisions_cannot_become_current_concurrently(platform):
         assert sorted(pool.map(submit, [0, 1])) == [200, 409]
 
 
+def test_concurrent_corrections_preserve_approved_predecessor(platform):
+    from test_review_regressions import draft
+
+    result = submit_decision(platform)
+    client, identities, _ = platform
+    original = result["decision"]
+    use_identity(client, identities[1])
+    response = client.post(
+        f"/api/v1/decisions/{original['id']}/approve",
+        headers={"Idempotency-Key": "approve-before-corrections", "If-Match": '"decision-r2"'},
+        json={
+            "review_notes": "Original QA review",
+            "evidence_references": ["reference:" + result["policy"]["reference_document_id"]],
+            "acknowledged_required_actions": ["HOLD_IN_CONTROLLED_STORAGE"],
+        },
+    )
+    assert response.status_code == 200
+    approved = response.json()["decision"]
+    use_identity(client, identities[0])
+    corrections = [draft(client, result, f"correction-{i}", original["id"]) for i in range(2)]
+
+    def submit(index):
+        return client.post(
+            f"/api/v1/decisions/{corrections[index]['id']}/submit",
+            headers={"Idempotency-Key": f"submit-correction-{index}", "If-Match": '"decision-r1"'},
+            json={"justification": "Request QA correction"},
+        ).status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(submit, [0, 1])) == [200, 409]
+    assert client.get(f"/api/v1/decisions/{original['id']}").json()["decision"] == approved
+
+
 def test_database_immutability_and_non_bypass_rls(platform):
     result = submit_decision(platform)
     _, identities, engine = platform

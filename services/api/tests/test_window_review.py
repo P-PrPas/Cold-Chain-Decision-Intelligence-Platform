@@ -69,6 +69,57 @@ def test_clipped_gap_uses_original_sampling_distance_and_integer_unknowns():
     assert type(result["unknown_intervals"][0]["duration_seconds"]) is int
 
 
+def test_eta_hot_observation_survives_later_normal_reading_and_duration_clips():
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+
+    def analyze_values(samples):
+        return analyze(
+            [
+                {
+                    "sensor_id": "A",
+                    "timestamp_utc": start + timedelta(seconds=at),
+                    "temperature_c": temperature,
+                }
+                for at, temperature in samples
+            ],
+            rules(),
+            start,
+            start + timedelta(seconds=600),
+        )
+
+    result = analyze_values([(0, "2"), (300, "2"), (600, "40"), (900, "2")])
+    assert result["classification"] == "INDETERMINATE"
+    assert result["summary"]["max_c"] == "40"
+    assert result["summary"]["cumulative_excursion_seconds"] == 0
+    assert (
+        result["summary"]["unbounded_out_of_range_observations"][0]["at"]
+        == (start + timedelta(seconds=600)).isoformat()
+    )
+    # A measured 600s hot interval contributes only its 300s overlap to this window.
+    result = analyze_values([(-300, "2"), (0, "2"), (300, "40"), (900, "2")])
+    assert result["summary"]["cumulative_excursion_seconds"] == 300
+    assert result["summary"]["unknown_seconds"] == 0
+    assert result["excursions"][0]["end_at"] == (start + timedelta(seconds=600)).isoformat()
+
+
+@pytest.mark.parametrize("times", [[-120, -60], [120, 180]])
+def test_no_overlapping_readings_leaves_exact_window_unknown(times):
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    result = analyze(
+        [
+            {"sensor_id": "A", "timestamp_utc": start + timedelta(seconds=at), "temperature_c": "2"}
+            for at in times
+        ],
+        rules(),
+        start,
+        start + timedelta(seconds=60),
+    )
+    assert result["classification"] == "INDETERMINATE"
+    assert result["summary"]["unknown_seconds"] == 60
+    assert result["unknown_intervals"][0]["start_at"] == start.isoformat()
+    assert result["unknown_intervals"][0]["end_at"] == (start + timedelta(seconds=60)).isoformat()
+
+
 @pytest.mark.parametrize("action", ["reject", "request-changes"])
 def test_unapproved_correction_cannot_revoke_qa_approval(platform, action):
     result = submit_decision(platform)

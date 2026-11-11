@@ -1,5 +1,7 @@
 # Pre-merge review corrections
 
+Historical first-review record for engine 1.1.0. The re-review found that its window filter discarded evidence; engine 1.2.0 replaces that behavior and revises approved-decision supersession. ADR 0004 describes the current contract. Results below remain evidence for the older reviewed commits, not for the corrected engine.
+
 Fixes are integrated in PR #7 on top of the existing S0–S6 stack. No PR was merged, rebased or squashed. The complete candidate is the diff from main to `feat/sprint-6-release-hardening`.
 
 ## Reproductions and regressions

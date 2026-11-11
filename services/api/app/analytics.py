@@ -150,6 +150,7 @@ def analyze(
             )
             if (value < low or value > high) and (
                 outside
+                or (window_end is not None and sample["timestamp_utc"] == window_end)
                 or index == len(samples) - 1
                 or (samples[index + 1]["timestamp_utc"] - sample["timestamp_utc"]).total_seconds()
                 > rules.max_valid_sampling_gap_seconds
