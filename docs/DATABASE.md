@@ -9,7 +9,7 @@
 
 ## S0–S6 physical implementation notes
 
-Pre-merge re-review correction (ADR 0004): `analysis_runs.result.coverage_window` pins the window used by engine 1.2.0 and its input hash; all readings remain evidence. Historical results are not rewritten. Decision writers use the organization transaction lock before row locks. At most one APPROVED and one PENDING_QA may coexist per shipment, only for an explicitly linked pending correction of that approval. APPROVED is superseded atomically only when QA approves the replacement; non-approved predecessors may be superseded on submission. This is an API invariant, not a database partial index. Snapshots remain unchanged. Membership activation resolves only tenant-scoped PENDING rows created by the operator provisioning command.
+Pre-merge re-review correction (ADR 0004): `analysis_runs.result.coverage_window` pins the window used by engine 1.3.0 and its input hash; all readings remain evidence. Historical results are not rewritten. Decision writers use the organization transaction lock before row locks. At most one APPROVED and one PENDING_QA may coexist per shipment, only for an explicitly linked pending correction of that approval. APPROVED is superseded atomically only when QA approves the replacement; non-approved predecessors may be superseded on submission. This is an API invariant, not a database partial index. Snapshots remain unchanged. Membership activation resolves only tenant-scoped PENDING rows created by the operator provisioning command.
 
 The detailed proposal below is retained for review. The executable schema is `services/api/app/models.py` with Alembic revisions `0001`–`0006`; these notes resolve physical differences from the illustrative DDL:
 

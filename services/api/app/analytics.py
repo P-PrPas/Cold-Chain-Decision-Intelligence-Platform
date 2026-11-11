@@ -9,7 +9,7 @@ from pydantic import Field, model_validator
 from app.shipments import Strict
 
 Effect = Literal["HARD_BLOCK", "REVIEW_REQUIRED", "ADVISORY"]
-ENGINE_VERSION = "1.2.0"
+ENGINE_VERSION = "1.3.0"
 
 
 def utc(value: datetime) -> datetime:
@@ -148,8 +148,15 @@ def analyze(
                 and window_end is not None
                 and not window_start <= sample["timestamp_utc"] <= window_end
             )
+            crosses_eta = (
+                window_end is not None
+                and sample["timestamp_utc"] < window_end
+                and index + 1 < len(samples)
+                and samples[index + 1]["timestamp_utc"] > window_end
+            )
             if (value < low or value > high) and (
                 outside
+                or crosses_eta
                 or (window_end is not None and sample["timestamp_utc"] == window_end)
                 or index == len(samples) - 1
                 or (samples[index + 1]["timestamp_utc"] - sample["timestamp_utc"]).total_seconds()
@@ -163,6 +170,8 @@ def analyze(
                         "duration_seconds": 0,
                         "reason": "OUT_OF_RANGE_OUTSIDE_SHIPMENT_WINDOW"
                         if outside
+                        else "OUT_OF_RANGE_INTERVAL_CROSSES_SHIPMENT_END"
+                        if crosses_eta
                         else "OUT_OF_RANGE_WITHOUT_OBSERVED_DURATION",
                     }
                 )

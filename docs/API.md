@@ -488,7 +488,7 @@ Response `200 {"decision":{"id":"<uuid>","status":"APPROVED","reviewed_by":"<qa-
 QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Required evidence missing" }`. `PENDING_QA → REJECTED`.
 
 ### POST `/decisions/{decision_id}/request-changes`
-QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Please attach inspection outcome" }`. `PENDING_QA → CHANGES_REQUESTED`. A revised proposal must create a new revision/draft and preserve old evidence; MVP may require creating a fresh decision referencing a revised simulation rather than editing an immutable submitted snapshot.
+QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Please attach inspection outcome" }`. `PENDING_QA → CHANGES_REQUESTED`. A revised proposal creates a fresh draft with supersedes_decision_id referencing the CHANGES_REQUESTED decision. Its correction ancestry carries forward the existing APPROVED decision until QA approves the replacement, including repeated request-changes. The old links and evidence remain intact; MVP may require creating a fresh decision referencing a revised simulation rather than editing an immutable submitted snapshot.
 
 ### Decision status rules
 `DRAFT → PENDING_QA → APPROVED | REJECTED | CHANGES_REQUESTED`. At most one APPROVED decision and one PENDING_QA proposal may coexist per shipment, only when the pending proposal explicitly corrects the approval. A correction links `supersedes_decision_id` to a same-shipment PENDING_QA, APPROVED or CHANGES_REQUESTED decision. Submission supersedes non-approved predecessors; an APPROVED predecessor is superseded only in the transaction where QA approves its replacement. Reject/request-changes leaves the existing approval intact. Both supersession paths increment the predecessor revision and append audit. Draft creation revokes nothing. Snapshots/PDFs stay immutable; conflicts return `409 ACTIVE_DECISION_EXISTS`. See ADR 0004.
@@ -604,8 +604,10 @@ Decision approvals require at least one tenant-owned stored reference document, 
 ## S6 implementation
 Decision report requests freeze the submitted snapshot and review metadata, then queue PDF generation. Downloads require tenant authorization and verify the stored SHA256. Dashboard counts and recent activity are tenant-scoped. Request size and Redis rate limits apply before business processing. `/organizations/current/members` activates trusted tenant-scoped provisioning records; no external invitation email is sent. Generated `packages/contracts/openapi.json` records the complete executable route and DTO contract.
 
-## Pre-merge re-review corrections: engine 1.2.0
+## Pre-merge re-review corrections: engine 1.3.0
 
 Analyses pin the shipment coverage window but retain ALL readings. Consecutive real observations may bracket boundaries; their original spacing must satisfy the gap limit before their interval is clipped to the window. Genuinely uncovered portions stay UNKNOWN. Every out-of-range sample outside the window matches R-DATA and contributes to summary min/max; final hot observations still match R-DATA. Duration fields remain integer seconds, with unknown fractional time rounded upward. Confirmed HARD_BLOCK keeps CRITICAL precedence. Event severity uses its own duration. `duration_limit_comparison: AT_OR_ABOVE` makes inclusive threshold behavior explicit.
 
 Simulation creation and decision submission/approval reject legacy engine results or a changed shipment window with `409 ANALYSIS_RECOMPUTE_REQUIRED`. Submit/review idempotency replays return the original decision ETag. Full rationale and historical-data handling: [ADR 0004](adr/0004-evidence-boundaries-and-current-decisions.md).
+
+Engine 1.3.0 also flags a hot interval crossing ETA as OUT_OF_RANGE_INTERVAL_CROSSES_SHIPMENT_END. In-window duration stays clipped, but the tail requires review and reanalysis rather than silently permitting release. The analysis UI displays sensor, temperature, timestamp and evidence reason prominently.

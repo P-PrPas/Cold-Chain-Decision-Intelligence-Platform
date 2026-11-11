@@ -2,7 +2,9 @@
 
 Status: proposed for owner/domain review. Resolves the pre-merge review blockers with conservative, deterministic behavior; does not approve real safety limits.
 
-## Analysis engine 1.2.0 (re-review correction)
+## Analysis engine 1.3.0 (re-review correction)
+
+An out-of-range reading before ETA whose next real observation is after ETA also triggers R-DATA, with reason OUT_OF_RANGE_INTERVAL_CROSSES_SHIPMENT_END. The in-window exposure remains measured and clipped; its outside-window tail is explicitly retained as review evidence, even if the next observation is normal. The analysis screen prominently displays temperature, sensor, timestamp and reason for these observations and outside-window heat. QA must reconcile the trip window and reanalyse; INDETERMINATE does not mean only missing readings.
 
 Analysis creation pins departure and estimated arrival in the input digest and queued metadata. The worker uses this pinned window even if the shipment changes while queued. All readings are retained, including loading and delayed-arrival evidence. Each required sensor must cover the same window. ETA is an estimate, not authority to discard evidence.
 
@@ -12,9 +14,11 @@ Every out-of-range sample outside the window is preserved in unbounded_out_of_ra
 
 Known excursions shorter than approved duration thresholds retain their measured duration and do not imply a threshold breach. `duration_limit_comparison: AT_OR_ABOVE` explicitly specifies inclusive `>=` semantics in the policy schema and approval-visible rules. This preserves the previous inclusive behavior; no alternative comparator is silently supported. Event classification uses that event's duration only; cumulative violations remain run-level rule results.
 
-New simulations and decision submission/approval require engine 1.2.0 and a window matching the current shipment. Engine 1.0/1.1 results remain immutable historical evidence and require reanalysis; they are not silently rewritten. Historical PDFs retain status at report request. Reports are evidence records, not proof of a currently active authorization.
+New simulations and decision submission/approval require engine 1.3.0 and a window matching the current shipment. Engine 1.0/1.1/1.2 results remain immutable historical evidence and require reanalysis; they are not silently rewritten. Historical PDFs retain status at report request. Reports are evidence records, not proof of a currently active authorization.
 
 ## One current decision per shipment
+
+Corrections may form a chain after request-changes: C2 references C1, which references the approved X. Submission supersedes C1 but retains X. The API follows that correction ancestry when checking the active approval, including repeated request-changes; QA approval of C2 supersedes X. Competing pending corrections remain disallowed. The original links and immutable snapshots are retained.
 
 The API serializes decision create/submit/review and report snapshots using the organization transaction lock before any decision row lock. There may be at most one APPROVED decision and at most one PENDING_QA proposal per shipment. They may coexist only when the pending proposal explicitly corrects that approved decision. Unrelated current decisions or a second pending correction are rejected, across simulation runs.
 

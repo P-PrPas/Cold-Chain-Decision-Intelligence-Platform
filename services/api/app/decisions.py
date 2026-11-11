@@ -53,6 +53,19 @@ def active_decisions(db: DB, current: Current, shipment_id: str, excluding: str)
     )
 
 
+def correction_ancestors(db: DB, current: Current, item: Decision) -> set[str]:
+    """Keep the correction chain while carrying forward its current QA approval."""
+    ancestors: set[str] = set()
+    predecessor = item.supersedes_decision_id
+    while predecessor and predecessor not in ancestors:
+        previous = owned(db, Decision, predecessor, current)
+        ancestors.add(previous.id)
+        if previous.status not in {"CHANGES_REQUESTED", "SUPERSEDED", "PENDING_QA"}:
+            break
+        predecessor = previous.supersedes_decision_id
+    return ancestors
+
+
 def supersede(
     db: DB,
     current: Current,
@@ -240,7 +253,12 @@ def submit(
     scenario = owned(db, Scenario, item.selected_scenario_id, current)
     allowed(scenario)
     active = active_decisions(db, current, run.shipment_id, item.id)
-    if any(previous.id != item.supersedes_decision_id for previous in active):
+    ancestors = correction_ancestors(db, current, item)
+    if any(
+        previous.id != item.supersedes_decision_id
+        and not (previous.status == "APPROVED" and previous.id in ancestors)
+        for previous in active
+    ):
         raise Problem(
             409, "ACTIVE_DECISION_EXISTS", "Explicitly supersede the current shipment decision"
         )
@@ -316,9 +334,9 @@ def review(
         shipment = owned(db, Shipment, run.shipment_id, current, True)
         require_current_analysis(owned(db, Analysis, run.analysis_id, current), shipment)
         active = active_decisions(db, current, run.shipment_id, item.id)
+        ancestors = correction_ancestors(db, current, item)
         if any(
-            previous.id != item.supersedes_decision_id or previous.status != "APPROVED"
-            for previous in active
+            previous.id not in ancestors or previous.status != "APPROVED" for previous in active
         ):
             raise Problem(
                 409, "ACTIVE_DECISION_EXISTS", "Another decision is current for this shipment"

@@ -100,6 +100,10 @@ def test_eta_hot_observation_survives_later_normal_reading_and_duration_clips():
     assert result["summary"]["cumulative_excursion_seconds"] == 300
     assert result["summary"]["unknown_seconds"] == 0
     assert result["excursions"][0]["end_at"] == (start + timedelta(seconds=600)).isoformat()
+    assert result["classification"] == "INDETERMINATE"
+    assert result["summary"]["unbounded_out_of_range_observations"][0]["reason"] == (
+        "OUT_OF_RANGE_INTERVAL_CROSSES_SHIPMENT_END"
+    )
 
 
 @pytest.mark.parametrize("times", [[-120, -60], [120, 180]])
@@ -147,6 +151,7 @@ def test_unapproved_correction_cannot_revoke_qa_approval(platform, action):
     )
     assert submitted.status_code == 200
     assert client.get(f"/api/v1/decisions/{original['id']}").json()["decision"] == before
+
     # A second pending correction is rejected even though it names the approval.
     competing = draft(client, result, "second-correction", original["id"])
     response = client.post(
@@ -163,6 +168,40 @@ def test_unapproved_correction_cannot_revoke_qa_approval(platform, action):
     )
     assert response.status_code == 200
     assert client.get(f"/api/v1/decisions/{original['id']}").json()["decision"] == before
+
+    if action == "request-changes":
+        # Repeat the documented correction chain; the original QA approval survives
+        # every submission and only the final QA approval may supersede it.
+        previous = correction
+        for index in range(2):
+            use_identity(client, identities[0])
+            revised = draft(client, result, f"revision-{index}", previous["id"])
+            response = client.post(
+                f"/api/v1/decisions/{revised['id']}/submit",
+                headers={
+                    "Idempotency-Key": f"submit-revision-{index}",
+                    "If-Match": '"decision-r1"',
+                },
+                json={"justification": "Address QA feedback"},
+            )
+            assert response.status_code == 200, response.text
+            assert response.json()["decision"]["supersedes_decision_id"] == previous["id"]
+            assert client.get(f"/api/v1/decisions/{original['id']}").json()["decision"] == before
+            use_identity(client, identities[1])
+            response = client.post(
+                f"/api/v1/decisions/{revised['id']}/" + ("approve" if index else "request-changes"),
+                headers={
+                    "Idempotency-Key": f"review-revision-{index}",
+                    "If-Match": '"decision-r2"',
+                },
+                json={**review, "acknowledged_required_actions": ["REVIEW_PINNED_EVIDENCE"]},
+            )
+            assert response.status_code == 200, response.text
+            previous = revised
+        assert (
+            client.get(f"/api/v1/decisions/{original['id']}").json()["decision"]["status"]
+            == "SUPERSEDED"
+        )
 
 
 def test_operator_provisioning_creates_pending_without_granting_roles(platform):

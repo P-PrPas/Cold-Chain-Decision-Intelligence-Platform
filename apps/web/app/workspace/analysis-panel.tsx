@@ -11,6 +11,33 @@ const draftRules = {
   unknown_gap_effect: "REVIEW_REQUIRED",
   action_constraints: [],
 };
+export function TemperatureEvidence({
+  observations,
+}: {
+  observations: Item[];
+}) {
+  if (!observations.length) return null;
+  return (
+    <aside role="alert" aria-label="Observed temperature requires QA review">
+      <h4>Out-of-range temperature evidence — QA review required</h4>
+      <p>
+        This includes observed temperature violations, not just missing data.
+        Evidence outside or crossing the shipment window requires reconciling
+        the trip times and reanalysis before release. Duration totals cover only
+        the pinned shipment window.
+      </p>
+      <ul>
+        {observations.map((observation, index) => (
+          <li key={index}>
+            Sensor {String(observation.sensor_id)}:{" "}
+            {String(observation.temperature_c)} °C at {String(observation.at)} —{" "}
+            <code>{String(observation.reason)}</code>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
 export default function AnalysisPanel({
   shipmentId,
   productId,
@@ -358,6 +385,15 @@ export default function AnalysisPanel({
           </h3>
           <p>Analysis ID: {String(analysis.id)}</p>
           <p>Input digest: {String(analysis.input_sha256)}</p>
+          <TemperatureEvidence
+            observations={
+              (
+                analysis.summary as {
+                  unbounded_out_of_range_observations?: Item[];
+                }
+              )?.unbounded_out_of_range_observations || []
+            }
+          />
           <pre>
             {JSON.stringify(
               {

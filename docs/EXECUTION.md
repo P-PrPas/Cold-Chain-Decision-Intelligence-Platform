@@ -2,6 +2,8 @@
 
 ## User-authorized workflow (updated)
 
+Latest authorization after re-review #3 supersedes the earlier leave-open instructions below: fix all three minors and merge after all CI jobs, including stack, pass. Corrections preserve request-changes ancestry and QA approval; engine 1.3.0 flags hot intervals crossing ETA; the UI exposes observed heat reasons. Real policy/domain sign-off remains a production release gate.
+
 Pre-merge re-review follow-up: final integration branch/PR #7 contains all review fixes; no rebase, stack rewrite or merge to main. Engine 1.2.0 retains every reading, clips intervals between real bracketing observations, preserves outside-window hot evidence, and keeps integer duration fields. APPROVED decisions remain unchanged until QA approves their replacement. An operator provisioning command and runbook create PENDING memberships without granting roles. ADR 0004 records the current behavior; VERIFICATION-REVIEW.md is historical first-review evidence. Review the full `main..feat/sprint-6-release-hardening` diff.
 The user superseded delegated implementation: current agent implements directly, implement all S0-S6 without stopping for review between sprints. Open one stacked PR per sprint, based on the prior sprint branch. Owner reviews all after implementation. Leave every PR open. Do not merge or deploy. S0–S6 implementation is submitted in PRs #1–#7 for one owner review. No delegates required. Previously unavailable orchestration tools no longer block work.
 
