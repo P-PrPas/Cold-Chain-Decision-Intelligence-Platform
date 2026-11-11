@@ -33,21 +33,14 @@ for (const width of [1440, 768, 375, 320]) {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
-    if (width >= 1000) {
-      const impact = await page
-        .locator(".network-explorer .evidence-summary")
-        .boundingBox();
-      expect(impact!.y + impact!.height).toBeLessThan(900);
-      expect(
-        (await viewport.boundingBox())!.y +
-          (await viewport.boundingBox())!.height,
-      ).toBeLessThan(900);
-      expect(
-        (await page
-          .getByRole("slider", { name: "Additional delay slider" })
-          .boundingBox())!.y,
-      ).toBeLessThan(900);
-    }
+    const box = (await viewport.boundingBox())!;
+    expect(box.y).toBeLessThan(width >= 1000 ? 400 : 320);
+    expect(box.y + box.height).toBeLessThan(900);
+    expect(box.height).toBeGreaterThanOrEqual(190);
+    const controlBox = (await page
+      .getByRole("slider", { name: "Additional delay slider" })
+      .boundingBox())!;
+    expect(controlBox.y + controlBox.height).toBeLessThan(900);
     const canvas = await viewport.locator("canvas").elementHandle();
     await page
       .getByRole("slider", { name: "Additional delay slider" })
@@ -76,12 +69,28 @@ for (const width of [1440, 768, 375, 320]) {
         "Conditional reroute",
         "Reject / quarantine / dispose",
       ]) {
-        await scenario
-          .getByRole("button", { name: action, exact: true })
-          .click();
-        await expect(
-          scenario.getByRole("button", { name: action, exact: true }),
-        ).toHaveAttribute("aria-pressed", "true");
+        if (width <= 900) {
+          await page
+            .getByLabel("Scenario", { exact: true })
+            .selectOption({ label: action });
+          await expect(
+            page.getByLabel("Scenario", { exact: true }),
+          ).toHaveValue(
+            Object.entries({
+              CONTINUE_DELIVERY: "Continue delivery",
+              HOLD_INSPECTION: "Hold for inspection",
+              CONDITIONAL_REROUTE: "Conditional reroute",
+              REJECT_QUARANTINE_DISPOSE: "Reject / quarantine / dispose",
+            }).find(([, v]) => v === action)![0],
+          );
+        } else {
+          await scenario
+            .getByRole("button", { name: action, exact: true })
+            .click();
+          await expect(
+            scenario.getByRole("button", { name: action, exact: true }),
+          ).toHaveAttribute("aria-pressed", "true");
+        }
         if (action === "Conditional reroute")
           await expect(
             page

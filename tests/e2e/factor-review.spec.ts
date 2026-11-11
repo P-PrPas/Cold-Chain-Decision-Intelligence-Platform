@@ -120,12 +120,15 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
       exact: true,
     }),
   ).toHaveValue("30");
+  await page.getByRole("button", { name: "Cost", exact: true }).click();
   await expect(
-    page.getByRole("spinbutton", { name: "Cost component amount" }),
+    page.getByRole("textbox", { name: "Cost component amount" }),
   ).toHaveValue("2.00");
+  await page.getByRole("button", { name: "Receiver", exact: true }).click();
   await expect(page.getByLabel("Receiver acceptance assumption")).toHaveValue(
     "ACCEPTED",
   );
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
   await expect(
     page.getByRole("spinbutton", { name: "Cost weight (0–1)" }),
   ).toHaveValue("0.25");
@@ -140,6 +143,7 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
     name: "Additional delay (minutes)",
     exact: true,
   });
+  await page.getByRole("button", { name: "Delay", exact: true }).click();
   await delayControl.fill("31");
   await expect.poll(() => previewCalls).toBe(1);
   await delayControl.fill("40");
@@ -149,14 +153,40 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
   ).not.toBeVisible();
   await page.getByRole("button", { name: "Reset to baseline" }).click();
   await expect(delayControl).toHaveValue("30");
+  await page.getByRole("button", { name: "Cost", exact: true }).click();
   await expect(
-    page.getByRole("spinbutton", { name: "Cost component amount" }),
+    page.getByRole("textbox", { name: "Cost component amount" }),
   ).toHaveValue("2.00");
+  await page.getByRole("button", { name: "Delay", exact: true }).click();
   await delayControl.fill("99");
   await expect(page.getByText(/Preview unavailable/)).toBeVisible();
   await expect(scene).toContainText("Awaiting calculation");
   await expect(
     page.getByRole("button", { name: "Prepare proposal" }),
   ).not.toBeVisible();
+  await page.getByRole("button", { name: "Cost", exact: true }).click();
+  const amount = page.getByRole("textbox", { name: "Cost component amount" });
+  const requestsBeforeInvalid = previewCalls;
+  for (const invalid of ["", "-2", "12.", "1.234"]) {
+    await amount.fill(invalid);
+    await expect(amount).toHaveAttribute("aria-invalid", "true");
+    await expect(
+      page.getByRole("button", { name: "Recalculate as a new run" }),
+    ).toBeDisabled();
+    await expect(
+      scene.getByLabel("Direct cost", { exact: true }),
+    ).toContainText("Unavailable");
+    await expect(amount).toHaveValue(invalid);
+  }
+  await page.getByRole("button", { name: "Delay", exact: true }).click();
+  for (const invalid of ["", "-1", "525601", "1.5"]) {
+    await delayControl.fill(invalid);
+    await expect(delayControl).toHaveAttribute("aria-invalid", "true");
+    await expect(
+      page.getByRole("button", { name: "Recalculate as a new run" }),
+    ).toBeDisabled();
+  }
+  await page.waitForTimeout(600);
+  expect(previewCalls).toBe(requestsBeforeInvalid);
   expect(submitted).toEqual(baseline);
 });

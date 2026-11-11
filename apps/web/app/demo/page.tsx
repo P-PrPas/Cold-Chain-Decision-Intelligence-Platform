@@ -6,7 +6,8 @@ import FactorControls from "../factor-controls";
 import {
   freshAssumptions,
   totalCost,
-  sameAssumptions,
+  draftErrors,
+  formatAmount,
   type Assumptions,
 } from "../simulation-assumptions";
 const shipments = [
@@ -130,13 +131,12 @@ export default function Demo() {
     <main className="demo-studio">
       <header className="studio-heading">
         <div>
-          <p className="context-label">SIMULATION EXPLORER / SYNTHETIC</p>
-          <h1>
+          <h1 className="sr-only">
             {shipment.id} <span>{shipment.product}</span>
           </h1>
         </div>
         <label>
-          Example shipment
+          <span className="sr-only">Example shipment</span>
           <select
             value={index}
             onChange={(e) => chooseShipment(Number(e.target.value))}
@@ -164,7 +164,7 @@ export default function Demo() {
           available
         </span>
         <span>{shipment.status}</span>
-        <span>Policy: not evaluated</span>
+
         <button
           type="button"
           onClick={() => setPanel(panel === "evidence" ? null : "evidence")}
@@ -172,6 +172,24 @@ export default function Demo() {
           Inspect evidence
         </button>
       </div>
+      <label className="mobile-scenario">
+        Scenario
+        <select
+          aria-label="Scenario"
+          value={selected}
+          onChange={(e) => {
+            setSelected(e.target.value);
+            setReviewed(false);
+            setProposal(false);
+          }}
+        >
+          {options.map((o) => (
+            <option key={o.type} value={o.type}>
+              {scenarioNames[o.type]}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="scenario-strip" role="group" aria-label="Select scenario">
         {options.map((option) => (
           <button
@@ -195,6 +213,8 @@ export default function Demo() {
             origin={shipment.route.split(" / ")[0]}
             destination={shipment.route.split(" / ")[1]}
             context={`${shipment.id} / illustrative draft, no saved run`}
+            baselineCost={totalCost(original)}
+            baselineDelay={String(original.estimated_delay_minutes)}
             cost={totalCost(scenario)}
             delay={String(scenario.estimated_delay_minutes)}
             currency={draft.currency}
@@ -207,24 +227,6 @@ export default function Demo() {
             }
             compact
           />
-          <div className="baseline-delta">
-            Against prepared baseline:{" "}
-            {Number(totalCost(scenario)) - Number(totalCost(original)) >= 0
-              ? "+"
-              : ""}
-            {(
-              Number(totalCost(scenario)) - Number(totalCost(original))
-            ).toFixed(2)}{" "}
-            THB /{" "}
-            {scenario.estimated_delay_minutes -
-              original.estimated_delay_minutes >=
-            0
-              ? "+"
-              : ""}
-            {scenario.estimated_delay_minutes -
-              original.estimated_delay_minutes}{" "}
-            min. {sameAssumptions(draft, baseline) ? "Unchanged" : "Modified"}
-          </div>
         </div>
         <aside className="studio-inspector" aria-label="Scenario factors">
           <FactorControls
@@ -232,23 +234,9 @@ export default function Demo() {
             baseline={baseline}
             selected={selected}
             onChange={change}
+            demo
             baselineLabel="prepared demo estimates"
           />
-          <p className="notice">
-            Immediate illustrative preview. Engine eligibility and ranking are
-            available in the connected workspace; this demo never saves runs.
-          </p>
-          <div
-            className="weight-meter"
-            aria-label={`Preference: cost ${Number(draft.ranking_weights.cost) * 100} percent, delay ${Number(draft.ranking_weights.delay) * 100} percent`}
-          >
-            <span
-              style={{ width: `${Number(draft.ranking_weights.cost) * 100}%` }}
-            >
-              Cost
-            </span>
-            <span>Delay</span>
-          </div>
         </aside>
       </div>
       <div className="studio-panel-controls">
@@ -447,7 +435,7 @@ export default function Demo() {
                       {scenarioNames[s.type]}
                     </button>
                   </td>
-                  <td>{totalCost(s)}</td>
+                  <td>{formatAmount(totalCost(s))}</td>
                   <td>{s.estimated_delay_minutes} min</td>
                 </tr>
               ))}
@@ -463,7 +451,7 @@ export default function Demo() {
         </p>
         <button
           type="button"
-          disabled={!reviewed}
+          disabled={!reviewed || Object.keys(draftErrors(draft)).length > 0}
           onClick={() => setProposal(true)}
         >
           Preview demo proposal
