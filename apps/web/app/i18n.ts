@@ -1,3 +1,5 @@
+import { studioEn, studioTh } from "./i18n-studio";
+
 export const LANGS = ["en", "th"] as const;
 export type Lang = (typeof LANGS)[number];
 export const LANG_KEY = "cc-lang";
@@ -8,7 +10,6 @@ const en = {
   siteName: "Cold Chain Simulation Studio",
   siteNameShort: "Cold Chain Studio",
   navPrimary: "Primary",
-  navDemo: "Demo",
   navWorkspace: "Workspace",
   environment: "Synthetic environment",
   language: "Language",
@@ -62,6 +63,7 @@ const en = {
   provEntered: "Entered",
   provCalculated: "Calculated",
   provEstimated: "Estimated",
+  ...studioEn,
 } as const;
 
 export type Dict = { [K in keyof typeof en]: string };
@@ -72,7 +74,6 @@ const th: Dict = {
   siteName: "Cold Chain Simulation Studio",
   siteNameShort: "Cold Chain Studio",
   navPrimary: "เมนูหลัก",
-  navDemo: "ทดลองใช้",
   navWorkspace: "พื้นที่ทำงาน",
   environment: "สภาพแวดล้อมจำลอง",
   language: "ภาษา",
@@ -126,6 +127,7 @@ const th: Dict = {
   provEntered: "ผู้ใช้กรอก",
   provCalculated: "คำนวณแล้ว",
   provEstimated: "ประมาณการ",
+  ...studioTh,
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, th };
