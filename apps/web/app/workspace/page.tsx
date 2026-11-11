@@ -1,5 +1,12 @@
 "use client";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import { money } from "../decision-summary";
 import Link from "next/link";
 import { api, write, type Item } from "./api";
 export default function Workspace() {
@@ -9,52 +16,86 @@ export default function Workspace() {
   const [organizationNames, setOrganizationNames] = useState<
     Record<string, string>
   >({});
-  const [dashboard, setDashboard] = useState<Item | null>(null);
+  const requestVersion = useRef(0);
+  const [dataKey, setDataKey] = useState("");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [dashboardData, setDashboard] = useState<Item | null>(null);
   const [org, setOrg] = useState("");
   const [members, setMembers] = useState<Item[]>([]);
-  const [shipments, setShipments] = useState<Item[]>([]);
+  const [shipmentRows, setShipments] = useState<Item[]>([]);
   const [products, setProducts] = useState<Item[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const load = useCallback(async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const me = await api("/auth/me");
-      setMembers(me.memberships);
-      const names = await Promise.all(
-        me.memberships.map(async (m: Item) => {
-          const r = await api(
-            "/organizations/current",
-            String(m.organization_id),
-          );
-          return [String(m.organization_id), String(r.organization.name)];
-        }),
-      );
-      setOrganizationNames(Object.fromEntries(names));
-      if (!org && me.memberships.length === 1)
-        setOrg(me.memberships[0].organization_id);
-      setLoaded(true);
-      if (org) {
-        const [s, p] = await Promise.all([
-          api("/shipments", org),
-          api("/products", org),
-        ]);
-        setShipments(s.items);
-        setProducts(p.items);
-        setDashboard(await api("/dashboard", org));
+  const scope = JSON.stringify([org, query, filter]);
+  const shipments = dataKey === scope ? shipmentRows : [];
+  const dashboard = dataKey === scope ? dashboardData : null;
+  const load = useCallback(
+    async (cursor?: string) => {
+      const request = ++requestVersion.current;
+      const key = JSON.stringify([org, query, filter]);
+      setBusy(true);
+      setError("");
+      try {
+        const me = await api("/auth/me");
+        if (request !== requestVersion.current) return;
+        setMembers(me.memberships);
+        const names = await Promise.all(
+          me.memberships.map(async (m: Item) => {
+            const r = await api(
+              "/organizations/current",
+              String(m.organization_id),
+            );
+            return [String(m.organization_id), String(r.organization.name)];
+          }),
+        );
+        if (request !== requestVersion.current) return;
+        setOrganizationNames(Object.fromEntries(names));
+        if (!org && me.memberships.length === 1)
+          setOrg(me.memberships[0].organization_id);
+        setLoaded(true);
+        if (org) {
+          const params = new URLSearchParams({
+            q: query,
+            status: filter,
+            limit: "25",
+          });
+          if (cursor) params.set("cursor", cursor);
+          const [s, p, d] = await Promise.all([
+            api(`/shipments?${params}`, org),
+            api("/products?limit=100", org),
+            api("/dashboard", org),
+          ]);
+          if (request !== requestVersion.current) return;
+          setShipments((old) => (cursor ? [...old, ...s.items] : s.items));
+          setProducts(p.items);
+          setDashboard(d);
+          setNextCursor(s.next_cursor);
+          setDataKey(key);
+        }
+      } catch (e) {
+        if (request === requestVersion.current) setError(String(e));
+      } finally {
+        if (request === requestVersion.current) setBusy(false);
       }
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }, [org]);
+    },
+    [org, query, filter],
+  );
   useEffect(() => {
+    const version = requestVersion;
     const timer = setTimeout(() => void load(), 0);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      version.current++;
+    };
   }, [load]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(sessionStorage.getItem("queue-query") || "");
+      setFilter(sessionStorage.getItem("queue-filter") || "");
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
   async function login() {
     setBusy(true);
     try {
@@ -72,6 +113,7 @@ export default function Workspace() {
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
+    const operation = requestVersion.current;
     const form = new FormData(event.currentTarget);
     try {
       await api(
@@ -90,6 +132,7 @@ export default function Workspace() {
           currency: "THB",
         }),
       );
+      if (operation !== requestVersion.current) return;
       setCreating(false);
       await load();
     } catch (e) {
@@ -108,7 +151,10 @@ export default function Workspace() {
           <p>Open a shipment to inspect evidence and continue its review.</p>
         </div>
         {org && (
-          <button onClick={() => setCreating(!creating)}>
+          <button
+            disabled={busy || dataKey !== scope}
+            onClick={() => setCreating(!creating)}
+          >
             {creating ? "Close new shipment" : "Create shipment"}
           </button>
         )}
@@ -152,6 +198,9 @@ export default function Workspace() {
               value={org}
               onChange={(e) => {
                 if (e.target.value === org) return;
+                requestVersion.current++;
+                setDataKey("");
+                setError("");
                 setShipments([]);
                 setProducts([]);
                 setDashboard(null);
@@ -192,11 +241,16 @@ export default function Workspace() {
           )}
           <div className="queue-filters">
             <label>
-              Search loaded shipments
+              Search all shipments
               <input
                 type="search"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  requestVersion.current++;
+                  setError("");
+                  setQuery(e.target.value);
+                  sessionStorage.setItem("queue-query", e.target.value);
+                }}
                 placeholder="Reference or route"
               />
             </label>
@@ -204,64 +258,73 @@ export default function Workspace() {
               Operational status
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => {
+                  requestVersion.current++;
+                  setError("");
+                  setFilter(e.target.value);
+                  sessionStorage.setItem("queue-filter", e.target.value);
+                }}
               >
                 <option value="">All statuses</option>
-                {[...new Set(shipments.map((s) => String(s.status)))].map(
-                  (status) => (
-                    <option key={status}>{status}</option>
-                  ),
-                )}
+                {[
+                  "DRAFT",
+                  "READY",
+                  "IN_TRANSIT",
+                  "ARRIVED",
+                  "CLOSED",
+                  "CANCELLED",
+                ].map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
               </select>
             </label>
           </div>
           <ul className="shipment-list">
-            {shipments
-              .filter(
-                (s) =>
-                  (!filter || s.status === filter) &&
-                  JSON.stringify([s.reference, s.origin, s.destination])
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-              )
-              .map((s) => (
-                <li key={String(s.id)}>
-                  <div>
-                    <Link href={`/workspace/shipments/${s.id}?org=${org}`}>
-                      {String(s.reference)}
-                    </Link>
-                    <p>
-                      {String((s.origin as Item)?.name || "Origin")} /{" "}
-                      {String((s.destination as Item)?.name || "Destination")}
-                    </p>
-                  </div>
-                  <span className="badge">
-                    {String(s.status).replaceAll("_", " ")}
-                  </span>
-                  <span>
-                    {String(s.cargo_value)} {String(s.currency)}
-                  </span>
+            {shipments.map((s) => (
+              <li key={String(s.id)}>
+                <div>
                   <Link href={`/workspace/shipments/${s.id}?org=${org}`}>
-                    Review evidence
+                    {String(s.reference)}
                   </Link>
-                </li>
-              ))}
+                  <p>
+                    {String((s.origin as Item)?.name || "Origin")} /{" "}
+                    {String((s.destination as Item)?.name || "Destination")}
+                  </p>
+                </div>
+                <span className="badge">
+                  {String(s.status).replaceAll("_", " ")}
+                </span>
+                <span>
+                  <small>Cargo value</small>
+                  <br />
+                  {money(s.cargo_value, s.currency)}
+                </span>
+                <Link href={`/workspace/shipments/${s.id}?org=${org}`}>
+                  {s.status === "DRAFT"
+                    ? "Prepare evidence"
+                    : s.status === "CANCELLED" || s.status === "CLOSED"
+                      ? "View history"
+                      : "Inspect shipment"}
+                </Link>
+              </li>
+            ))}
           </ul>
-          {!busy &&
-            !shipments.some(
-              (s) =>
-                (!filter || s.status === filter) &&
-                JSON.stringify([s.reference, s.origin, s.destination])
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-            ) && (
-              <p>No matching shipments. Clear filters or create a shipment.</p>
-            )}
+          {!busy && dataKey === scope && !error && shipments.length === 0 && (
+            <p>No shipments match this search.</p>
+          )}
+          {dataKey === scope && nextCursor && (
+            <button disabled={busy} onClick={() => void load(nextCursor)}>
+              Load more shipments
+            </button>
+          )}
+          {org && dataKey !== scope && !error && (
+            <p role="status">Loading this organization and search...</p>
+          )}
           <p className="notice">
             Queue status is operational, not a safety assessment. Open a
             shipment for evidence and policy results.
           </p>
-          {creating && (
+          {creating && dataKey === scope && (
             <div>
               <h2>Create shipment</h2>
               {roles.some((r) => ["ADMIN", "LOGISTICS"].includes(r)) ? (

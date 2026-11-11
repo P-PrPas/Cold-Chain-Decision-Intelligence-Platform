@@ -1,15 +1,42 @@
+const web = process.env.CC_TEST_WEB || "http://localhost:3000";
 import { test, expect } from "@playwright/test";
 for (const width of [1440, 768, 375, 320]) {
   test(`evidence precedes actions and chart labels remain readable at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("http://localhost:3000/demo");
+    await page.goto(`${web}/demo`);
+    const viewport = page.locator(".network-canvas");
+    await expect(viewport).toHaveAttribute("data-init-ms", /\d+/);
+    const sceneBudget = await viewport.evaluate((el) => ({
+      draws: Number((el as HTMLElement).dataset.drawCalls),
+      triangles: Number((el as HTMLElement).dataset.triangles),
+      markersVisible: [...el.querySelectorAll(".network-marker")].every(
+        (marker) => {
+          const rect = marker.getBoundingClientRect(),
+            bounds = el.getBoundingClientRect();
+          return (
+            rect.left >= bounds.left &&
+            rect.right <= bounds.right &&
+            rect.top >= bounds.top &&
+            rect.bottom <= bounds.bottom
+          );
+        },
+      ),
+    }));
+    expect(sceneBudget.draws).toBeLessThan(100);
+    expect(sceneBudget.triangles).toBeLessThan(20000);
+    expect(sceneBudget.markersVisible).toBe(true);
     const evidence = page.getByRole("heading", {
       name: "Temperature evidence",
       exact: true,
     });
-    const scenario = page.getByRole("group", { name: "Scenario", exact: true });
+    const scenario = page.getByRole("table").filter({
+      has: page.getByRole("button", {
+        name: "Continue delivery",
+        exact: true,
+      }),
+    });
     expect((await evidence.boundingBox())!.y).toBeLessThan(
       (await scenario.boundingBox())!.y,
     );
@@ -48,9 +75,11 @@ for (const width of [1440, 768, 375, 320]) {
         ).toHaveAttribute("aria-pressed", "true");
         if (action === "Conditional reroute")
           await expect(
-            page.getByText("Alternative receiver (unconfirmed)", {
-              exact: true,
-            }),
+            page
+              .getByText("Alternative receiver (unconfirmed)", {
+                exact: false,
+              })
+              .first(),
           ).toBeVisible();
       }
     }
@@ -70,7 +99,7 @@ for (const width of [1440, 768, 375, 320]) {
 test("work queue shows organization name and keeps create form closed", async ({
   page,
 }) => {
-  await page.goto("http://localhost:3000/workspace");
+  await page.goto(`${web}/workspace`);
   await page
     .getByRole("button", { name: "Sign in with identity provider" })
     .click();
@@ -148,9 +177,7 @@ test("QA requires explicit acknowledgement and sends only the checked action", a
     }
     await route.fulfill({ json: body });
   });
-  await page.goto(
-    "http://localhost:3000/workspace/shipments/shipment-demo?org=org-demo",
-  );
+  await page.goto(`${web}/workspace/shipments/shipment-demo?org=org-demo`);
   await expect(
     page.getByText("Complete an analysis to unlock scenario comparison."),
   ).toBeVisible();
@@ -173,9 +200,9 @@ test("QA requires explicit acknowledgement and sends only the checked action", a
     .getByLabel("I have reviewed the evidence and understand this action.")
     .check();
   await page.getByRole("button", { name: "Confirm review outcome" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "Decision updated: Approved",
-  );
+  await expect(
+    page.getByRole("status").filter({ hasText: "Decision updated: Approved" }),
+  ).toBeVisible();
   expect(submitted).toMatchObject({
     acknowledged_required_actions: ["HOLD_IN_CONTROLLED_STORAGE"],
     evidence_references: ["reference:reference-demo"],

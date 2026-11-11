@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from pydantic import Field
 from sqlalchemy import select
 
@@ -11,7 +11,7 @@ from app.analytics import ENGINE_VERSION, Rules, analyze, coverage_window
 from app.contracts import Problem, request_hash
 from app.jobs import enqueue
 from app.models import Analysis, Dataset, Job, Policy, Reading, Shipment
-from app.shipments import Strict, serialized
+from app.shipments import Strict, page, serialized
 
 router = APIRouter(prefix="/api/v1")
 
@@ -154,3 +154,23 @@ def require_current_analysis(analysis: Analysis, shipment: Shipment) -> None:
             "ANALYSIS_RECOMPUTE_REQUIRED",
             "Reanalyze the current shipment window with the current engine",
         )
+
+
+@router.get("/shipments/{shipment_id}/analyses")
+def list_analyses(
+    shipment_id: UUID,
+    db: DB,
+    current: Current,
+    limit: int = Query(25, ge=1, le=100),
+    cursor: str | None = None,
+) -> dict[str, Any]:
+    owned(db, Shipment, str(shipment_id), current)
+    return page(
+        db,
+        current,
+        Analysis,
+        limit,
+        cursor,
+        f"analyses:{shipment_id}",
+        [Analysis.shipment_id == str(shipment_id)],
+    )

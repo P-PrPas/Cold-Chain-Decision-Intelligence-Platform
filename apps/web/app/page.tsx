@@ -47,7 +47,7 @@ export default function Home() {
         <p className="notice">
           Next action: reconcile missing readings before making a proposal.
         </p>
-        <Link href="/demo">Inspect this example</Link>
+        <Link href="/demo?shipment=DEMO-003">Inspect this example</Link>
       </section>
       <section id="workflow" className="workflow-cards">
         {[

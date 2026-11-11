@@ -175,6 +175,12 @@ export default function TemperaturePanel({
       )}
       {rows.length > 0 && (
         <>
+          <p>
+            Readings shown: {rows.length}. Range {Math.min(...values)} to{" "}
+            {Math.max(...values)} Celsius. {new Date(minTime).toISOString()} to{" "}
+            {new Date(maxTime).toISOString()} (UTC). Scroll the chart for the
+            full displayed interval.
+          </p>
           <div
             className="chart-scroll"
             tabIndex={0}

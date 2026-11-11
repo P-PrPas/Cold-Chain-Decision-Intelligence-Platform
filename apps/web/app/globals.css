@@ -1258,3 +1258,131 @@ summary {
     flex-wrap: wrap;
   }
 }
+.network-explorer {
+  padding: 20px 0 !important;
+  border: 0;
+  background: transparent !important;
+}
+.network-canvas {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #102131;
+}
+.network-canvas canvas {
+  display: block;
+}
+.network-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: #0b1420;
+  color: #eaf2f8;
+  border: 1px solid #a7c4d4;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 24px;
+  pointer-events: none;
+}
+.network-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  font-size: 14px;
+}
+.network-legend li {
+  margin: 0;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.network-legend li > span {
+  display: inline-block;
+  margin-right: 8px;
+  font-weight: 700;
+}
+.selected-location {
+  background: #173745;
+  border-left: 3px solid var(--accent);
+}
+.view-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.view-controls button {
+  font-size: 13px;
+}
+.view-controls [aria-pressed="true"],
+button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: #1e4654;
+  color: var(--text);
+}
+tr[data-selected="true"] {
+  background: #173745;
+}
+tr[data-selected="true"] td:first-child {
+  box-shadow: inset 3px 0 var(--accent);
+}
+.route-steps {
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+  flex-wrap: wrap;
+}
+.context-label {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.network-explorer .section-heading {
+  align-items: flex-start;
+}
+.network-explorer h3 {
+  margin-top: 4px;
+}
+.saved-workflow {
+  border-left: 3px solid #8ea9c0;
+}
+.shipment-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 1fr 1fr 1fr;
+}
+.shipment-list li > span:nth-of-type(2) {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.evidence-grid,
+.digest {
+  overflow-wrap: anywhere;
+}
+@media (min-width: 900px) {
+  table {
+    display: table;
+  }
+}
+@media (max-width: 600px) {
+  .network-canvas {
+    height: 340px;
+  }
+  .network-legend {
+    grid-template-columns: 1fr;
+  }
+  .network-explorer .section-heading {
+    flex-direction: column;
+  }
+  .shipment-list li {
+    grid-template-columns: 1fr 1fr;
+  }
+  .route-steps {
+    flex-direction: column;
+  }
+  .network-explorer .evidence-summary {
+    font-size: 15px;
+  }
+}
