@@ -53,6 +53,28 @@ def active_decisions(db: DB, current: Current, shipment_id: str, excluding: str)
     )
 
 
+def supersede(
+    db: DB,
+    current: Current,
+    request: Request,
+    previous: Decision,
+    replacement: Decision,
+    role: str | None = None,
+) -> None:
+    previous.status = "SUPERSEDED"
+    previous.revision += 1
+    audit(
+        db,
+        current,
+        request,
+        "SUPERSEDE",
+        "decision",
+        previous.id,
+        {"replacement_decision_id": replacement.id, "snapshot_sha256": previous.snapshot_sha256},
+        role,
+    )
+
+
 class DecisionInput(Strict):
     simulation_run_id: UUID
     selected_scenario_id: UUID
@@ -231,17 +253,9 @@ def submit(
             "CHANGES_REQUESTED",
         }:
             raise Problem(409, "INVALID_STATE_TRANSITION", "Correction source is no longer current")
-        previous.status = "SUPERSEDED"
-        previous.revision += 1
-        audit(
-            db,
-            current,
-            request,
-            "SUPERSEDE",
-            "decision",
-            previous.id,
-            {"replacement_decision_id": item.id, "snapshot_sha256": previous.snapshot_sha256},
-        )
+        # Only QA approval of the replacement may revoke a QA-approved predecessor.
+        if previous.status != "APPROVED":
+            supersede(db, current, request, previous, item)
     item.justification = payload.justification
     item.submitted_at = now()
     item.snapshot = {
@@ -301,7 +315,11 @@ def review(
         run = owned(db, Simulation, item.simulation_run_id, current)
         shipment = owned(db, Shipment, run.shipment_id, current, True)
         require_current_analysis(owned(db, Analysis, run.analysis_id, current), shipment)
-        if active_decisions(db, current, run.shipment_id, item.id):
+        active = active_decisions(db, current, run.shipment_id, item.id)
+        if any(
+            previous.id != item.supersedes_decision_id or previous.status != "APPROVED"
+            for previous in active
+        ):
             raise Problem(
                 409, "ACTIVE_DECISION_EXISTS", "Another decision is current for this shipment"
             )
@@ -322,6 +340,8 @@ def review(
         )
         if required not in payload.acknowledged_required_actions:
             raise Problem(422, "INSUFFICIENT_DATA", "Required action acknowledgement missing")
+        for previous in active:
+            supersede(db, current, request, previous, item, "QA")
     item.status = {
         "approve": "APPROVED",
         "reject": "REJECTED",

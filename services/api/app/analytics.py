@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import UTC, datetime
 from decimal import Decimal
+from math import ceil
 from typing import Any, Literal
 
 from pydantic import Field, model_validator
@@ -8,7 +9,7 @@ from pydantic import Field, model_validator
 from app.shipments import Strict
 
 Effect = Literal["HARD_BLOCK", "REVIEW_REQUIRED", "ADVISORY"]
-ENGINE_VERSION = "1.1.0"
+ENGINE_VERSION = "1.2.0"
 
 
 def utc(value: datetime) -> datetime:
@@ -96,18 +97,13 @@ def analyze(
         )
         if window_end <= window_start:
             raise ValueError("INVALID_COVERAGE_WINDOW")
-        readings = [
-            r
-            for r in readings
-            if window_start <= r["timestamp_utc"].replace(tzinfo=UTC) <= window_end
-        ]
     sensors: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in readings:
         sensors[row["sensor_id"]].append(row)
     events = []
     gaps = []
     sensor_results = []
-    unknown = 0.0
+    unknown = 0
     total = 0
     maximum = 0
     rule_results = []
@@ -119,19 +115,19 @@ def analyze(
         active = None
         cumulative = 0
         continuous = 0
-        sensor_unknown = 0.0
+        sensor_unknown = 0
         if window_known and sensor in rules.required_sensor_ids:
             assert window_start is not None and window_end is not None
             boundaries = (
                 [
-                    (window_start, samples[0]["timestamp_utc"].replace(tzinfo=UTC)),
-                    (samples[-1]["timestamp_utc"].replace(tzinfo=UTC), window_end),
+                    (window_start, min(window_end, samples[0]["timestamp_utc"])),
+                    (max(window_start, samples[-1]["timestamp_utc"]), window_end),
                 ]
                 if samples
                 else [(window_start, window_end)]
             )
             for start, end in boundaries:
-                seconds = (end - start).total_seconds()
+                seconds = ceil((end - start).total_seconds())
                 if seconds > 0:
                     sensor_unknown += seconds
                     gaps.append(
@@ -146,8 +142,15 @@ def analyze(
                     )
         for index, sample in enumerate(samples):
             value = Decimal(str(sample["temperature_c"]))
+            outside = (
+                window_known
+                and window_start is not None
+                and window_end is not None
+                and not window_start <= sample["timestamp_utc"] <= window_end
+            )
             if (value < low or value > high) and (
-                index == len(samples) - 1
+                outside
+                or index == len(samples) - 1
                 or (samples[index + 1]["timestamp_utc"] - sample["timestamp_utc"]).total_seconds()
                 > rules.max_valid_sampling_gap_seconds
             ):
@@ -157,17 +160,27 @@ def analyze(
                         "at": sample["timestamp_utc"].replace(tzinfo=UTC).isoformat(),
                         "temperature_c": str(value),
                         "duration_seconds": 0,
-                        "reason": "OUT_OF_RANGE_WITHOUT_OBSERVED_DURATION",
+                        "reason": "OUT_OF_RANGE_OUTSIDE_SHIPMENT_WINDOW"
+                        if outside
+                        else "OUT_OF_RANGE_WITHOUT_OBSERVED_DURATION",
                     }
                 )
         for left, right in zip(samples, samples[1:]):
             start = left["timestamp_utc"]
             end = right["timestamp_utc"]
-            seconds = int((end - start).total_seconds())
+            sampling_gap = (end - start).total_seconds()
             value = Decimal(str(left["temperature_c"]))
-            if seconds <= 0:
+            if sampling_gap <= 0:
                 raise ValueError("CONFLICTING_READINGS")
-            if seconds > rules.max_valid_sampling_gap_seconds:
+            if window_known:
+                assert window_start is not None and window_end is not None
+                start, end = max(start, window_start), min(end, window_end)
+            if end <= start:
+                continue
+            seconds = int((end - start).total_seconds())
+            # Validate the ORIGINAL observation spacing, never the clipped duration.
+            if sampling_gap > rules.max_valid_sampling_gap_seconds:
+                seconds = ceil((end - start).total_seconds())
                 sensor_unknown += seconds
                 active = None
                 continuous = 0

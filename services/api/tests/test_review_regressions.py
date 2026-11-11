@@ -127,10 +127,13 @@ def test_current_decision_superseded_atomically_and_replay_etag(platform, approv
     replay = client.post(path, headers=headers, json=payload)
     assert replay.json() == submitted.json() and replay.headers["ETag"] == submitted.headers["ETag"]
     old = client.get(f"/api/v1/decisions/{original['id']}").json()["decision"]
-    assert old["status"] == "SUPERSEDED" and old["snapshot_sha256"] == original["snapshot_sha256"]
+    assert old["status"] == ("APPROVED" if approve_first else "SUPERSEDED")
+    assert old["snapshot_sha256"] == original["snapshot_sha256"]
     use_identity(client, identities[1])
     events = client.get("/api/v1/audit-logs").json()["items"]
-    assert any(e["action"] == "SUPERSEDE" and e["entity_id"] == original["id"] for e in events)
+    assert any(e["action"] == "SUPERSEDE" and e["entity_id"] == original["id"] for e in events) is (
+        not approve_first
+    )
     review = {
         "acting_role": "QA",
         "review_notes": "Independent correction review",
@@ -149,6 +152,12 @@ def test_current_decision_superseded_atomically_and_replay_etag(platform, approv
         json=review,
     )
     assert repeated.headers["ETag"] == reviewed.headers["ETag"]
+    assert (
+        client.get(f"/api/v1/decisions/{original['id']}").json()["decision"]["status"]
+        == "SUPERSEDED"
+    )
+    events = client.get("/api/v1/audit-logs").json()["items"]
+    assert any(e["action"] == "SUPERSEDE" and e["entity_id"] == original["id"] for e in events)
 
 
 def test_roleless_membership_denied_and_email_not_enumerable(platform):

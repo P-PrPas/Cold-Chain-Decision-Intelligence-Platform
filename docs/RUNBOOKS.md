@@ -30,6 +30,23 @@ Investigate source integrity/configuration, then create a new upload/analysis/si
 Object writes precede DB commit. Orphans can therefore exist after a DB rollback. List objects by tenant prefix and compare with dataset/reference/report object keys in a read-only reconciliation report. Do not auto-delete. Owner authorizes removal only after retention/legal checks and a minimum quarantine longer than retry/backup windows. Approved/submitted evidence is never overwritten.
 
 ## Access / secret incidents
+
+### Provision a pending tenant membership
+
+This is a platform-operator procedure, not a public API or tenant email search. Verify an approved access request, target organization UUID and the existing user's exact OIDC issuer/subject binding. Resolve their user UUID through the trusted identity administration process; do not identify a user by an unverified email. The command does not create OIDC identities or grant application roles.
+
+Using the operator-controlled deployment environment (existing `CC_*` configuration and authorized DB credentials), run:
+
+```sh
+docker compose exec -T api python -m app.provision_membership --organization-id <organization-uuid> --user-id <verified-user-uuid>
+```
+
+For managed staging, use `docker compose -f infra/compose.staging.yaml exec -T api ...` with the same arguments. The command requires ACTIVE organization/user records, locks the organization, and creates one PENDING membership. Repeating it returns the existing PENDING/ACTIVE membership without modifying status or roles; disabled/other states fail for investigation. Record the request, operator, IDs and returned membership ID in the access ticket. Do not expose database credentials or this command to tenant users.
+
+The tenant ADMIN then uses authenticated, CSRF-protected `POST /api/v1/organizations/current/members` with that identity's verified email and the approved role allowlist. This activates the tenant-scoped pending record and writes ADD_MEMBER to audit. Before activation the user has no tenant access; the operator command never activates an account or grants roles. No email invitation is sent.
+
+### Respond to an incident
+
 Revoke affected server sessions, disable membership/user, rotate credentials through the secret manager, and review append-only audit. Do not paste tokens/CSV contents into logs or tickets. Keep Secure/HttpOnly/SameSite session cookies, CSRF, origin allowlist and request/body/rate limits enabled. External explanation providers are optional and receive known deterministic fact text only; no raw CSV or credentials.
 
 ## Monitoring
