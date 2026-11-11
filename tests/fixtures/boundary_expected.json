@@ -1,0 +1,5 @@
+{
+  "final_hot": {"arrival": "2026-01-01T00:10:00+00:00", "classification": "INDETERMINATE", "unknown_seconds": 0, "excursion_seconds": 0, "release": "INSUFFICIENT_DATA"},
+  "partial_trip": {"arrival": "2026-01-02T00:00:00+00:00", "classification": "INDETERMINATE", "unknown_seconds": 85800, "excursion_seconds": 0, "release": "INSUFFICIENT_DATA"},
+  "hard_block_gap": {"arrival": "2026-01-01T00:30:00+00:00", "classification": "CRITICAL", "unknown_seconds": 1200, "excursion_seconds": 600, "release": "BLOCKED"}
+}

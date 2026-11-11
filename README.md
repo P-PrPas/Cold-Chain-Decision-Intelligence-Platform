@@ -1,7 +1,7 @@
 # Cold Chain Decision Intelligence Platform
 
-Decision support for shipment ? CSV ? analysis ? scenarios ? human QA ? report.
-S0 provides developer foundations only. No shipment operations, authentication, production policy, or release certification is implemented yet.
+Decision support for shipment → CSV → analysis → scenarios → human QA → report.
+The S0–S6 implementation includes OIDC sessions, tenant-scoped operations, immutable temperature evidence, versioned policies, deterministic analysis and cost scenarios, independent QA decisions, private PDF reports and an operations dashboard. All sprint PRs remain open for owner review. Synthetic fixtures are not approved real-world safety policies.
 
 ## Fresh clone
 Requirements: Python 3.12+, Node 22, Docker Compose v2. Synthetic local data only.
@@ -32,7 +32,9 @@ curl http://localhost:8000/api/v1/health/ready
 curl http://localhost:3000
 docker compose down
 ```
-API docs: http://localhost:8000/docs. Health live/ready are the only implemented routes. Missing critical settings fail startup. Local S3 emulator is ephemeral; never use real data. See [infrastructure](infra/README.md).
+Open http://localhost:3000/workspace and sign in as `operator` or `reviewer` with the local-only password `synthetic-demo-only`. API docs: http://localhost:8000/docs. Missing critical settings fail startup. Local S3 emulator is ephemeral; never use real data. See [infrastructure](infra/README.md) and [operations, staging and recovery](docs/RUNBOOKS.md).
+
+With the stack running, install root test dependencies with `npm ci`, install Chromium with `npx playwright install chromium`, then run `npm run test:e2e`. CI also runs the Python suite against PostgreSQL, including concurrent review and row-level security tests. Set `CC_TEST_POSTGRES_URL` to a disposable PostgreSQL database with schema/role creation rights to run those tests locally.
 
 ## Contracts and review
 - [PRD](docs/Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md)
@@ -42,7 +44,7 @@ API docs: http://localhost:8000/docs. Health live/ready are the only implemented
 - [UX wireframe](docs/UX.md), [synthetic oracles](tests/fixtures/README.md)
 - [Operating contract](AGENT.md)
 
-One PR per sprint. The current agent implements directly; the project owner reviews. Do not auto-merge or deploy. S1 follows reviewed S0. Real QA-policy approval remains OPEN.
+One PR per sprint, stacked S0 → S6. The project owner reviews the whole stack. No automatic merge or deployment. Real QA-policy approval and production infrastructure sign-off remain OPEN.
 
 ## Conventions
 Python snake_case; TypeScript components PascalCase; conventional commit prefixes. Keep HTTP adapters separate from domain calculations. New API routes update generated OpenAPI and contract tests. Persistence begins with reversible S1 migrations; no S0 schema migration is implied.

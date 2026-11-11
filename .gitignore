@@ -16,3 +16,6 @@ htmlcov/
 
 *.egg-info/
 *.tsbuildinfo
+
+playwright-report/
+test-results/

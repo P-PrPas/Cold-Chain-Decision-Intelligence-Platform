@@ -1,17 +1,19 @@
+import Link from "next/link";
 export default function Home() {
   return (
     <main>
-      <p>Cold Chain / Development workspace</p>
+      <p>Cold Chain / Decision intelligence</p>
       <h1>Evidence before action.</h1>
-      <p>Shipment ? temperature data ? analysis ? scenarios ? QA review</p>
+      <p>
+        Shipments, temperature evidence, reproducible scenarios and independent
+        QA review.
+      </p>
+      <Link href="/workspace">Open workspace</Link>
       <section aria-labelledby="status">
-        <h2 id="status">Foundation ready for review</h2>
+        <h2 id="status">Synthetic release candidate</h2>
         <p>
-          Shipment workflows are planned for Sprint 1. No operational decisions
-          are available.
-        </p>
-        <p>
-          Synthetic development only. Domain QA policy approval remains open.
+          Domain QA policy approval remains open. This system does not certify
+          food safety or automatically release goods.
         </p>
       </section>
     </main>

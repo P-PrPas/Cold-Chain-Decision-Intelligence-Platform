@@ -1,0 +1,6 @@
+{
+  "late_arrival_hot": {"classification": "INDETERMINATE", "max_c": "40.000", "unknown_seconds": 0, "release": "INSUFFICIENT_DATA"},
+  "loading_hot": {"classification": "INDETERMINATE", "max_c": "40.000", "unknown_seconds": 0, "release": "INSUFFICIENT_DATA"},
+  "bracketed_boundaries": {"classification": "NORMAL", "max_c": "2.000", "unknown_seconds": 0, "release": "ELIGIBLE"},
+  "unbracketed_start": {"classification": "INDETERMINATE", "max_c": "2.000", "unknown_seconds": 1, "release": "INSUFFICIENT_DATA"}
+}

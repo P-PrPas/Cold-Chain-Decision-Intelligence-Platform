@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
+  },
+  "name": "cold-chain-verification",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test"
+  }
+}
