@@ -588,3 +588,6 @@ See [S0 ADR](adr/0001-foundation.md) for contract reconciliation and durable ide
 
 ## S1 implementation
 Auth login/callback/logout/me, organization current/members read, product CRUD and shipment CRUD are implemented. Callback GET /auth/callback verifies OIDC and issues server session plus CSRF cookie. Unsafe authenticated requests require X-CSRF-Token. See ADR 0002 for local identity provisioning and supported currency contract.
+
+## S2 implementation
+CSV upload uses UPLOADED (not QUEUED) dataset status, with a separate QUEUED job. Validation errors yield INVALID; infrastructure failures yield failed jobs. Raw readings are paginated, maximum 100 per page; aggregated resolution is explicitly rejected until min/max-envelope aggregation is implemented. Error samples are capped at 100 with errors_truncated indicator.

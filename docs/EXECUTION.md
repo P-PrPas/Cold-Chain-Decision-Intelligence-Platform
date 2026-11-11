@@ -17,3 +17,5 @@ CC-001 through CC-005: API/Web foundations, Compose, CI, shared HTTP contracts, 
 See PR evidence and docs/VERIFICATION-S0.md for actual commands/results. S0 may be moved to DONE only after owner review. No correction rounds or automatic merges under the revised workflow.
 
 S1 implementation: SQLAlchemy core + Alembic, OIDC/session/CSRF, tenant/RBAC, shipment/product endpoints and Web workspace. Tests: 17 passing, Ruff/mypy and Web checks. Docker migration/identity smoke in progress.
+
+S2: immutable S3 uploads, dataset versions, strict CSV normalization, per-row provenance, DB job/outbox with RQ worker, upload/mapping UI and sample-only chart. 27 API tests pass; mypy passes. Docker engine was unavailable after disk exhaustion; restart requested, live verification pending.

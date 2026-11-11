@@ -23,6 +23,7 @@ from starlette.responses import Response
 
 from app.config import Settings
 from app.contracts import Problem, ProblemBody
+from app.datasets import router as datasets_router
 from app.db import connect
 from app.identity import router as identity_router
 from app.shipments import router as shipments_router
@@ -92,6 +93,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(identity_router)
     app.include_router(shipments_router)
+    app.include_router(datasets_router)
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:

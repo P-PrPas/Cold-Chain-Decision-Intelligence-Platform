@@ -1,6 +1,46 @@
 {
   "components": {
     "schemas": {
+      "Body_upload_api_v1_shipments__shipment_id__temperature_datasets_post": {
+        "properties": {
+          "conflicting_duplicate_mode": {
+            "default": "REJECT",
+            "title": "Conflicting Duplicate Mode",
+            "type": "string"
+          },
+          "default_unit": {
+            "default": "C",
+            "title": "Default Unit",
+            "type": "string"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "mapping": {
+            "title": "Mapping",
+            "type": "string"
+          },
+          "source_timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Timezone"
+          }
+        },
+        "required": [
+          "file",
+          "mapping"
+        ],
+        "title": "Body_upload_api_v1_shipments__shipment_id__temperature_datasets_post",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -502,6 +542,48 @@
         "summary": "Ready"
       }
     },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "operationId": "job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Job Api V1 Jobs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Job"
+      }
+    },
     "/api/v1/organizations/current": {
       "get": {
         "operationId": "organization_api_v1_organizations_current_get",
@@ -985,6 +1067,318 @@
           }
         },
         "summary": "Update Shipment"
+      }
+    },
+    "/api/v1/shipments/{shipment_id}/temperature-datasets": {
+      "get": {
+        "operationId": "datasets_api_v1_shipments__shipment_id__temperature_datasets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shipment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shipment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Datasets Api V1 Shipments  Shipment Id  Temperature Datasets Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Datasets"
+      },
+      "post": {
+        "operationId": "upload_api_v1_shipments__shipment_id__temperature_datasets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shipment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shipment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_v1_shipments__shipment_id__temperature_datasets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Upload Api V1 Shipments  Shipment Id  Temperature Datasets Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload"
+      }
+    },
+    "/api/v1/temperature-datasets/{dataset_id}": {
+      "get": {
+        "operationId": "dataset_api_v1_temperature_datasets__dataset_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dataset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dataset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Dataset Api V1 Temperature Datasets  Dataset Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dataset"
+      }
+    },
+    "/api/v1/temperature-datasets/{dataset_id}/readings": {
+      "get": {
+        "operationId": "readings_api_v1_temperature_datasets__dataset_id__readings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dataset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dataset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sensor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sensor Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resolution",
+            "required": false,
+            "schema": {
+              "default": "raw",
+              "title": "Resolution",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_points",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 2,
+              "title": "Max Points",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Readings Api V1 Temperature Datasets  Dataset Id  Readings Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Readings"
+      }
+    },
+    "/api/v1/temperature-datasets/{dataset_id}/validation": {
+      "get": {
+        "operationId": "validation_api_v1_temperature_datasets__dataset_id__validation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dataset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dataset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Validation Api V1 Temperature Datasets  Dataset Id  Validation Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validation"
       }
     }
   }

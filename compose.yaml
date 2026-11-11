@@ -38,7 +38,7 @@ services:
     volumes: ["./infra/keycloak:/opt/keycloak/data/import:ro"]
   api:
     build: services/api
-    environment:
+    environment: &api-environment
       CC_DATABASE_URL: postgresql://coldchain:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/coldchain
       CC_REDIS_URL: redis://redis:6379/0
       CC_S3_ENDPOINT: http://storage:9000
@@ -61,6 +61,12 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/ready')"]
       interval: 10s
       retries: 12
+  worker:
+    build: services/api
+    environment: *api-environment
+    command: ["python", "-m", "app.jobs"]
+    depends_on:
+      api: {condition: service_healthy}
   web:
     build: apps/web
     ports: ["127.0.0.1:3000:3000"]

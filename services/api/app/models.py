@@ -127,3 +127,71 @@ class Audit(TenantEntity, Base):
     entity_id: Mapped[str]
     request_id: Mapped[str]
     after_digest: Mapped[str]
+
+
+class Dataset(TenantEntity, Base):
+    __tablename__ = "temperature_datasets"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        UniqueConstraint("organization_id", "shipment_id", "version"),
+        ForeignKeyConstraint(
+            ["organization_id", "shipment_id"], ["shipments.organization_id", "shipments.id"]
+        ),
+        CheckConstraint(
+            "status IN ('UPLOADED','VALIDATING','READY','INVALID','FAILED')", name="dataset_status"
+        ),
+    )
+    shipment_id: Mapped[str]
+    version: Mapped[int]
+    raw_object_key: Mapped[str]
+    sha256: Mapped[str]
+    mapping: Mapped[dict[str, Any]] = mapped_column(JSONType)
+    source_timezone: Mapped[str | None]
+    default_unit: Mapped[str]
+    status: Mapped[str] = mapped_column(default="UPLOADED")
+    row_count: Mapped[int] = mapped_column(default=0)
+    validation: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
+    uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class Reading(TenantEntity, Base):
+    __tablename__ = "temperature_readings"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "dataset_id", "source_row"),
+        ForeignKeyConstraint(
+            ["organization_id", "dataset_id"],
+            ["temperature_datasets.organization_id", "temperature_datasets.id"],
+        ),
+        CheckConstraint("source_row > 0", name="source_row_positive"),
+    )
+    dataset_id: Mapped[str] = mapped_column(index=True)
+    sensor_id: Mapped[str]
+    timestamp_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    temperature_c: Mapped[Decimal] = mapped_column(Numeric(8, 3))
+    quality_flag: Mapped[str] = mapped_column(default="VALID")
+    source_row: Mapped[int]
+
+
+class Job(TenantEntity, Base):
+    __tablename__ = "jobs"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        UniqueConstraint("organization_id", "dedupe_key"),
+        CheckConstraint("status IN ('QUEUED','RUNNING','COMPLETED','FAILED')", name="job_status"),
+    )
+    type: Mapped[str]
+    resource_id: Mapped[str]
+    status: Mapped[str] = mapped_column(default="QUEUED")
+    attempt_count: Mapped[int] = mapped_column(default=0)
+    dedupe_key: Mapped[str]
+    error_code: Mapped[str | None]
+
+
+class Outbox(TenantEntity, Base):
+    __tablename__ = "outbox_events"
+    __table_args__ = (
+        ForeignKeyConstraint(["organization_id", "job_id"], ["jobs.organization_id", "jobs.id"]),
+    )
+    job_id: Mapped[str]
+    status: Mapped[str] = mapped_column(default="PENDING")
+    attempt_count: Mapped[int] = mapped_column(default=0)
