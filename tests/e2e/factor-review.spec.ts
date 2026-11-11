@@ -147,7 +147,7 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
   await delayControl.fill("31");
   await expect.poll(() => previewCalls).toBe(1);
   await delayControl.fill("40");
-  await expect(scene).toContainText("BLOCKED");
+  await expect(scene).toContainText("Blocked");
   await expect(
     page.getByRole("button", { name: "Prepare proposal" }),
   ).not.toBeVisible();

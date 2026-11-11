@@ -304,18 +304,27 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   await operator.page.goto(
     `http://localhost:3000/workspace/shipments/${shipment.id}?org=${org}`,
   );
-  await operator.page
-    .getByText("Temperature evidence / Ready dataset available", {
-      exact: true,
-    })
-    .click();
+  const journey = operator.page.getByRole("navigation", {
+    name: "Shipment journey",
+  });
+  await expect(journey).toBeVisible();
+  const open = async (step: string) =>
+    operator.page.locator(`li[data-step="${step}"] button`).click();
+  await open("evidence");
   await expect(
     operator.page.getByRole("heading", { name: "Temperature evidence" }),
   ).toBeVisible();
+  await open("propose");
   await expect(
-    operator.page.getByRole("heading", {
-      name: "Proposal and QA review",
-    }),
+    operator.page.getByRole("heading", { name: "Proposal", exact: true }),
+  ).toBeVisible();
+  await open("qa");
+  await expect(
+    operator.page.getByRole("heading", { name: "QA review", exact: true }),
+  ).toBeVisible();
+  await open("report");
+  await expect(
+    operator.page.getByRole("heading", { name: "Report", exact: true }),
   ).toBeVisible();
   await operator.context.close();
   await reviewer.context.close();
