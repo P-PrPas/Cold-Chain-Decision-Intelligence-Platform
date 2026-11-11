@@ -1,4 +1,5 @@
 "use client";
+import { EvidenceView } from "../evidence-view";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, write, type Item } from "./api";
 const draftRules = {
@@ -49,6 +50,12 @@ export default function AnalysisPanel({
   onCompleted?: (id: string) => void;
   org: string;
 }) {
+  const [policyAction, setPolicyAction] = useState<{
+    policy: Item;
+    action: string;
+  } | null>(null);
+  const [policyNote, setPolicyNote] = useState("");
+  const [recentAnalyses, setRecentAnalyses] = useState<Item[]>([]);
   const [policies, setPolicies] = useState<Item[]>([]);
   const [datasets, setDatasets] = useState<Item[]>([]);
   const [rules, setRules] = useState(JSON.stringify(draftRules, null, 2));
@@ -105,6 +112,22 @@ export default function AnalysisPanel({
     }, 1500);
     return () => clearInterval(timer);
   }, [job, org, analysisId, onCompleted]);
+  useEffect(() => {
+    let active = true;
+    api("/dashboard", org)
+      .then((d) => {
+        if (active)
+          setRecentAnalyses(
+            d.recent_analyses.filter((a: Item) => a.shipment_id === shipmentId),
+          );
+      })
+      .catch((e) => {
+        if (active) setError(String(e));
+      });
+    return () => {
+      active = false;
+    };
+  }, [org, shipmentId]);
   async function editDraft(event: FormEvent<HTMLFormElement>, policy: Item) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -160,7 +183,7 @@ export default function AnalysisPanel({
     }
   }
   async function transition(policy: Item, action: string) {
-    const note = window.prompt("Review note / reason");
+    const note = policyNote;
     if (!note) return;
     setBusy(true);
     try {
@@ -174,6 +197,7 @@ export default function AnalysisPanel({
         ),
       );
       await refresh();
+      setPolicyAction(null);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -213,7 +237,7 @@ export default function AnalysisPanel({
         real safety limits from synthetic examples.
       </p>
       {error && <p role="alert">{error}</p>}
-      {busy && <p role="status">Processing?</p>}
+      {busy && <p role="status">Processing...</p>}
       <button
         disabled={busy}
         onClick={() => refresh().catch((e) => setError(String(e)))}
@@ -278,10 +302,10 @@ export default function AnalysisPanel({
       <ul>
         {policies.map((p) => (
           <li key={String(p.id)}>
-            {String(p.policy_key)} v{String(p.version)} ? {String(p.status)}
+            {String(p.policy_key)} v{String(p.version)} / {String(p.status)}
             <details>
               <summary>Rule evidence</summary>
-              <pre>{JSON.stringify(p.rules, null, 2)}</pre>
+              <EvidenceView value={p.rules} />
             </details>
             {p.status === "DRAFT" && canAuthor && (
               <details>
@@ -328,7 +352,10 @@ export default function AnalysisPanel({
             {p.status === "DRAFT" && canAuthor && (
               <button
                 disabled={busy}
-                onClick={() => void transition(p, "submit-review")}
+                onClick={() => {
+                  setPolicyAction({ policy: p, action: "submit-review" });
+                  setPolicyNote("");
+                }}
               >
                 Submit review
               </button>
@@ -336,7 +363,10 @@ export default function AnalysisPanel({
             {p.status === "PENDING_REVIEW" && roles.includes("QA") && (
               <button
                 disabled={busy}
-                onClick={() => void transition(p, "approve")}
+                onClick={() => {
+                  setPolicyAction({ policy: p, action: "approve" });
+                  setPolicyNote("");
+                }}
               >
                 QA approve
               </button>
@@ -344,7 +374,10 @@ export default function AnalysisPanel({
             {p.status === "APPROVED" && roles.includes("QA") && (
               <button
                 disabled={busy}
-                onClick={() => void transition(p, "retire")}
+                onClick={() => {
+                  setPolicyAction({ policy: p, action: "retire" });
+                  setPolicyNote("");
+                }}
               >
                 Retire
               </button>
@@ -352,6 +385,79 @@ export default function AnalysisPanel({
           </li>
         ))}
       </ul>
+      {policyAction && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await transition(policyAction.policy, policyAction.action);
+          }}
+        >
+          <h3>
+            Confirm {policyAction.action.replaceAll("-", " ")}:{" "}
+            {String(policyAction.policy.policy_key)}
+          </h3>
+          <label>
+            Reason / review note
+            <textarea
+              required
+              value={policyNote}
+              onChange={(e) => setPolicyNote(e.target.value)}
+            />
+          </label>
+          <label className="check-label">
+            <input type="checkbox" required />I have reviewed the policy and
+            supporting evidence.
+          </label>
+          <button disabled={busy}>Confirm policy action</button>
+          <button
+            type="button"
+            className="quiet"
+            onClick={() => setPolicyAction(null)}
+          >
+            Cancel
+          </button>
+        </form>
+      )}
+      {recentAnalyses.length > 0 && (
+        <label>
+          Resume a recent analysis
+          <select
+            defaultValue=""
+            disabled={busy}
+            onChange={async (e) => {
+              if (!e.target.value) return;
+              setBusy(true);
+              setError("");
+              try {
+                const a = (await api(`/analyses/${e.target.value}`, org))
+                  .analysis;
+                setAnalysis(a);
+                if (a.status === "COMPLETED") onCompleted?.(a.id);
+                else
+                  setError(
+                    "This analysis is not complete. Run a new analysis below.",
+                  );
+              } catch (e) {
+                setError(String(e));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <option value="">Select a previous result</option>
+            {recentAnalyses.map((a, i) => (
+              <option value={String(a.id)} key={String(a.id)}>
+                Recent result {i + 1} /{" "}
+                {String(a.classification || "Classification unavailable")}
+              </option>
+            ))}
+          </select>
+          <span>
+            The server checks whether this result is current when simulation
+            runs.
+          </span>
+        </label>
+      )}
       <form onSubmit={run}>
         <label>
           Ready dataset
@@ -386,8 +492,13 @@ export default function AnalysisPanel({
           <h3>
             Analysis: {String(analysis.classification || analysis.status)}
           </h3>
-          <p>Analysis ID: {String(analysis.id)}</p>
-          <p>Input digest: {String(analysis.input_sha256)}</p>
+          <details>
+            <summary>Traceability</summary>
+            <p>Analysis reference: {String(analysis.id)}</p>
+            <p className="digest">
+              Input digest: {String(analysis.input_sha256)}
+            </p>
+          </details>
           <TemperatureEvidence
             observations={
               (
@@ -397,18 +508,14 @@ export default function AnalysisPanel({
               )?.unbounded_out_of_range_observations || []
             }
           />
-          <pre>
-            {JSON.stringify(
-              {
-                summary: analysis.summary,
-                rule_results: analysis.rule_results,
-                unknown_intervals: analysis.unknown_intervals,
-                excursions: analysis.excursions,
-              },
-              null,
-              2,
-            )}
-          </pre>
+          <EvidenceView
+            value={{
+              summary: analysis.summary,
+              rule_results: analysis.rule_results,
+              unknown_intervals: analysis.unknown_intervals,
+              excursions: analysis.excursions,
+            }}
+          />
         </>
       )}
     </section>
