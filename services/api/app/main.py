@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -13,12 +14,18 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from redis import Redis
+from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException
 from starlette.middleware.base import RequestResponseEndpoint
+from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 
 from app.config import Settings
 from app.contracts import Problem, ProblemBody
+from app.db import connect
+from app.identity import router as identity_router
+from app.shipments import router as shipments_router
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +59,45 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.settings = Settings()
+        app.state.engine = connect(app.state.settings.database_url)
         yield
+        app.state.engine.dispose()
 
     app = FastAPI(title="Cold Chain API", version="0.1.0", lifespan=lifespan)
+
+    secret = os.environ.get("CC_SESSION_SECRET", "")
+    if secret:
+        if len(secret) < 32:
+            raise ValueError("CC_SESSION_SECRET must contain at least 32 characters")
+        app.add_middleware(
+            SessionMiddleware,
+            secret_key=secret,
+            session_cookie="cc_oidc",
+            max_age=600,
+            https_only=os.environ.get("CC_SECURE_COOKIES", "true").lower() != "false",
+        )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[os.environ.get("CC_WEB_ORIGIN", "http://localhost:3000")],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=[
+            "Content-Type",
+            "X-Organization-Id",
+            "X-CSRF-Token",
+            "Idempotency-Key",
+            "If-Match",
+        ],
+        expose_headers=["ETag", "X-Request-Id"],
+    )
+    app.include_router(identity_router)
+    app.include_router(shipments_router)
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:
+        return problem_response(
+            request, Problem(409, "DUPLICATE_REFERENCE", "Conflicting resource or reference")
+        )
 
     def problem_response(request: Request, error: Problem) -> JSONResponse:
         body = ProblemBody(

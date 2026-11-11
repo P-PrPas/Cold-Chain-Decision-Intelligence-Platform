@@ -42,7 +42,7 @@ API docs: http://localhost:8000/docs. Health live/ready are the only implemented
 - [UX wireframe](docs/UX.md), [synthetic oracles](tests/fixtures/README.md)
 - [Operating contract](AGENT.md)
 
-One PR per sprint. The current agent implements directly; the project owner reviews. Do not auto-merge or deploy. S1 follows reviewed S0. Real QA-policy approval remains OPEN.
+One PR per sprint. The current agent implements directly; the project owner reviews. Do not auto-merge or deploy. S1-S6 proceed on stacked sprint branches while S0 awaits review. Real QA-policy approval remains OPEN.
 
 ## Conventions
 Python snake_case; TypeScript components PascalCase; conventional commit prefixes. Keep HTTP adapters separate from domain calculations. New API routes update generated OpenAPI and contract tests. Persistence begins with reversible S1 migrations; no S0 schema migration is implied.

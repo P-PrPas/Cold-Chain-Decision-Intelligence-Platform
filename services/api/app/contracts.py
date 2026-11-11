@@ -34,7 +34,7 @@ Money = Annotated[
     Decimal,
     BeforeValidator(decimal_input),
     Field(ge=0, max_digits=18, decimal_places=2, allow_inf_nan=False),
-    PlainSerializer(lambda v: format(v, ".2f"), return_type=str),
+    PlainSerializer(lambda v: format(v, ".2f"), return_type=str, when_used="json"),
 ]
 
 
@@ -47,7 +47,9 @@ def aware(value: datetime) -> datetime:
 UTCDateTime = Annotated[
     datetime,
     AfterValidator(aware),
-    PlainSerializer(lambda v: v.isoformat().replace("+00:00", "Z"), return_type=str),
+    PlainSerializer(
+        lambda v: v.isoformat().replace("+00:00", "Z"), return_type=str, when_used="json"
+    ),
 ]
 T = TypeVar("T")
 

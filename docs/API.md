@@ -585,3 +585,6 @@ Error type uses `urn:cold-chain:error:<lowercase_code>` until a documentation do
 Missing If-Match returns 428 PRECONDITION_REQUIRED. Shipment create also requires Idempotency-Key (as specified in section 5).
 Cursor payload includes tenant, query scope (including filters), created_at and id. It is opaque, not an authorization grant; every query still enforces membership and tenant ownership.
 See [S0 ADR](adr/0001-foundation.md) for contract reconciliation and durable idempotency conventions.
+
+## S1 implementation
+Auth login/callback/logout/me, organization current/members read, product CRUD and shipment CRUD are implemented. Callback GET /auth/callback verifies OIDC and issues server session plus CSRF cookie. Unsafe authenticated requests require X-CSRF-Token. See ADR 0002 for local identity provisioning and supported currency contract.
