@@ -33,6 +33,8 @@
 
 Implemented workspace query extensions:
 
+- `POST /shipments/{shipment_id}/simulation-preview` accepts `SimulationInput`, uses the saved-run validation/calculation path, and returns `items`, `analysis_id`, `assumptions_sha256`, `persisted: false`. This authenticated calculation creates no job/run/history and cannot be referenced as a saved proposal source. See [factor preview contract](FACTOR_PREVIEW_CONTRACT.md).
+
 - `GET /shipments?q=<text>&status=<status>&limit=25&cursor=<opaque>` searches reference, origin name and destination name across the authorized organization. Search is case-insensitive literal substring matching; `%` and `_` are not wildcards. Cursors are bound to search and filter context.
 - `GET /shipments/{shipment_id}/analyses` lists that shipment's analysis history with standard cursor pagination.
 - `GET /shipments/{shipment_id}/workflow` returns `analysis` (latest completed), `simulation` (latest completed), `decision` (latest) and `approved_decision` (latest approved), each nullable. They are separate saved records; clients must check source IDs before treating a run as belonging to a selected analysis. This endpoint does not declare old evidence current or authorize release.

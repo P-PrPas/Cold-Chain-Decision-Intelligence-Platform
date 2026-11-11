@@ -9,10 +9,12 @@ export default function DecisionPanel({
   org,
   shipmentId,
   proposal,
+  onSaved,
 }: {
   org: string;
   shipmentId: string;
   proposal: ProposalSource | null;
+  onSaved?: () => void;
 }) {
   const [draftEvidence, setDraftEvidence] = useState<Item | null>(null);
   const [explanation, setExplanation] = useState<Item | null>(null);
@@ -121,6 +123,7 @@ export default function DecisionPanel({
         }),
       );
       await openDecision(r.decision);
+      onSaved?.();
       await refresh();
       setMessage(
         "Draft saved. Review the evidence below before submitting to QA.",
@@ -160,6 +163,7 @@ export default function DecisionPanel({
       );
       setDraftEvidence(null);
       setDetail(r.decision);
+      onSaved?.();
       await refresh();
       setMessage("Decision updated: " + human(r.decision.status));
     });

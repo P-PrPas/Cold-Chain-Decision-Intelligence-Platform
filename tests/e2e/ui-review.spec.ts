@@ -1,7 +1,7 @@
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
 import { test, expect } from "@playwright/test";
 for (const width of [1440, 768, 375, 320]) {
-  test(`evidence precedes actions and chart labels remain readable at ${width}px`, async ({
+  test(`3D first, persistent canvas, evidence gate and readable chart labels at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -27,31 +27,40 @@ for (const width of [1440, 768, 375, 320]) {
     expect(sceneBudget.draws).toBeLessThan(100);
     expect(sceneBudget.triangles).toBeLessThan(20000);
     expect(sceneBudget.markersVisible).toBe(true);
-    const evidence = page.getByRole("heading", {
-      name: "Temperature evidence",
-      exact: true,
-    });
-    const scenario = page.getByRole("table").filter({
-      has: page.getByRole("button", {
-        name: "Continue delivery",
-        exact: true,
-      }),
-    });
-    expect((await evidence.boundingBox())!.y).toBeLessThan(
-      (await scenario.boundingBox())!.y,
-    );
+    const scenario = page.getByRole("group", { name: "Select scenario" });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
-    const comparison = page.getByRole("heading", {
-      name: "Understand the trade-offs.",
-    });
-    const preview = page.getByRole("button", { name: "Preview demo proposal" });
-    expect((await comparison.boundingBox())!.y).toBeLessThan(
-      (await preview.boundingBox())!.y,
-    );
+    if (width >= 1000) {
+      const impact = await page
+        .locator(".network-explorer .evidence-summary")
+        .boundingBox();
+      expect(impact!.y + impact!.height).toBeLessThan(900);
+      expect(
+        (await viewport.boundingBox())!.y +
+          (await viewport.boundingBox())!.height,
+      ).toBeLessThan(900);
+      expect(
+        (await page
+          .getByRole("slider", { name: "Additional delay slider" })
+          .boundingBox())!.y,
+      ).toBeLessThan(900);
+    }
+    const canvas = await viewport.locator("canvas").elementHandle();
+    await page
+      .getByRole("slider", { name: "Additional delay slider" })
+      .fill("135");
+    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    expect(await canvas!.evaluate((el) => el.isConnected)).toBe(true);
+    await page.getByRole("button", { name: "Reset view" }).click();
+    await expect(
+      page.getByRole("button", { name: "Preview demo proposal" }),
+    ).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Inspect evidence", exact: true })
+      .click();
     const label = page.locator(".demo-chart text").first();
     expect(
       await label.evaluate((el) => {
@@ -76,20 +85,30 @@ for (const width of [1440, 768, 375, 320]) {
         if (action === "Conditional reroute")
           await expect(
             page
-              .getByText("Alternative receiver (unconfirmed)", {
+              .getByText("Alternative receiver", {
                 exact: false,
               })
               .first(),
           ).toBeVisible();
       }
     }
-    await expect(page.getByText("6 / 9 readings available")).toBeVisible();
+    await expect(page.locator(".studio-evidence-bar")).toContainText(
+      "6 / 9 readings available",
+    );
+    await page
+      .getByLabel(
+        "I reviewed the synthetic evidence and its limitations for this selection.",
+      )
+      .check();
     await page.getByRole("button", { name: "Preview demo proposal" }).click();
     await expect(
       page.getByText("No proposal was saved or submitted."),
     ).toBeVisible();
     await page.getByRole("button", { name: "Reset demo" }).click();
     await expect(page.getByLabel("Example shipment")).toHaveValue("0");
+    await page
+      .getByRole("button", { name: "Inspect evidence", exact: true })
+      .click();
     await page.screenshot({
       path: `test-results/evidence-demo-${width}.png`,
       fullPage: true,
@@ -163,6 +182,8 @@ test("QA requires explicit acknowledgement and sends only the checked action", a
           currency: "THB",
         },
       };
+    else if (path.endsWith("/workflow"))
+      body = { decision: submitted ? { status: "APPROVED" } : null };
     else if (path.endsWith("/temperature-datasets")) body = { items: [] };
     else if (path.endsWith("/simulations/run-demo"))
       body = { simulation: { id: "run-demo", shipment_id: "shipment-demo" } };
@@ -203,6 +224,7 @@ test("QA requires explicit acknowledgement and sends only the checked action", a
   await expect(
     page.getByRole("status").filter({ hasText: "Decision updated: Approved" }),
   ).toBeVisible();
+  await expect(page.locator(".saved-workflow")).toContainText("APPROVED");
   expect(submitted).toMatchObject({
     acknowledged_required_actions: ["HOLD_IN_CONTROLLED_STORAGE"],
     evidence_references: ["reference:reference-demo"],

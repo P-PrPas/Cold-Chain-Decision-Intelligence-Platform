@@ -35,14 +35,9 @@ class SimulationInput(Strict):
         return self
 
 
-def submit(
-    shipment_id: str,
-    payload: SimulationInput,
-    request: Request,
-    db: DB,
-    current: Current,
-    parent: str | None = None,
-) -> dict[str, Any]:
+def validated_calculation(
+    shipment_id: str, payload: SimulationInput, db: DB, current: Current
+) -> tuple[Shipment, Analysis, Dataset, Policy, list[dict[str, Any]]]:
     shipment = owned(db, Shipment, shipment_id, current)
     analysis = owned(db, Analysis, str(payload.analysis_id), current)
     dataset = owned(db, Dataset, str(payload.dataset_id), current)
@@ -65,7 +60,7 @@ def submit(
     if payload.currency != shipment.currency:
         raise Problem(422, "VALIDATION_ERROR", "Currency must match shipment")
     try:
-        calculate(
+        results = calculate(
             analysis.result,
             Rules.model_validate(policy.rules),
             payload.scenarios,
@@ -74,6 +69,33 @@ def submit(
         )
     except ValueError as exc:
         raise Problem(422, "VALIDATION_ERROR", str(exc)) from None
+    return shipment, analysis, dataset, policy, results
+
+
+@router.post("/shipments/{shipment_id}/simulation-preview")
+def preview(
+    shipment_id: UUID, payload: SimulationInput, db: DB, current: Current
+) -> dict[str, Any]:
+    _, analysis, _, _, results = validated_calculation(str(shipment_id), payload, db, current)
+    return {
+        "items": results,
+        "assumptions_sha256": request_hash(payload.model_dump(mode="json")),
+        "analysis_id": analysis.id,
+        "persisted": False,
+    }
+
+
+def submit(
+    shipment_id: str,
+    payload: SimulationInput,
+    request: Request,
+    db: DB,
+    current: Current,
+    parent: str | None = None,
+) -> dict[str, Any]:
+    shipment, analysis, dataset, policy, _ = validated_calculation(
+        shipment_id, payload, db, current
+    )
     key, fingerprint, existing = replay(db, current, request, payload.model_dump(mode="json"))
     if existing:
         return existing

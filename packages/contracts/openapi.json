@@ -3151,6 +3151,58 @@
         "summary": "Create"
       }
     },
+    "/api/v1/shipments/{shipment_id}/simulation-preview": {
+      "post": {
+        "operationId": "preview_api_v1_shipments__shipment_id__simulation_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shipment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shipment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Preview Api V1 Shipments  Shipment Id  Simulation Preview Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview"
+      }
+    },
     "/api/v1/shipments/{shipment_id}/simulations": {
       "post": {
         "operationId": "create_api_v1_shipments__shipment_id__simulations_post",

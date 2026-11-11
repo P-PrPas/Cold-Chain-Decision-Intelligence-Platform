@@ -1,4 +1,11 @@
 import * as THREE from "three";
+export type NetworkState = {
+  target: number;
+  zoom: number;
+  destinationLabel: string;
+  delay: string;
+  acceptance: string;
+};
 export function mountNetwork(
   host: HTMLDivElement,
   target: number,
@@ -48,14 +55,27 @@ export function mountNetwork(
     return mesh;
   }
   box(0, -0.2, 0, 14, 0.35, 12, 0x1a3345);
-  scene.add(new THREE.GridHelper(14, 14, 0x3d5868, 0x274253));
+  box(0, 0.005, 0, 12, 0.03, 1.1, 0x385064);
+  for (const [x, z] of positions.slice(3)) {
+    const road = box(
+      x / 2,
+      0.005,
+      z / 2,
+      Math.hypot(x, z),
+      0.03,
+      0.75,
+      0x385064,
+    );
+    road.rotation.y = -Math.atan2(z, x);
+  }
+  const pads: THREE.Mesh[] = [];
   positions.forEach(([x, z], i) => {
     if (i === 1) return;
     const selected = i === target;
-    box(x, 0.06, z, 2.5, 0.12, 2, selected ? 0x28788b : 0x284252);
+    pads[i] = box(x, 0.06, z, 2.5, 0.12, 2, selected ? 0x28788b : 0x284252);
     if (i === 4) {
       box(x, 0.65, z, 1.7, 1.3, 1.2, 0xb9ac82);
-      box(x, 1.38, z, 1.9, 0.15, 1.4, 0xe3cf92);
+      box(x, 1.38, z + 0.35, 2.3, 0.15, 2.1, 0xe3cf92);
       for (const dx of [-1, 1])
         box(x + dx, 0.45, z + 0.8, 0.09, 0.9, 0.09, 0xe3cf92);
     } else if (i === 5) {
@@ -68,6 +88,9 @@ export function mountNetwork(
       box(x, 0.75, z, 1.9, 1.5, 1.35, selected ? 0x79c6d1 : 0x90aaba);
       box(x, 1.58, z, 2.15, 0.15, 1.6, 0xcde0e5);
       box(x, 0.5, z + 0.69, 0.8, 1, 0.05, 0x334f62);
+      box(x, 0.14, z + 0.9, 1.2, 0.14, 0.65, 0x718492);
+      for (const height of [0.3, 0.5, 0.7, 0.9])
+        box(x, height, z + 0.73, 0.72, 0.025, 0.02, 0x7592a0);
       for (const dx of [-0.62, 0.62])
         box(x + dx, 1.1, z + 0.7, 0.3, 0.3, 0.05, 0xc3edfa);
     }
@@ -135,8 +158,10 @@ export function mountNetwork(
     renderer.render(scene, camera);
     labels.forEach(({ el, point }) => {
       const v = point.clone().project(camera);
-      el.style.left = `${(v.x * 0.5 + 0.5) * w}px`;
-      el.style.top = `${(-v.y * 0.5 + 0.5) * h}px`;
+      const halfWidth = el.offsetWidth / 2 + 4,
+        halfHeight = el.offsetHeight / 2 + 4;
+      el.style.left = `${Math.min(w - halfWidth, Math.max(halfWidth, (v.x * 0.5 + 0.5) * w))}px`;
+      el.style.top = `${Math.min(h - halfHeight, Math.max(halfHeight, (-v.y * 0.5 + 0.5) * h))}px`;
     });
     host.dataset.drawCalls = String(renderer.info.render.calls);
     host.dataset.triangles = String(renderer.info.render.triangles);
@@ -146,19 +171,60 @@ export function mountNetwork(
   observer.observe(host);
   draw();
   host.dataset.initMs = String(Math.round(performance.now() - start));
-  return () => {
-    observer.disconnect();
-    scene.traverse((obj) => {
-      if (obj instanceof THREE.Mesh || obj instanceof THREE.Line) {
-        obj.geometry.dispose();
-        const mats = Array.isArray(obj.material)
-          ? obj.material
-          : [obj.material];
-        mats.forEach((m) => m.dispose());
-      }
+  function update(state: NetworkState) {
+    camera.zoom = state.zoom;
+    if (state.target !== target) {
+      target = state.target;
+      const [x, z] = positions[target];
+      line.geometry.dispose();
+      line.geometry = new THREE.TubeGeometry(
+        new THREE.CatmullRomCurve3([
+          new THREE.Vector3(0, 0.22, 0),
+          new THREE.Vector3(x, 0.22, z),
+        ]),
+        1,
+        0.065,
+        6,
+        false,
+      );
+      pads.forEach((pad, i) =>
+        (pad.material as THREE.MeshStandardMaterial).color.setHex(
+          i === target ? 0x28788b : 0x284252,
+        ),
+      );
+    }
+    labels.forEach(({ el }, i) => {
+      el.className =
+        i === target || i === 1
+          ? "network-marker network-name"
+          : "network-marker";
+      el.textContent =
+        i === 1
+          ? "Decision point"
+          : i === target
+            ? `${state.destinationLabel} / +${state.delay} min`
+            : String(i + 1);
+      el.title = i === target ? `Receiver assumption: ${state.acceptance}` : "";
     });
-    labels.forEach(({ el }) => el.remove());
-    renderer.dispose();
-    renderer.domElement.remove();
+    draw();
+  }
+  return {
+    update,
+    dispose: () => {
+      observer.disconnect();
+      scene.traverse((obj) => {
+        if (obj instanceof THREE.Mesh || obj instanceof THREE.Line) {
+          obj.geometry.dispose();
+          const mats = Array.isArray(obj.material)
+            ? obj.material
+            : [obj.material];
+          mats.forEach((m) => m.dispose());
+        }
+      });
+      labels.forEach(({ el }) => el.remove());
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove();
+    },
   };
 }
