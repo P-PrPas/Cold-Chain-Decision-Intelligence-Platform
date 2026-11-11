@@ -110,7 +110,7 @@ export default function ShipmentDetail({
     }
   }
   return (
-    <main>
+    <main id="content">
       <a href="/workspace">Shipments</a>
       <h1>{item ? String(item.reference) : "Shipment"}</h1>
       {notice && <p role="status">{notice}</p>}

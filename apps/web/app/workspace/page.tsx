@@ -144,7 +144,7 @@ export default function Workspace() {
   const roles = (members.find((m) => m.organization_id === org)?.roles ||
     []) as string[];
   return (
-    <main>
+    <main id="content">
       <div className="page-heading">
         <div>
           <h1>Shipment queue</h1>
