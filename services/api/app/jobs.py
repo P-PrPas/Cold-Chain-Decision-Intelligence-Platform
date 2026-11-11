@@ -161,7 +161,11 @@ def dispatch(db: Session, queue: Any) -> None:
         .limit(25)
     ):
         queue.enqueue(
-            run_job, event.job_id, event.organization_id, job_timeout=300, result_ttl=3600
+            "app.jobs.run_job",
+            event.job_id,
+            event.organization_id,
+            job_timeout=300,
+            result_ttl=3600,
         )
         event.status = "DELIVERED"
         event.attempt_count += 1
@@ -183,8 +187,10 @@ def main() -> None:
                     set_tenant(db, organization_id)
                     dispatch(db, queue)
             SimpleWorker([queue], connection=redis).work(burst=True)
-        except Exception:
-            logging.getLogger(__name__).error("worker_dispatch_unavailable")
+        except Exception as exc:
+            logging.getLogger(__name__).error(
+                "worker_dispatch_unavailable error_type=%s", type(exc).__name__
+            )
         time.sleep(2)
 
 

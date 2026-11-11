@@ -119,3 +119,25 @@ def test_outbox_queue_failure_preserves_durable_event(platform):
             dispatch(db, BrokenQueue())
         db.rollback()
         assert db.scalar(select(Outbox).where(Outbox.status == "PENDING")) is not None
+
+
+def test_dispatch_uses_importable_target_when_started_as_module(platform, monkeypatch):
+    from rq import Queue
+
+    from app.jobs import dispatch, enqueue, run_job
+
+    result = prepare(platform)
+    _, _, engine = platform
+    monkeypatch.setattr(run_job, "__module__", "__main__")
+    targets = []
+
+    class ValidatingQueue:
+        def enqueue(self, target, *args, **kwargs):
+            Queue.parse_args(target, *args, **kwargs)
+            targets.append(target)
+
+    with Session(engine) as db:
+        enqueue(db, result["shipment"]["organization_id"], "EXPLANATION", str(uuid4()))
+        db.commit()
+        dispatch(db, ValidatingQueue())
+    assert targets == ["app.jobs.run_job"]
