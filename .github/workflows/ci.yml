@@ -66,9 +66,13 @@ jobs:
         options: --health-cmd "pg_isready -U test" --health-interval 5s --health-retries 20
     env:
       CC_TEST_POSTGRES_URL: postgresql://test:synthetic-test-only@localhost:5432/test
+      CC_BENCHMARK_OUTPUT: benchmark-postgres.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - run: pip install -r services/api/requirements-dev.lock
       - run: pytest services/api/tests -q
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: postgres-benchmark, path: benchmark-postgres.json}
