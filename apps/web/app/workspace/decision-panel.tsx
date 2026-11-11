@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, write, downloadReport, type Item } from "./api";
+import DecisionEvidenceSummary from "../decision-summary";
 import { EvidenceView, human } from "../evidence-view";
 import { scenarioNames } from "../scene";
 export type ProposalSource = { run: string; scenario: Item };
@@ -24,29 +25,32 @@ export default function DecisionPanel({
     [message, setMessage] = useState(""),
     [report, setReport] = useState<Item | null>(null),
     [reviewAction, setReviewAction] = useState("request-changes");
-  const refresh = useCallback(async () => {
-    const all: Item[] = [];
-    let cursor: string | null = null;
-    do {
-      const data = await api(
-        `/decisions?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
-        org,
-      );
-      all.push(...data.items);
-      cursor = data.next_cursor;
-    } while (cursor);
-    const scoped = await Promise.all(
-      all.map(async (d) => {
-        const run = (await api(`/simulations/${d.simulation_run_id}`, org))
-          .simulation;
-        return run.shipment_id === shipmentId ? d : null;
-      }),
-    );
-    setItems(scoped.filter((d): d is Item => d !== null));
-  }, [org, shipmentId]);
+  const [inboxLoading, setInboxLoading] = useState(true);
+  const [inboxError, setInboxError] = useState("");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const refresh = useCallback(
+    async (cursor?: string) => {
+      setInboxLoading(true);
+      setInboxError("");
+      try {
+        const data = await api(
+          `/decisions?shipment_id=${shipmentId}&limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+          org,
+        );
+        setItems((old) => (cursor ? [...old, ...data.items] : data.items));
+        setNextCursor(data.next_cursor);
+      } catch (e) {
+        setInboxError(String(e));
+        throw e;
+      } finally {
+        setInboxLoading(false);
+      }
+    },
+    [org, shipmentId],
+  );
   useEffect(() => {
     let active = true;
-    Promise.all([Promise.resolve().then(refresh), api("/auth/me")])
+    Promise.all([Promise.resolve().then(() => refresh()), api("/auth/me")])
       .then(([, me]) => {
         if (active) {
           setUser(me.user.id);
@@ -213,12 +217,28 @@ export default function DecisionPanel({
         <button
           className="quiet"
           disabled={busy}
-          onClick={() => void perform(refresh)}
+          onClick={() => void perform(() => refresh())}
         >
           Refresh decisions
         </button>
       </div>
-      {!items.length && <p>No decisions for this shipment.</p>}
+      {inboxLoading && <p role="status">Loading shipment decisions...</p>}
+      {inboxError && (
+        <p role="alert">
+          Unable to load decisions. Use Refresh decisions to retry. {inboxError}
+        </p>
+      )}
+      {!inboxLoading && !inboxError && !items.length && (
+        <p>No decisions for this shipment.</p>
+      )}
+      {nextCursor && (
+        <button
+          disabled={inboxLoading}
+          onClick={() => void perform(() => refresh(nextCursor))}
+        >
+          Load older decisions
+        </button>
+      )}
       <ul className="decision-list">
         {items.map((d) => (
           <li key={String(d.id)}>
@@ -254,12 +274,17 @@ export default function DecisionPanel({
           {draftEvidence && (
             <details open>
               <summary>Source evidence for this draft (not yet frozen)</summary>
-              <EvidenceView value={draftEvidence} />
+              <DecisionEvidenceSummary evidence={draftEvidence} />
+              <details>
+                <summary>Source traceability</summary>
+                <EvidenceView value={draftEvidence} />
+              </details>
             </details>
           )}
           {snapshot && (
             <>
               <h4>Pinned evidence</h4>
+              <DecisionEvidenceSummary evidence={snapshot} />
               <EvidenceView
                 value={{
                   shipment: (snapshot.shipment as Item)?.reference,

@@ -56,6 +56,7 @@ export default function AnalysisPanel({
   } | null>(null);
   const [policyNote, setPolicyNote] = useState("");
   const [recentAnalyses, setRecentAnalyses] = useState<Item[]>([]);
+  const [analysisCursor, setAnalysisCursor] = useState<string | null>(null);
   const [policies, setPolicies] = useState<Item[]>([]);
   const [datasets, setDatasets] = useState<Item[]>([]);
   const [rules, setRules] = useState(JSON.stringify(draftRules, null, 2));
@@ -114,12 +115,12 @@ export default function AnalysisPanel({
   }, [job, org, analysisId, onCompleted]);
   useEffect(() => {
     let active = true;
-    api("/dashboard", org)
+    api(`/shipments/${shipmentId}/analyses`, org)
       .then((d) => {
-        if (active)
-          setRecentAnalyses(
-            d.recent_analyses.filter((a: Item) => a.shipment_id === shipmentId),
-          );
+        if (active) {
+          setRecentAnalyses(d.items);
+          setAnalysisCursor(d.next_cursor);
+        }
       })
       .catch((e) => {
         if (active) setError(String(e));
@@ -206,6 +207,7 @@ export default function AnalysisPanel({
   }
   async function run(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    onCompleted?.("");
     setBusy(true);
     setError("");
     const form = new FormData(event.currentTarget);
@@ -426,6 +428,7 @@ export default function AnalysisPanel({
             disabled={busy}
             onChange={async (e) => {
               if (!e.target.value) return;
+              onCompleted?.("");
               setBusy(true);
               setError("");
               try {
@@ -457,6 +460,29 @@ export default function AnalysisPanel({
             runs.
           </span>
         </label>
+      )}
+      {analysisCursor && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              const data = await api(
+                `/shipments/${shipmentId}/analyses?cursor=${encodeURIComponent(analysisCursor)}`,
+                org,
+              );
+              setRecentAnalyses((items) => [...items, ...data.items]);
+              setAnalysisCursor(data.next_cursor);
+            } catch (e) {
+              setError(String(e));
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Load older analyses
+        </button>
       )}
       <form onSubmit={run}>
         <label>

@@ -107,14 +107,22 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   await operator.page
     .getByLabel("Cargo value (THB)", { exact: true })
     .fill("1000.00");
-  await operator.page
-    .getByRole("button", { name: "Create shipment", exact: true })
-    .click();
+  const [createdShipment] = await Promise.all([
+    operator.page.waitForResponse(
+      (response) =>
+        response.url() === api + "/shipments" &&
+        response.request().method() === "POST",
+    ),
+    operator.page
+      .getByRole("button", { name: "Create shipment", exact: true })
+      .click(),
+  ]);
+  expect(createdShipment.ok(), await createdShipment.text()).toBeTruthy();
+  const shipment = (await createdShipment.json()).shipment;
+  expect(shipment.product_id).toBe(createdProduct.product.id);
   await expect(
-    operator.page.getByRole("link", { name: /E2E-/ }).first(),
+    operator.page.getByRole("link", { name: shipment.reference, exact: true }),
   ).toBeVisible();
-  const shipments = await call(operator.context, org, "/shipments");
-  const shipment = shipments.items[0];
   const csrf = (await operator.context.cookies()).find(
     (c) => c.name === "cc_csrf",
   )!.value;

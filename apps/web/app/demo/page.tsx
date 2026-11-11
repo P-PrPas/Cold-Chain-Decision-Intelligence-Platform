@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Scene, { scenarioNames } from "../scene";
 const shipments = [
@@ -65,12 +65,34 @@ export default function Demo() {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState("HOLD_INSPECTION");
   const [proposal, setProposal] = useState(false);
+  const [linkNotice, setLinkNotice] = useState("");
+  useEffect(() => {
+    const read = () => {
+      const value = new URLSearchParams(window.location.search).get("shipment");
+      const found = shipments.findIndex((s) => s.id === value);
+      const i = found >= 0 ? found : 0;
+      setIndex(i);
+      setSelected(shipments[i].recommended);
+      setProposal(false);
+      setLinkNotice(
+        value && found < 0 ? "Unknown example link. Showing DEMO-001." : "",
+      );
+    };
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, []);
+  function chooseShipment(i: number) {
+    setIndex(i);
+    setSelected(shipments[i].recommended);
+    setProposal(false);
+    setLinkNotice("");
+    window.history.replaceState(null, "", `/demo?shipment=${shipments[i].id}`);
+  }
   const shipment = shipments[index];
   const option = options.find((item) => item.type === selected)!;
   function reset() {
-    setIndex(0);
-    setSelected("HOLD_INSPECTION");
-    setProposal(false);
+    chooseShipment(0);
   }
   return (
     <main>
@@ -92,15 +114,14 @@ export default function Demo() {
         below are prepared examples, not backend engine results. Nothing is
         saved or submitted to QA.
       </p>
+      {linkNotice && <p role="status">{linkNotice}</p>}
       <label className="compact-selector">
         Example shipment
         <select
           value={index}
           onChange={(e) => {
             const i = Number(e.target.value);
-            setIndex(i);
-            setSelected(shipments[i].recommended);
-            setProposal(false);
+            chooseShipment(i);
           }}
         >
           {shipments.map((item, i) => (
@@ -120,6 +141,17 @@ export default function Demo() {
             available
           </span>
           <span>Policy evaluation: not performed</span>
+          <span>
+            Journey: 08:00 - 12:00 UTC / range{" "}
+            {Math.min(
+              ...shipment.readings.filter((v): v is number => v !== null),
+            )}{" "}
+            -{" "}
+            {Math.max(
+              ...shipment.readings.filter((v): v is number => v !== null),
+            )}{" "}
+            Celsius
+          </span>
         </div>
         <p>
           Sample temperatures in Celsius, every 30 minutes from 08:00 to 12:00
@@ -235,6 +267,10 @@ export default function Demo() {
         <span className="eyebrow">SCENARIO COMPARISON</span>
         <h2>Understand the trade-offs.</h2>
         <p>
+          Selected: <strong>{scenarioNames[selected]}</strong>. Selection
+          updates the scene and inspector below.
+        </p>
+        <p>
           These are fixed example costs and delays. There is no calculated
           eligibility or ranking in this demo.
         </p>
@@ -249,10 +285,11 @@ export default function Demo() {
           </thead>
           <tbody>
             {options.map((item) => (
-              <tr key={item.type}>
+              <tr key={item.type} data-selected={selected === item.type}>
                 <td>
                   <button
                     className="quiet"
+                    aria-pressed={selected === item.type}
                     onClick={() => {
                       setSelected(item.type);
                       setProposal(false);
@@ -273,22 +310,12 @@ export default function Demo() {
         <section className="demo-stage">
           <span className="eyebrow">01 / EXPLORE THE NETWORK</span>
           <h2>{shipment.route}</h2>
-          <div className="scenario-tabs" role="group" aria-label="Scenario">
-            {options.map((item) => (
-              <button
-                key={item.type}
-                aria-pressed={selected === item.type}
-                onClick={() => {
-                  setSelected(item.type);
-                  setProposal(false);
-                }}
-              >
-                {scenarioNames[item.type]}
-              </button>
-            ))}
-          </div>
           <Scene
             scenario={selected}
+            cost={option.cost}
+            delay={option.delay}
+            context={`${shipment.id} / prepared example (no engine run)`}
+            missing={index === 2 ? "3 readings, 09:30 - 10:30 UTC" : undefined}
             origin={shipment.route.split(" / ")[0]}
             destination={shipment.route.split(" / ")[1]}
           />
@@ -313,6 +340,7 @@ export default function Demo() {
             </div>
           </dl>
           <p>{shipment.note}</p>
+          <p>Context: {shipment.id} / prepared example, no engine run.</p>
           <button onClick={() => setProposal(true)} disabled={proposal}>
             Preview demo proposal
           </button>

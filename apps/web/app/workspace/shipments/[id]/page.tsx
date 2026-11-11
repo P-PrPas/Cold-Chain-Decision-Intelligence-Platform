@@ -1,5 +1,5 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import DecisionPanel, { type ProposalSource } from "../../decision-panel";
 import SimulationPanel from "../../simulation-panel";
 import AnalysisPanel from "../../analysis-panel";
@@ -16,6 +16,16 @@ export default function ShipmentDetail({
   const [pendingStatus, setPendingStatus] = useState("");
   const [notice, setNotice] = useState("");
   const [completedAnalysis, setCompletedAnalysis] = useState("");
+  const [initialRun, setInitialRun] = useState("");
+  const selectionVersion = useRef(0);
+  const selectAnalysis = useCallback((analysis: string) => {
+    selectionVersion.current++;
+    setCompletedAnalysis(analysis);
+    setProposal(null);
+    setInitialRun("");
+  }, []);
+  const [savedWorkflow, setSavedWorkflow] = useState<Item | null>(null);
+  const [workflowError, setWorkflowError] = useState("");
   const [item, setItem] = useState<Item | null>(null);
   const [error, setError] = useState("");
   const [org, setOrg] = useState("");
@@ -29,6 +39,29 @@ export default function ShipmentDetail({
         setItem(data.shipment);
       })
       .catch((e) => setError(String(e)));
+  }, [id]);
+  useEffect(() => {
+    let active = true;
+    const organization =
+      new URLSearchParams(window.location.search).get("org") || "";
+    const version = selectionVersion.current;
+    api(`/shipments/${id}/workflow`, organization)
+      .then((data) => {
+        if (!active) return;
+        setSavedWorkflow(data);
+        const a = data.analysis;
+        const run = data.simulation;
+        if (a && version === selectionVersion.current) {
+          setCompletedAnalysis(String(a.id));
+          if (run?.analysis_id === a.id) setInitialRun(String(run.id));
+        }
+      })
+      .catch((e) => {
+        if (active) setWorkflowError(String(e));
+      });
+    return () => {
+      active = false;
+    };
   }, [id]);
   async function transition(status: string) {
     setBusy(true);
@@ -115,6 +148,57 @@ export default function ShipmentDetail({
               </form>
             )}
           </details>
+          <section className="saved-workflow">
+            <h2>Saved workflow</h2>
+            {workflowError ? (
+              <p role="alert">
+                Cannot load saved history. Reload this page to retry.{" "}
+                {workflowError}
+              </p>
+            ) : !savedWorkflow ? (
+              <p role="status">Loading saved workflow...</p>
+            ) : (
+              <>
+                <p>
+                  Latest decision:{" "}
+                  <strong>
+                    {String(
+                      (savedWorkflow.decision as Item)?.status ||
+                        "None recorded",
+                    )}
+                  </strong>
+                  .{" "}
+                  {savedWorkflow.approved_decision
+                    ? "An approved decision remains in history. Starting a new analysis does not replace that approval."
+                    : "No current approved decision recorded."}
+                </p>
+                <p>
+                  Completed analysis:{" "}
+                  {(savedWorkflow.analysis as Item)?.created_at
+                    ? new Date(
+                        String((savedWorkflow.analysis as Item).created_at),
+                      ).toLocaleString()
+                    : "None"}
+                  . Completed simulation:{" "}
+                  {(savedWorkflow.simulation as Item)?.created_at
+                    ? new Date(
+                        String((savedWorkflow.simulation as Item).created_at),
+                      ).toLocaleString()
+                    : "None"}
+                  .
+                </p>
+                <button
+                  className="quiet"
+                  onClick={() => {
+                    selectAnalysis("");
+                    setInitialRun("");
+                  }}
+                >
+                  Start a new analysis cycle
+                </button>
+              </>
+            )}
+          </section>
           <div className="next-action">
             <strong>Next step</strong>
             <p>
@@ -153,13 +237,13 @@ export default function ShipmentDetail({
                 <summary>
                   Analysis /{" "}
                   {completedAnalysis
-                    ? "Completed this session"
+                    ? "Selected completed result"
                     : "Select evidence"}
                 </summary>
                 <AnalysisPanel
                   shipmentId={id}
                   productId={String(item.product_id)}
-                  onCompleted={setCompletedAnalysis}
+                  onCompleted={selectAnalysis}
                   org={org}
                 />
               </details>
@@ -170,16 +254,23 @@ export default function ShipmentDetail({
           <div id="simulation">
             {completedAnalysis ? (
               <SimulationPanel
+                key={`${org}:${id}:${completedAnalysis}`}
                 shipmentId={id}
                 org={org}
                 completedAnalysis={completedAnalysis}
+                initialRun={initialRun}
+                shipmentLabel={String(item.reference)}
+                origin={String((item.origin as Item)?.name || "Origin")}
+                destination={String(
+                  (item.destination as Item)?.name || "Original receiver",
+                )}
                 onPropose={setProposal}
               />
             ) : (
               <p>Complete an analysis to unlock scenario comparison.</p>
             )}
           </div>
-          <div id="review">
+          <div id="review" tabIndex={-1} aria-label="Proposal and QA review">
             <DecisionPanel org={org} shipmentId={id} proposal={proposal} />
           </div>
         </>
