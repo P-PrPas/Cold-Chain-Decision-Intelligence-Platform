@@ -186,8 +186,9 @@ Input: normalized readings of a selected sensor, a single APPROVED effective pol
 4. If gap is longer, mark full interval `UNKNOWN`. Do not assume compliance or extend last reading indefinitely. Final sample has no trailing duration unless explicit bounded measurement-end metadata is validated; MVP default is no inferred tail.
 5. Use strict boundary configuration `temperature_c < min_c OR temperature_c > max_c` (equality within limit), with versioned rule schema for alternate comparison policies.
 6. Merge consecutive out-of-band intervals into continuous excursion events; known-compliant intervals or unknown gaps terminate an event. Never bridge unknown gaps.
-7. Sum actual seconds of valid out-of-band intervals; compare both maximum continuous and cumulative durations to policy. Unknown segments may make conclusion INDETERMINATE regardless of seemingly normal measurements.
-8. Multi-sensor: evaluate per sensor; organizational product policy must specify primary/required sensors and aggregation rule. If conflicting/unspecified sensors, mark `INDETERMINATE` and route to QA.
+7. Sum actual seconds of valid out-of-band intervals; compare both maximum continuous and cumulative durations using the explicit policy `duration_limit_comparison: AT_OR_ABOVE`. A confirmed HARD_BLOCK always yields CRITICAL; retain unknown evidence separately. Otherwise missing evidence yields INDETERMINATE.
+8. Multi-sensor: evaluate per sensor; organizational product policy must specify primary/required sensors and aggregation rule. Conflicting/unspecified sensors require QA and yield INDETERMINATE unless a confirmed HARD_BLOCK takes precedence.
+9. Engine 1.1.0 pins departure/estimated arrival at analysis creation. Per required sensor, all uncovered leading/trailing time is UNKNOWN without extrapolation. A final out-of-range observation (or one followed by a long unknown gap) has no inferred exposure duration but matches R-DATA and prevents release eligibility. Individual event severity uses event duration, not the run's aggregate classification. See ADR 0004.
 
 ### Pseudocode
 ```python
@@ -281,8 +282,9 @@ stateDiagram-v2
   PENDING_QA --> REJECTED: QA rejects
   PENDING_QA --> CHANGES_REQUESTED: QA requests changes
   CHANGES_REQUESTED --> DRAFT: new revision
-  DRAFT --> SUPERSEDED: replaced
-  PENDING_QA --> SUPERSEDED: newer proposal cancels old
+  PENDING_QA --> SUPERSEDED: correction submitted atomically
+  APPROVED --> SUPERSEDED: correction submitted atomically
+  CHANGES_REQUESTED --> SUPERSEDED: correction submitted atomically
 ```
 
 - Server enforces allowed transitions and acting roles. Admin does **not** grant QA permission.

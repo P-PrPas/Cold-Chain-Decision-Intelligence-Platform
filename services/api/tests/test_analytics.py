@@ -122,3 +122,20 @@ def test_inclusive_thresholds_and_event_severity_are_local():
     assert result["classification"] == "CRITICAL"
     assert [e["classification"] for e in result["excursions"]] == ["WARNING", "WARNING"]
     assert rules().model_dump()["duration_limit_comparison"] == "AT_OR_ABOVE"
+
+
+def test_short_uncovered_boundaries_are_unknown_for_each_required_sensor():
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    rows = [
+        {"sensor_id": sensor, "timestamp_utc": start + timedelta(seconds=at), "temperature_c": "4"}
+        for sensor, times in [("A", [0, 300, 600, 900]), ("B", [300, 600])]
+        for at in times
+    ]
+    policy = rules().model_copy(update={"required_sensor_ids": ["A", "B"]})
+    result = analyze(rows, policy, start, start + timedelta(seconds=900))
+    assert result["classification"] == "INDETERMINATE"
+    assert result["summary"]["unknown_seconds"] == 600
+    assert [(gap["sensor_id"], gap["duration_seconds"]) for gap in result["unknown_intervals"]] == [
+        ("B", 300),
+        ("B", 300),
+    ]

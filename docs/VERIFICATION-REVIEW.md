@@ -10,7 +10,9 @@ Checked-in golden fixtures provide explicit windows: final_hot (zero inferred du
 
 Decision tests cover conflicting pending/approved decisions, atomic supersession, preserved predecessor snapshot, audit events, submit/review replay ETags and concurrent submissions of distinct drafts (PostgreSQL). Membership tests cover uniform cross-tenant/unknown-email responses, activation of tenant-scoped pending membership and denial of roleless membership. Threshold tests cover below/equal/above the inclusive duration limit and individual event classification under a cumulative run-level HARD_BLOCK.
 
-Local Ruff, formatting, mypy, generated OpenAPI and pytest verification accompany the commits. PostgreSQL, browser workflow and restore checks run in CI; final results are appended after those checks complete. Original candidate timing results in VERIFICATION-S6.md are historical and are not claims about this corrected engine.
+Local Ruff, formatting, mypy and generated OpenAPI checks pass. The complete local suite passes 61 tests, with six PostgreSQL-only cases skipped. The unchanged reviewer probe also runs successfully using the repository `.venv` (which contains boto3).
+
+[CI run 42958367534 at 7b8abc3](https://github.com/P-PrPas/Cold-Chain-Decision-Intelligence-Platform/actions/runs/42958367534) passes API/Web, all 64 then-existing PostgreSQL tests, the real OIDC-to-PDF browser workflow (13.0 seconds), and restore verification of three objects and three database references. Application source is unchanged by subsequent test/documentation commits. Follow-up regressions additionally exercise legacy-engine rejection, rollback of failed correction submission and short uncovered boundaries per required sensor; CI runs again for these additions. Original candidate timing results in VERIFICATION-S6.md are historical and are not claims about this corrected engine.
 
 ## Decisions requiring review
 
