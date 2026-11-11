@@ -1,4 +1,5 @@
 "use client";
+import { EvidenceView } from "../evidence-view";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, write, type Item } from "./api";
 import Scene, { scenarioNames } from "../scene";
@@ -12,9 +13,11 @@ export default function SimulationPanel({
   shipmentId,
   org,
   completedAnalysis,
+  onPropose,
 }: {
   shipmentId: string;
   completedAnalysis?: string;
+  onPropose: (source: { run: string; scenario: Item } | null) => void;
   org: string;
 }) {
   const [selected, setSelected] = useState("CONTINUE_DELIVERY");
@@ -52,6 +55,7 @@ export default function SimulationPanel({
     event.preventDefault();
     setBusy(true);
     setScenarios([]);
+    onPropose(null);
     setError("");
     const form = new FormData(event.currentTarget);
     try {
@@ -109,7 +113,7 @@ export default function SimulationPanel({
   return (
     <section>
       <span className="eyebrow">03 / SIMULATION STUDIO</span>
-      <h2>Explore the alternatives.</h2>
+      <h2>Compare operational alternatives</h2>
       <div
         className="scenario-tabs"
         role="group"
@@ -133,23 +137,10 @@ export default function SimulationPanel({
         unknown. Every proposed action requires QA review.
       </p>
       {error && <p role="alert">{error}</p>}
-      {busy && <p role="status">Simulation processing?</p>}
+      {busy && <p role="status">Simulation processing...</p>}
       <form onSubmit={submit}>
-        <label>
-          Completed analysis ID
-          <input
-            key={completedAnalysis || "manual"}
-            name="analysis"
-            defaultValue={completedAnalysis || ""}
-            required
-          />
-          {completedAnalysis && (
-            <span>
-              Latest completed analysis from this session is selected. Previous
-              runs remain unchanged.
-            </span>
-          )}
-        </label>
+        <input type="hidden" name="analysis" value={completedAnalysis || ""} />
+        <p>Using the completed analysis selected in the evidence step.</p>
         <label>
           Receiver acceptance
           <select name="receiver">
@@ -202,22 +193,25 @@ export default function SimulationPanel({
         </button>
       </form>
       {run && (
-        <p>Current simulation ID: {run}. Previous runs remain unchanged.</p>
+        <details>
+          <summary>Run traceability</summary>
+          <p>Run reference: {run}. Previous runs remain unchanged.</p>
+        </details>
       )}
       {scenarios.length > 0 && (
         <table>
           <caption>
-            Scenario comparison ? lower score ranks first among eligible options
+            Scenario comparison: lower score ranks first among eligible options
             only
           </caption>
           <thead>
             <tr>
               <th>Action</th>
-              <th>Eligibility</th>
+              <th>Eligibility and evidence</th>
               <th>Cost</th>
               <th>Delay</th>
               <th>Score</th>
-              <th>Scenario ID</th>
+              <th>Next action</th>
             </tr>
           </thead>
           <tbody>
@@ -232,7 +226,20 @@ export default function SimulationPanel({
                     {scenarioNames[String(s.type)] || String(s.type)}
                   </button>
                 </td>
-                <td>{String(s.eligibility)}</td>
+                <td>
+                  <strong>{String(s.eligibility).replaceAll("_", " ")}</strong>
+                  <details>
+                    <summary>Why this outcome?</summary>
+                    <EvidenceView
+                      value={{
+                        risk_classification: s.risk_classification,
+                        receiver_acceptance: s.receiver_acceptance,
+                        missing_information: s.missing_information,
+                        rule_results: s.rule_results,
+                      }}
+                    />
+                  </details>
+                </td>
                 <td>
                   {String(s.direct_incremental_cost)} {String(s.currency)}
                 </td>
@@ -242,7 +249,23 @@ export default function SimulationPanel({
                     ? "Excluded"
                     : String(s.ranking_score)}
                 </td>
-                <td>{String(s.id)}</td>
+                <td>
+                  {["ELIGIBLE", "REVIEW_REQUIRED"].includes(
+                    String(s.eligibility),
+                  ) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onPropose({ run, scenario: s });
+                        document.getElementById("review")?.scrollIntoView();
+                      }}
+                    >
+                      Prepare proposal
+                    </button>
+                  ) : (
+                    <span>Cannot propose: {String(s.eligibility)}</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -251,7 +274,7 @@ export default function SimulationPanel({
       {parameters && (
         <details>
           <summary>Pinned assumptions</summary>
-          <pre>{JSON.stringify(parameters, null, 2)}</pre>
+          <EvidenceView value={parameters} />
         </details>
       )}
     </section>

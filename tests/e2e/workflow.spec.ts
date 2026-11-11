@@ -67,13 +67,28 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   const operator = await signIn(browser, "operator");
   const reviewer = await signIn(browser, "reviewer");
   const org = operator.me.memberships[0].organization_id;
+  const createdProduct = await call(
+    operator.context,
+    org,
+    "/products",
+    "POST",
+    {
+      name: "E2E product " + Date.now(),
+      category: "TEST",
+      packaging_type: "DEMO",
+    },
+  );
+  await operator.page.reload();
   await operator.page
     .getByLabel("Organization", { exact: true })
     .selectOption(org);
   await operator.page
+    .getByRole("button", { name: "Create shipment", exact: true })
+    .click();
+  await operator.page
     .getByLabel("Reference", { exact: true })
     .fill("E2E-" + Date.now());
-  const products = await call(operator.context, org, "/products");
+  const products = { items: [createdProduct.product] };
   await operator.page
     .getByLabel("Product", { exact: true })
     .selectOption(products.items[0].id);
@@ -281,12 +296,17 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   await operator.page.goto(
     `http://localhost:3000/workspace/shipments/${shipment.id}?org=${org}`,
   );
+  await operator.page
+    .getByText("Temperature evidence / Ready dataset available", {
+      exact: true,
+    })
+    .click();
   await expect(
     operator.page.getByRole("heading", { name: "Temperature evidence" }),
   ).toBeVisible();
   await expect(
     operator.page.getByRole("heading", {
-      name: "Decision proposals and QA inbox",
+      name: "Proposal and QA review",
     }),
   ).toBeVisible();
   await operator.context.close();
