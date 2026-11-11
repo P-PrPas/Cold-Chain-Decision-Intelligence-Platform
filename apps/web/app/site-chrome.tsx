@@ -80,8 +80,8 @@ export function SiteHeader() {
     <header className="app-header">
       <Link className="brand" href="/" aria-label={t("siteName")}>
         <BrandMark size={36} />
-        <span className="brand-word">COLDCHAIN</span>
-        <span className="brand-sub">SIMULATION STUDIO</span>
+        <span className="brand-word">Cold Chain</span>
+        <span className="brand-sub">Simulation Studio</span>
       </Link>
       <nav aria-label={t("navPrimary")}>
         <Link href="/demo">{t("navDemo")}</Link>
