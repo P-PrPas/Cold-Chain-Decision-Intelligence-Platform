@@ -1,7 +1,7 @@
 # Execution status and handoff
 
 ## User-authorized workflow (updated)
-The user superseded delegated implementation: current agent implements directly, implement all S0-S6 without stopping for review between sprints. Open one stacked PR per sprint, based on the prior sprint branch. Owner reviews all after implementation. Leave every PR open. Do not merge or deploy. S0–S5 are submitted; S6 release hardening and end-to-end verification are in progress in draft PR #7. No delegates required. Previously unavailable orchestration tools no longer block work.
+The user superseded delegated implementation: current agent implements directly, implement all S0-S6 without stopping for review between sprints. Open one stacked PR per sprint, based on the prior sprint branch. Owner reviews all after implementation. Leave every PR open. Do not merge or deploy. S0–S6 implementation is submitted in PRs #1–#7 for one owner review. No delegates required. Previously unavailable orchestration tools no longer block work.
 
 ## S0 scope
 CC-001 through CC-005: API/Web foundations, Compose, CI, shared HTTP contracts, proposed ADRs, API/DB reconciliation and synthetic fixtures. No business endpoints, auth, DB migrations or production policy implementation claimed.
@@ -26,7 +26,7 @@ S4: four scenario templates, Decimal sourced costs, unknown probability, eligibi
 
 S5: decision draft/submit, frozen source snapshot/hash, independent QA review with persisted evidence, append-only audit, bounded optional explanation and QA inbox. 36 API tests pass; mypy/Ruff/Web checks pass.
 
-S6: private reproducible PDF reports, dashboard, rate/body limits, PostgreSQL evidence triggers and forced tenant RLS, browser OIDC-to-PDF workflow, recovery drill and staging configuration/runbooks. Local checks: 46 API tests passed (PostgreSQL-only cases skipped), Ruff/mypy, Web lint/format/types/test/build pass. PostgreSQL CI passed at 9a8a0dd; subsequent additions need fresh verification. Full stack readiness race was found and fixed with a real Web healthcheck. Final browser/restore verification is pending; do not claim completed release acceptance.
+S6: private reproducible PDF reports, dashboard, rate/body limits, PostgreSQL evidence triggers and forced tenant RLS, browser OIDC-to-PDF workflow, recovery drill and staging configuration/runbooks. Local checks: 49 API tests passed (five PostgreSQL-only cases skipped), Ruff/mypy, OpenAPI and Web lint/format/types/test/build pass. Integrated CI at a07b843 passes all 54 PostgreSQL tests, browser workflow (14.6s) and restore hash/reference checks. The 100k-row persisted reference workload meets the measured import/analysis/simulation budgets. Read VERIFICATION-S6.md for scope and source links; human release acceptance remains open.
 
 ## Review stack
 Repository: https://github.com/P-PrPas/Cold-Chain-Decision-Intelligence-Platform

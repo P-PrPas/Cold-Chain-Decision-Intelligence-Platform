@@ -1,0 +1,8 @@
+{
+  "rows": 100000,
+  "concurrency": 1,
+  "scope": "HTTP adapters + PostgreSQL commit; in-memory object store; excludes queue and network latency",
+  "import_seconds": 10.042351948000004,
+  "analysis_seconds": 1.7229339609999954,
+  "simulation_seconds": 0.03577643399999886
+}

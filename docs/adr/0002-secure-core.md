@@ -7,4 +7,4 @@ Status: proposed for owner review. S1 continues from unmerged S0 as explicitly r
 - OIDC backchannel is a trusted configuration-only URL for local Docker networking, never a user parameter; authorization/issuer remain browser-visible localhost, token and JWKS requests use private identity service.
 - Tenant-scoped transaction locking serializes idempotent writes initially. This prioritizes duplicate prevention; scale to per-key advisory locks after profiling. Key records have no automatic expiry/deletion yet.
 - Initial supported currency allowlist is THB/USD/EUR/GBP/JPY (no FX conversion); JPY requires integral amounts. Extend explicitly with minor-unit rules.
-- Product PATCH initially accepts the full product DTO; shipment PATCH is partial. Date filters and richer member administration remain tracked for hardening before final handoff.
+- Product PATCH initially accepts the full product DTO; S6 adds partial PATCH, departure date filters and bounded membership administration. Shipment PATCH is partial. See ADR 0003 for the final pagination contract.
