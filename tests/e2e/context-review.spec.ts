@@ -216,7 +216,9 @@ test("deep links, keyboard selection, 3D failure fallback, and 200 percent text 
       >);
     } as typeof original;
   });
+  // /demo redirects to /studio and keeps the ?shipment= query.
   await page.goto(web + "/demo?shipment=DEMO-003");
+  await expect(page).toHaveURL(/\/studio\?shipment=DEMO-003/);
   await expect(page.getByLabel("Example shipment")).toHaveValue("2");
   await expect(
     page.getByText("3D is unavailable.", { exact: false }),

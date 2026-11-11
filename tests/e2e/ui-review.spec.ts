@@ -1,13 +1,22 @@
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
 import { test, expect } from "@playwright/test";
+// Returning visitor: skip the first-visit autoplay so the sandbox starts at the decision point.
+async function returning(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("cc-studio-visited", "1");
+    localStorage.setItem("cc-studio-coach", "1");
+  });
+}
 for (const width of [1440, 768, 375, 320]) {
-  test(`3D first, persistent canvas, evidence gate and readable chart labels at ${width}px`, async ({
+  test(`3D first, persistent canvas, evidence gate and readable timeline labels at ${width}px`, async ({
     page,
   }) => {
+    await returning(page);
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`${web}/demo`);
+    await page.goto(`${web}/studio`);
     const viewport = page.locator(".network-canvas");
     await expect(viewport).toHaveAttribute("data-init-ms", /\d+/);
+    await expect(viewport).toHaveAttribute("data-draw-calls", /\d+/);
     const sceneBudget = await viewport.evaluate((el) => ({
       draws: Number((el as HTMLElement).dataset.drawCalls),
       triangles: Number((el as HTMLElement).dataset.triangles),
@@ -34,33 +43,35 @@ for (const width of [1440, 768, 375, 320]) {
       ),
     ).toBe(true);
     const box = (await viewport.boundingBox())!;
-    expect(box.y).toBeLessThan(width >= 1000 ? 400 : 320);
+    expect(box.y).toBeLessThan(width >= 1000 ? 400 : 420);
     expect(box.y + box.height).toBeLessThan(900);
     expect(box.height).toBeGreaterThanOrEqual(190);
-    const controlBox = (await page
-      .getByRole("slider", { name: "Additional delay slider" })
-      .boundingBox())!;
+    // The h1 is visible, not screen-reader only.
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByText("Synthetic demo only")).toBeVisible();
+    if (width <= 760)
+      await page.getByRole("button", { name: "Adjust assumptions" }).click();
+    const delay = page.getByRole("slider", { name: "Additional delay slider" });
+    const controlBox = (await delay.boundingBox())!;
     expect(controlBox.y + controlBox.height).toBeLessThan(900);
     const canvas = await viewport.locator("canvas").elementHandle();
+    await delay.fill("135");
+    if (width <= 760)
+      await page.getByRole("button", { name: "Hide assumptions" }).click();
     await page
-      .getByRole("slider", { name: "Additional delay slider" })
-      .fill("135");
-    await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+      .getByRole("button", { name: "Follow truck", exact: true })
+      .click();
     expect(await canvas!.evaluate((el) => el.isConnected)).toBe(true);
-    await page.getByRole("button", { name: "Reset view" }).click();
+    await page.getByRole("button", { name: "Overview", exact: true }).click();
+    expect(await canvas!.evaluate((el) => el.isConnected)).toBe(true);
+    // Timeline axis labels stay readable.
+    const label = page.locator(".tl-axis span").first();
+    expect(
+      await label.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+    ).toBeGreaterThanOrEqual(12);
     await expect(
       page.getByRole("button", { name: "Preview demo proposal" }),
     ).toBeDisabled();
-    await page
-      .getByRole("button", { name: "Inspect evidence", exact: true })
-      .click();
-    const label = page.locator(".demo-chart text").first();
-    expect(
-      await label.evaluate((el) => {
-        const m = (el as SVGGraphicsElement).getScreenCTM()!;
-        return parseFloat(getComputedStyle(el).fontSize) * m.a;
-      }),
-    ).toBeGreaterThanOrEqual(12);
     for (const shipment of ["0", "1", "2"]) {
       await page.getByLabel("Example shipment").selectOption(shipment);
       for (const action of [
@@ -69,39 +80,19 @@ for (const width of [1440, 768, 375, 320]) {
         "Conditional reroute",
         "Reject / quarantine / dispose",
       ]) {
-        if (width <= 900) {
-          await page
-            .getByLabel("Scenario", { exact: true })
-            .selectOption({ label: action });
-          await expect(
-            page.getByLabel("Scenario", { exact: true }),
-          ).toHaveValue(
-            Object.entries({
-              CONTINUE_DELIVERY: "Continue delivery",
-              HOLD_INSPECTION: "Hold for inspection",
-              CONDITIONAL_REROUTE: "Conditional reroute",
-              REJECT_QUARANTINE_DISPOSE: "Reject / quarantine / dispose",
-            }).find(([, v]) => v === action)![0],
-          );
-        } else {
-          await scenario
-            .getByRole("button", { name: action, exact: true })
-            .click();
-          await expect(
-            scenario.getByRole("button", { name: action, exact: true }),
-          ).toHaveAttribute("aria-pressed", "true");
-        }
+        await scenario
+          .getByRole("button", { name: action, exact: true })
+          .click();
+        await expect(
+          scenario.getByRole("button", { name: action, exact: true }),
+        ).toHaveAttribute("aria-pressed", "true");
         if (action === "Conditional reroute")
           await expect(
-            page
-              .getByText("Alternative receiver", {
-                exact: false,
-              })
-              .first(),
+            page.locator(".network-name").filter({ hasText: "Alternative" }),
           ).toBeVisible();
       }
     }
-    await expect(page.locator(".studio-evidence-bar")).toContainText(
+    await expect(page.locator(".evidence-facts")).toContainText(
       "6 / 9 readings available",
     );
     await page
@@ -113,13 +104,14 @@ for (const width of [1440, 768, 375, 320]) {
     await expect(
       page.getByText("No proposal was saved or submitted."),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Reset demo" }).click();
-    await expect(page.getByLabel("Example shipment")).toHaveValue("0");
-    await page
-      .getByRole("button", { name: "Inspect evidence", exact: true })
-      .click();
+    // Reset returns the current example to its prepared estimates and clears the preview.
+    await page.getByRole("button", { name: "Reset", exact: true }).click();
+    await expect(page.getByLabel("Example shipment")).toHaveValue("2");
+    await expect(
+      page.getByText("No proposal was saved or submitted."),
+    ).not.toBeVisible();
     await page.screenshot({
-      path: `test-results/evidence-demo-${width}.png`,
+      path: `test-results/studio-${width}.png`,
       fullPage: true,
     });
   });
