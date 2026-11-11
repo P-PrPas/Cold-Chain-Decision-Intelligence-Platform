@@ -26,7 +26,7 @@ def public_dataset(item: Dataset) -> dict[str, Any]:
 
 
 @router.post("/shipments/{shipment_id}/temperature-datasets", status_code=202)
-async def upload(
+def upload(
     shipment_id: UUID,
     request: Request,
     db: DB,
@@ -44,7 +44,7 @@ async def upload(
         raise Problem(415, "UNSUPPORTED_MEDIA", "CSV file required")
     if conflicting_duplicate_mode != "REJECT":
         raise Problem(422, "VALIDATION_ERROR", "Duplicates must be rejected")
-    content = await file.read(10 * 1024 * 1024 + 1)
+    content = file.file.read(10 * 1024 * 1024 + 1)
     if len(content) > 10 * 1024 * 1024:
         raise Problem(413, "FILE_TOO_LARGE", "CSV exceeds 10 MB")
     try:
