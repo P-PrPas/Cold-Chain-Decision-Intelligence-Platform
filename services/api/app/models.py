@@ -324,3 +324,56 @@ class Scenario(TenantEntity, Base):
     currency: Mapped[str]
     delay_minutes: Mapped[int]
     result: Mapped[dict[str, Any]] = mapped_column(JSONType)
+
+
+class Decision(TenantEntity, Base):
+    __tablename__ = "decisions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        ForeignKeyConstraint(
+            ["organization_id", "simulation_run_id", "selected_scenario_id"],
+            [
+                "simulation_scenarios.organization_id",
+                "simulation_scenarios.simulation_run_id",
+                "simulation_scenarios.id",
+            ],
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "supersedes_decision_id"],
+            ["decisions.organization_id", "decisions.id"],
+        ),
+        CheckConstraint(
+            "status IN ('DRAFT','PENDING_QA','CHANGES_REQUESTED','APPROVED','REJECTED','SUPERSEDED')",
+            name="decision_status",
+        ),
+    )
+    simulation_run_id: Mapped[str]
+    selected_scenario_id: Mapped[str]
+    supersedes_decision_id: Mapped[str | None]
+    status: Mapped[str] = mapped_column(default="DRAFT")
+    justification: Mapped[str]
+    submitted_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_notes: Mapped[str | None]
+    review_evidence: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
+    snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
+    snapshot_sha256: Mapped[str | None]
+    revision: Mapped[int] = mapped_column(default=1)
+
+
+class Explanation(TenantEntity, Base):
+    __tablename__ = "ai_explanations"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        ForeignKeyConstraint(
+            ["organization_id", "simulation_run_id"],
+            ["simulation_runs.organization_id", "simulation_runs.id"],
+        ),
+    )
+    simulation_run_id: Mapped[str]
+    model: Mapped[str] = mapped_column(default="deterministic-template")
+    status: Mapped[str] = mapped_column(default="QUEUED")
+    source_digest: Mapped[str]
+    content: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)

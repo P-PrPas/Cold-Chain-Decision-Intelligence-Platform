@@ -66,6 +66,10 @@ def execute(db: Session, job: Job, store: Store) -> None:
         from app.simulations import execute_simulation
 
         execute_simulation(db, job)
+    elif job.type == "EXPLANATION":
+        from app.explanations import execute_explanation
+
+        execute_explanation(db, job)
     else:
         raise ValueError("UNKNOWN_JOB")
     job.status = "COMPLETED"

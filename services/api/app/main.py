@@ -26,6 +26,8 @@ from app.config import Settings
 from app.contracts import Problem, ProblemBody
 from app.datasets import router as datasets_router
 from app.db import connect
+from app.decisions import router as decisions_router
+from app.explanations import router as explanations_router
 from app.identity import router as identity_router
 from app.policies import router as policies_router
 from app.shipments import router as shipments_router
@@ -100,6 +102,8 @@ def create_app() -> FastAPI:
     app.include_router(policies_router)
     app.include_router(analyses_router)
     app.include_router(simulations_router)
+    app.include_router(decisions_router)
+    app.include_router(explanations_router)
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:

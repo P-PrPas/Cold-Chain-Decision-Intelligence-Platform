@@ -217,6 +217,46 @@
         "title": "Costs",
         "type": "object"
       },
+      "DecisionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "justification": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Justification",
+            "type": "string"
+          },
+          "selected_scenario_id": {
+            "format": "uuid",
+            "title": "Selected Scenario Id",
+            "type": "string"
+          },
+          "simulation_run_id": {
+            "format": "uuid",
+            "title": "Simulation Run Id",
+            "type": "string"
+          },
+          "supersedes_decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Decision Id"
+          }
+        },
+        "required": [
+          "simulation_run_id",
+          "selected_scenario_id",
+          "justification"
+        ],
+        "title": "DecisionInput",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -486,6 +526,44 @@
           "category"
         ],
         "title": "ProductInput",
+        "type": "object"
+      },
+      "Review": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledged_required_actions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Acknowledged Required Actions",
+            "type": "array"
+          },
+          "acting_role": {
+            "const": "QA",
+            "default": "QA",
+            "title": "Acting Role",
+            "type": "string"
+          },
+          "evidence_references": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Evidence References",
+            "type": "array"
+          },
+          "review_notes": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Review Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_notes"
+        ],
+        "title": "Review",
         "type": "object"
       },
       "Rules": {
@@ -837,6 +915,22 @@
         "title": "SimulationInput",
         "type": "object"
       },
+      "Submit": {
+        "additionalProperties": false,
+        "properties": {
+          "justification": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Justification",
+            "type": "string"
+          }
+        },
+        "required": [
+          "justification"
+        ],
+        "title": "Submit",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1006,6 +1100,66 @@
         "summary": "Excursions"
       }
     },
+    "/api/v1/audit-logs": {
+      "get": {
+        "operationId": "audits_api_v1_audit_logs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Audits Api V1 Audit Logs Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Audits"
+      }
+    },
     "/api/v1/auth/callback": {
       "get": {
         "operationId": "callback_api_v1_auth_callback_get",
@@ -1093,6 +1247,275 @@
           }
         },
         "summary": "Me"
+      }
+    },
+    "/api/v1/decisions": {
+      "get": {
+        "operationId": "decisions_api_v1_decisions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Decisions Api V1 Decisions Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decisions"
+      },
+      "post": {
+        "operationId": "create_api_v1_decisions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api V1 Decisions Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/v1/decisions/{decision_id}": {
+      "get": {
+        "operationId": "decision_api_v1_decisions__decision_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "decision_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Decision Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Decision Api V1 Decisions  Decision Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decision"
+      }
+    },
+    "/api/v1/decisions/{decision_id}/submit": {
+      "post": {
+        "operationId": "submit_api_v1_decisions__decision_id__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "decision_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Decision Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Submit Api V1 Decisions  Decision Id  Submit Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit"
+      }
+    },
+    "/api/v1/decisions/{decision_id}/{action}": {
+      "post": {
+        "operationId": "review_api_v1_decisions__decision_id___action__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "decision_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Decision Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Review"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Review Api V1 Decisions  Decision Id   Action  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review"
       }
     },
     "/api/v1/health/live": {
@@ -2257,6 +2680,90 @@
           }
         },
         "summary": "Simulation"
+      }
+    },
+    "/api/v1/simulations/{simulation_id}/explanations": {
+      "post": {
+        "operationId": "create_api_v1_simulations__simulation_id__explanations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "simulation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Simulation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api V1 Simulations  Simulation Id  Explanations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/v1/simulations/{simulation_id}/explanations/latest": {
+      "get": {
+        "operationId": "latest_api_v1_simulations__simulation_id__explanations_latest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "simulation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Simulation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Latest Api V1 Simulations  Simulation Id  Explanations Latest Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest"
       }
     },
     "/api/v1/simulations/{simulation_id}/recalculate": {

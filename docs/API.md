@@ -597,3 +597,6 @@ Policy version is a positive integer (aligned with DB), not semantic version tex
 
 ## S4 implementation
 Simulation create and recalculate require a complete SimulationInput body. Costs explicitly include all six components and their sources. No unsourced loss probabilities accepted. Cumulative duration is maximum per required sensor (never sums simultaneous exposures). Ranking score is weighted normalized cost/delay, lower first, only ELIGIBLE; equal values contribute zero. All scenarios still require human QA.
+
+## S5 implementation
+Decision approvals require at least one tenant-owned stored reference document, encoded reference:<document UUID>, instead of unverifiable free-text inspection references. HOLD_INSPECTION requires HOLD_IN_CONTROLLED_STORAGE acknowledgement; other permitted actions require REVIEW_PINNED_EVIDENCE. Provider-agnostic explanation adapters may select only existing fact IDs; rendered text remains deterministic. No external provider is configured or called by default.

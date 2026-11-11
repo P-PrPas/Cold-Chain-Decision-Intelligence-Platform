@@ -23,3 +23,5 @@ S2: immutable S3 uploads, dataset versions, strict CSV normalization, per-row pr
 S3: versioned policy author/review/retire, private reference uploads, independent-QA guard, deterministic half-open excursion analysis and evidence UI. 30 tests pass including full synthetic upload -> policy review -> analysis, negative role/tenant and immutable approved-policy API checks. Ruff/mypy and Web checks pass.
 
 S4: four scenario templates, Decimal sourced costs, unknown probability, eligibility-before-ranking, immutable recalculation and comparison UI. 33 tests pass; lint/typecheck pass.
+
+S5: decision draft/submit, frozen source snapshot/hash, independent QA review with persisted evidence, append-only audit, bounded optional explanation and QA inbox. 36 API tests pass; mypy/Ruff/Web checks pass.

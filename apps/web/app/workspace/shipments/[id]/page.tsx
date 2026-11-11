@@ -1,5 +1,6 @@
 "use client";
 import { use, useEffect, useState } from "react";
+import DecisionPanel from "../../decision-panel";
 import SimulationPanel from "../../simulation-panel";
 import AnalysisPanel from "../../analysis-panel";
 import TemperaturePanel from "../../temperature-panel";
@@ -89,6 +90,7 @@ export default function ShipmentDetail({
             org={org}
           />
           <SimulationPanel shipmentId={id} org={org} />
+          <DecisionPanel org={org} />
           <section id="workflow">
             <h2>Evidence workflow</h2>
             <p>
