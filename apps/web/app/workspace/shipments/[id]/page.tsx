@@ -1,5 +1,6 @@
 "use client";
 import { use, useEffect, useState } from "react";
+import SimulationPanel from "../../simulation-panel";
 import AnalysisPanel from "../../analysis-panel";
 import TemperaturePanel from "../../temperature-panel";
 import { api, write, type Item } from "../../api";
@@ -87,6 +88,7 @@ export default function ShipmentDetail({
             productId={String(item.product_id)}
             org={org}
           />
+          <SimulationPanel shipmentId={id} org={org} />
           <section id="workflow">
             <h2>Evidence workflow</h2>
             <p>

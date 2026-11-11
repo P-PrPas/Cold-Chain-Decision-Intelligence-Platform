@@ -21,3 +21,5 @@ S1 implementation: SQLAlchemy core + Alembic, OIDC/session/CSRF, tenant/RBAC, sh
 S2: immutable S3 uploads, dataset versions, strict CSV normalization, per-row provenance, DB job/outbox with RQ worker, upload/mapping UI and sample-only chart. 27 API tests pass; mypy passes. Docker engine was unavailable after disk exhaustion; restart requested, live verification pending.
 
 S3: versioned policy author/review/retire, private reference uploads, independent-QA guard, deterministic half-open excursion analysis and evidence UI. 30 tests pass including full synthetic upload -> policy review -> analysis, negative role/tenant and immutable approved-policy API checks. Ruff/mypy and Web checks pass.
+
+S4: four scenario templates, Decimal sourced costs, unknown probability, eligibility-before-ranking, immutable recalculation and comparison UI. 33 tests pass; lint/typecheck pass.

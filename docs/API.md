@@ -594,3 +594,6 @@ CSV upload uses UPLOADED (not QUEUED) dataset status, with a separate QUEUED job
 
 ## S3 implementation
 Policy version is a positive integer (aligned with DB), not semantic version text. POST /reference-documents uploads private evidence for policy approval. Rules include explicit continuous_effect and cumulative_effect; defaults are REVIEW_REQUIRED and HARD_BLOCK respectively. Unknown gaps cannot grant clearance. Dataset sampling times must lie within the policy effective interval. Analysis selects exactly required sensors; unspecified extra sensors produce INDETERMINATE. Excursions and gaps are pinned JSON result arrays on analysis_runs, not separately mutable tables.
+
+## S4 implementation
+Simulation create and recalculate require a complete SimulationInput body. Costs explicitly include all six components and their sources. No unsourced loss probabilities accepted. Cumulative duration is maximum per required sensor (never sums simultaneous exposures). Ranking score is weighted normalized cost/delay, lower first, only ELIGIBLE; equal values contribute zero. All scenarios still require human QA.

@@ -29,6 +29,7 @@ from app.db import connect
 from app.identity import router as identity_router
 from app.policies import router as policies_router
 from app.shipments import router as shipments_router
+from app.simulations import router as simulations_router
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ def create_app() -> FastAPI:
     app.include_router(datasets_router)
     app.include_router(policies_router)
     app.include_router(analyses_router)
+    app.include_router(simulations_router)
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:

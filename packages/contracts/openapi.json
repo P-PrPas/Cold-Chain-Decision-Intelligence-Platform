@@ -151,6 +151,72 @@
         "title": "Constraint",
         "type": "object"
       },
+      "Cost": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "decimal_places": 2,
+            "ge": 0,
+            "max_digits": 18,
+            "title": "Amount"
+          },
+          "source": {
+            "enum": [
+              "USER_ESTIMATE",
+              "CONFIRMED"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "source"
+        ],
+        "title": "Cost",
+        "type": "object"
+      },
+      "Costs": {
+        "additionalProperties": false,
+        "properties": {
+          "additional_transport": {
+            "$ref": "#/components/schemas/Cost"
+          },
+          "disposal": {
+            "$ref": "#/components/schemas/Cost"
+          },
+          "handling": {
+            "$ref": "#/components/schemas/Cost"
+          },
+          "holding": {
+            "$ref": "#/components/schemas/Cost"
+          },
+          "inspection": {
+            "$ref": "#/components/schemas/Cost"
+          },
+          "other": {
+            "$ref": "#/components/schemas/Cost"
+          }
+        },
+        "required": [
+          "additional_transport",
+          "inspection",
+          "holding",
+          "handling",
+          "disposal",
+          "other"
+        ],
+        "title": "Costs",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -516,6 +582,47 @@
         "title": "Rules",
         "type": "object"
       },
+      "ScenarioInput": {
+        "additionalProperties": false,
+        "properties": {
+          "costs": {
+            "$ref": "#/components/schemas/Costs"
+          },
+          "estimated_delay_minutes": {
+            "maximum": 525600.0,
+            "minimum": 0.0,
+            "title": "Estimated Delay Minutes",
+            "type": "integer"
+          },
+          "receiver_acceptance": {
+            "default": "UNKNOWN",
+            "enum": [
+              "ACCEPTED",
+              "REJECTED",
+              "UNKNOWN"
+            ],
+            "title": "Receiver Acceptance",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CONTINUE_DELIVERY",
+              "HOLD_INSPECTION",
+              "CONDITIONAL_REROUTE",
+              "REJECT_QUARANTINE_DISPOSE"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "estimated_delay_minutes",
+          "costs"
+        ],
+        "title": "ScenarioInput",
+        "type": "object"
+      },
       "ShipmentInput": {
         "additionalProperties": false,
         "properties": {
@@ -667,6 +774,69 @@
         "title": "ShipmentPatch",
         "type": "object"
       },
+      "SimulationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "format": "uuid",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "currency": {
+            "pattern": "^[A-Z]{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "uuid",
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "policy_version_id": {
+            "format": "uuid",
+            "title": "Policy Version Id",
+            "type": "string"
+          },
+          "ranking_weights": {
+            "$ref": "#/components/schemas/Weights"
+          },
+          "scenario_types": {
+            "items": {
+              "enum": [
+                "CONTINUE_DELIVERY",
+                "HOLD_INSPECTION",
+                "CONDITIONAL_REROUTE",
+                "REJECT_QUARANTINE_DISPOSE"
+              ],
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Scenario Types",
+            "type": "array"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Scenarios",
+            "type": "array"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "dataset_id",
+          "policy_version_id",
+          "scenario_types",
+          "currency",
+          "scenarios",
+          "ranking_weights"
+        ],
+        "title": "SimulationInput",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -705,6 +875,43 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "Weights": {
+        "additionalProperties": false,
+        "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Cost"
+          },
+          "delay": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Delay"
+          }
+        },
+        "required": [
+          "cost",
+          "delay"
+        ],
+        "title": "Weights",
         "type": "object"
       }
     }
@@ -1838,6 +2045,58 @@
         "summary": "Create"
       }
     },
+    "/api/v1/shipments/{shipment_id}/simulations": {
+      "post": {
+        "operationId": "create_api_v1_shipments__shipment_id__simulations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shipment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Shipment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api V1 Shipments  Shipment Id  Simulations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
     "/api/v1/shipments/{shipment_id}/temperature-datasets": {
       "get": {
         "operationId": "datasets_api_v1_shipments__shipment_id__temperature_datasets_get",
@@ -1956,6 +2215,142 @@
           }
         },
         "summary": "Upload"
+      }
+    },
+    "/api/v1/simulations/{simulation_id}": {
+      "get": {
+        "operationId": "simulation_api_v1_simulations__simulation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "simulation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Simulation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Simulation Api V1 Simulations  Simulation Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Simulation"
+      }
+    },
+    "/api/v1/simulations/{simulation_id}/recalculate": {
+      "post": {
+        "operationId": "recalculate_api_v1_simulations__simulation_id__recalculate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "simulation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Simulation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Recalculate Api V1 Simulations  Simulation Id  Recalculate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recalculate"
+      }
+    },
+    "/api/v1/simulations/{simulation_id}/scenarios": {
+      "get": {
+        "operationId": "scenarios_api_v1_simulations__simulation_id__scenarios_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "simulation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Simulation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Scenarios Api V1 Simulations  Simulation Id  Scenarios Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scenarios"
       }
     },
     "/api/v1/temperature-datasets/{dataset_id}": {

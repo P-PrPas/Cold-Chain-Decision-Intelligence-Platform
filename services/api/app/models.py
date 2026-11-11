@@ -262,3 +262,65 @@ class Analysis(TenantEntity, Base):
     input_sha256: Mapped[str]
     result: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class Simulation(TenantEntity, Base):
+    __tablename__ = "simulation_runs"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        ForeignKeyConstraint(
+            ["organization_id", "shipment_id"], ["shipments.organization_id", "shipments.id"]
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "analysis_id"],
+            ["analysis_runs.organization_id", "analysis_runs.id"],
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "dataset_id"],
+            ["temperature_datasets.organization_id", "temperature_datasets.id"],
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "policy_version_id"],
+            ["quality_policy_versions.organization_id", "quality_policy_versions.id"],
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "parent_run_id"],
+            ["simulation_runs.organization_id", "simulation_runs.id"],
+        ),
+    )
+    shipment_id: Mapped[str]
+    analysis_id: Mapped[str]
+    dataset_id: Mapped[str]
+    policy_version_id: Mapped[str]
+    parent_run_id: Mapped[str | None]
+    status: Mapped[str] = mapped_column(default="QUEUED")
+    parameters: Mapped[dict[str, Any]] = mapped_column(JSONType)
+    input_sha256: Mapped[str]
+    engine_version: Mapped[str] = mapped_column(default="1.0.0")
+    template_version: Mapped[str] = mapped_column(default="1.0.0")
+    currency: Mapped[str]
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class Scenario(TenantEntity, Base):
+    __tablename__ = "simulation_scenarios"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "id"),
+        UniqueConstraint("organization_id", "simulation_run_id", "id"),
+        ForeignKeyConstraint(
+            ["organization_id", "simulation_run_id"],
+            ["simulation_runs.organization_id", "simulation_runs.id"],
+        ),
+        CheckConstraint(
+            "eligibility IN ('ELIGIBLE','REVIEW_REQUIRED','BLOCKED','INSUFFICIENT_DATA')",
+            name="scenario_eligibility",
+        ),
+        CheckConstraint("incremental_cost >= 0 AND delay_minutes >= 0", name="scenario_values"),
+    )
+    simulation_run_id: Mapped[str]
+    type: Mapped[str]
+    eligibility: Mapped[str]
+    incremental_cost: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    currency: Mapped[str]
+    delay_minutes: Mapped[int]
+    result: Mapped[dict[str, Any]] = mapped_column(JSONType)
