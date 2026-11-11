@@ -29,10 +29,37 @@ jobs:
       - run: npm run build
   stack:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
       - run: docker compose up --build -d --wait --wait-timeout 180
       - run: curl --fail http://localhost:8000/api/v1/health/ready && curl --fail http://localhost:3000
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: curl --fail --retry 30 --retry-delay 2 --retry-connrefused http://localhost:8080/realms/coldchain/.well-known/openid-configuration
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: {name: browser-traces, path: test-results/}
       - if: always()
-        run: docker compose logs --tail 50 && docker compose down
+        run: docker compose logs --tail 150 && docker compose down
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: {POSTGRES_USER: test, POSTGRES_PASSWORD: synthetic-test-only, POSTGRES_DB: test}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U test" --health-interval 5s --health-retries 20
+    env:
+      CC_TEST_POSTGRES_URL: postgresql://test:synthetic-test-only@localhost:5432/test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r services/api/requirements-dev.lock
+      - run: pytest services/api/tests -q

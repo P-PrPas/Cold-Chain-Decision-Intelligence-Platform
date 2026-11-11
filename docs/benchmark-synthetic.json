@@ -1,0 +1,11 @@
+{
+  "environment": "Windows-11-10.0.26200-SP0",
+  "python": "3.14.4",
+  "rows": 100000,
+  "input_bytes": 3000033,
+  "concurrency": 1,
+  "normalization_seconds": 0.5096486000038567,
+  "analysis_seconds": 0.12675120000494644,
+  "simulation_seconds": 8.97999998414889e-05,
+  "scope": "In-process synthetic parsing/analysis/calculation; excludes persistence, queue and network."
+}

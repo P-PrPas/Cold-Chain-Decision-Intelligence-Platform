@@ -91,13 +91,6 @@ export default function ShipmentDetail({
           />
           <SimulationPanel shipmentId={id} org={org} />
           <DecisionPanel org={org} />
-          <section id="workflow">
-            <h2>Evidence workflow</h2>
-            <p>
-              Temperature and decision workflows are added in subsequent
-              sprints.
-            </p>
-          </section>
         </>
       )}
     </main>

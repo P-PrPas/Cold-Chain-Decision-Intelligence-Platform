@@ -19,7 +19,7 @@ class Base(DeclarativeBase):
     metadata = MetaData(
         naming_convention={
             "ix": "ix_%(column_0_label)s",
-            "uq": "uq_%(table_name)s_%(column_0_name)s",
+            "uq": "uq_%(table_name)s_%(column_0_N_name)s",
             "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
             "pk": "pk_%(table_name)s",
         }
@@ -51,3 +51,13 @@ def session(request: Request) -> Iterator[Session]:
         except Exception:
             db.rollback()
             raise
+
+
+def set_tenant(db: Session, organization_id: str) -> None:
+    if db.bind is not None and db.bind.dialect.name == "postgresql":
+        from sqlalchemy import text
+
+        db.execute(
+            text("SELECT set_config('cc.organization_id', :tenant, true)"),
+            {"tenant": organization_id},
+        )

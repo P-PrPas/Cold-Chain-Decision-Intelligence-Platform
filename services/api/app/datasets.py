@@ -1,13 +1,16 @@
 import hashlib
 import json
+import math
+from collections import defaultdict
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, File, Form, Query, Request, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from app.access import DB, Current, audit, owned, remember, replay
-from app.contracts import Problem
+from app.contracts import Cursor, Problem, decode_cursor, encode_cursor
 from app.jobs import enqueue
 from app.models import Dataset, Job, Reading, Shipment
 from app.shipments import page, serialized
@@ -146,23 +149,86 @@ def readings(
     sensor_id: str | None = None,
     resolution: str = "raw",
     max_points: int = Query(100, ge=2, le=1000),
+    start: datetime | None = None,
+    end: datetime | None = None,
 ) -> dict[str, Any]:
     item = owned(db, Dataset, str(dataset_id), current)
     if item.status != "READY":
         raise Problem(409, "DATASET_NOT_READY", "Dataset not ready")
-    if resolution != "raw":
-        raise Problem(
-            422, "VALIDATION_ERROR", "Use paginated raw readings; aggregation is not enabled"
-        )
-    filters = [Reading.dataset_id == item.id]
-    if sensor_id:
-        filters.append(Reading.sensor_id == sensor_id)
-    result = page(
-        db, current, Reading, limit, cursor, f"readings:{dataset_id}:{sensor_id}", filters
+    if resolution not in {"raw", "aggregated"}:
+        raise Problem(422, "VALIDATION_ERROR", "Invalid resolution")
+    if (start and start.tzinfo is None) or (end and end.tzinfo is None):
+        raise Problem(422, "VALIDATION_ERROR", "Explicit timezone required")
+    statement = select(Reading).where(
+        Reading.organization_id == current.organization_id, Reading.dataset_id == item.id
     )
-    result["unknown_intervals"] = []
-    result["gap_evaluation"] = "REQUIRES_POLICY_ANALYSIS"
-    return result
+    if sensor_id:
+        statement = statement.where(Reading.sensor_id == sensor_id)
+    if start:
+        statement = statement.where(Reading.timestamp_utc >= start)
+    if end:
+        statement = statement.where(Reading.timestamp_utc < end)
+    scope = f"readings:{dataset_id}:{sensor_id}:{start}:{end}"
+    if cursor:
+        if resolution != "raw":
+            raise Problem(422, "VALIDATION_ERROR", "Aggregates do not accept cursor")
+        point = decode_cursor(cursor, UUID(current.organization_id), scope)
+        statement = statement.where(
+            or_(
+                Reading.timestamp_utc > point.created_at,
+                and_(Reading.timestamp_utc == point.created_at, Reading.id > str(point.id)),
+            )
+        )
+    statement = statement.order_by(Reading.timestamp_utc, Reading.id)
+    if resolution == "aggregated":
+        groups: dict[str, list[Reading]] = defaultdict(list)
+        for row in db.scalars(statement):
+            groups[row.sensor_id].append(row)
+        if max_points < len(groups) * 2:
+            raise Problem(
+                422, "VALIDATION_ERROR", "max_points must allow at least two points per sensor"
+            )
+        result = []
+        budget = max(1, max_points // max(1, len(groups)))
+        for sensor, rows in sorted(groups.items()):
+            width = max(1, math.ceil(len(rows) / budget))
+            for index in range(0, len(rows), width):
+                bucket = rows[index : index + width]
+                result.append(
+                    {
+                        "sensor_id": sensor,
+                        "start_at": serialized(bucket[0])["timestamp_utc"],
+                        "end_at": serialized(bucket[-1])["timestamp_utc"],
+                        "min_c": str(min(r.temperature_c for r in bucket)),
+                        "max_c": str(max(r.temperature_c for r in bucket)),
+                        "sample_count": len(bucket),
+                        "connect_to_next": False,
+                    }
+                )
+        return {
+            "items": result,
+            "next_cursor": None,
+            "unknown_intervals": [],
+            "gap_evaluation": "REQUIRES_POLICY_ANALYSIS",
+        }
+    rows = list(db.scalars(statement.limit(limit + 1)))
+    next_cursor = None
+    if len(rows) > limit:
+        last = rows[limit - 1]
+        next_cursor = encode_cursor(
+            Cursor(
+                organization_id=current.organization_id,
+                scope=scope,
+                created_at=last.timestamp_utc.replace(tzinfo=UTC),
+                id=last.id,
+            )
+        )
+    return {
+        "items": [serialized(row) for row in rows[:limit]],
+        "next_cursor": next_cursor,
+        "unknown_intervals": [],
+        "gap_evaluation": "REQUIRES_POLICY_ANALYSIS",
+    }
 
 
 @router.get("/jobs/{job_id}")

@@ -35,6 +35,14 @@ class ProductInput(Strict):
     notes: str | None = Field(default=None, max_length=2000)
 
 
+class ProductPatch(Strict):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    category: str | None = Field(default=None, min_length=1, max_length=100)
+    packaging_type: str | None = Field(default=None, max_length=100)
+    active: bool | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class Location(Strict):
     name: str = Field(min_length=1, max_length=200)
     country: str | None = Field(default=None, pattern="^[A-Z]{2}$")
@@ -161,7 +169,7 @@ def product(product_id: UUID, response: Response, db: DB, current: Current) -> d
 @router.patch("/products/{product_id}")
 def update_product(
     product_id: UUID,
-    payload: ProductInput,
+    payload: ProductPatch,
     request: Request,
     response: Response,
     db: DB,
@@ -170,7 +178,9 @@ def update_product(
     permit(current, "ADMIN", "QA")
     item = owned(db, Product, str(product_id), current, True)
     require_match(request.headers.get("If-Match"), etag("product", item.revision))
-    for key, value in payload.model_dump().items():
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        if value is None and key in {"name", "category", "active"}:
+            raise Problem(422, "VALIDATION_ERROR", "Field cannot be null")
         setattr(item, key, value)
     item.revision += 1
     response.headers["ETag"] = etag("product", item.revision)

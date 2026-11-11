@@ -2,6 +2,7 @@ from typing import Protocol
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from app.config import Settings
 
@@ -23,9 +24,16 @@ class S3Store:
         )
 
     def put(self, key: str, content: bytes, content_type: str) -> None:
-        self.client.put_object(
-            Bucket=self.bucket, Key=key, Body=content, ContentType=content_type, IfNoneMatch="*"
-        )
+        try:
+            self.client.put_object(
+                Bucket=self.bucket, Key=key, Body=content, ContentType=content_type, IfNoneMatch="*"
+            )
+        except ClientError as exc:
+            if (
+                exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 412
+                or self.get(key) != content
+            ):
+                raise
 
     def get(self, key: str) -> bytes:
         return self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read()

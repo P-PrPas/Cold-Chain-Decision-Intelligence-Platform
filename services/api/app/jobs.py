@@ -1,5 +1,7 @@
 import hashlib
+import logging
 import time
+from datetime import timedelta
 from typing import Any
 
 from redis import Redis
@@ -8,8 +10,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.db import connect
-from app.models import Dataset, Job, Outbox, Reading
+from app.db import connect, now, set_tenant
+from app.models import (
+    Analysis,
+    Dataset,
+    Explanation,
+    Job,
+    Organization,
+    Outbox,
+    Reading,
+    Report,
+    Simulation,
+)
 from app.storage import S3Store, Store
 from app.temperature import normalize
 
@@ -70,6 +82,10 @@ def execute(db: Session, job: Job, store: Store) -> None:
         from app.explanations import execute_explanation
 
         execute_explanation(db, job)
+    elif job.type == "REPORT":
+        from app.reports import execute_report
+
+        execute_report(db, job, store)
     else:
         raise ValueError("UNKNOWN_JOB")
     job.status = "COMPLETED"
@@ -80,12 +96,13 @@ def run_job(job_id: str, organization_id: str) -> None:
     engine = connect(settings.database_url)
     try:
         with Session(engine) as db:
+            set_tenant(db, organization_id)
             job = db.scalar(
                 select(Job)
                 .where(Job.id == job_id, Job.organization_id == organization_id)
                 .with_for_update()
             )
-            if not job or job.status == "COMPLETED":
+            if not job or job.status == "COMPLETED" or job.attempt_count >= 3:
                 return
             job.attempt_count += 1
             try:
@@ -96,6 +113,32 @@ def run_job(job_id: str, organization_id: str) -> None:
             except Exception:
                 job.status = "FAILED"
                 job.error_code = "PROCESSING_FAILED"
+                resource_models: dict[str, Any] = {
+                    "DATASET_IMPORT": Dataset,
+                    "ANALYSIS": Analysis,
+                    "SIMULATION": Simulation,
+                    "EXPLANATION": Explanation,
+                    "REPORT": Report,
+                }
+                model = resource_models.get(job.type)
+                if model:
+                    resource = db.scalar(
+                        select(model).where(
+                            model.id == job.resource_id,
+                            model.organization_id == job.organization_id,
+                        )
+                    )
+                    if resource and resource.status not in {"READY", "COMPLETED", "INVALID"}:
+                        resource.status = "FAILED"
+                if job.attempt_count < 3:
+                    event = db.scalar(
+                        select(Outbox).where(
+                            Outbox.organization_id == job.organization_id, Outbox.job_id == job.id
+                        )
+                    )
+                    if event:
+                        event.status = "PENDING"
+
             db.commit()
     finally:
         engine.dispose()
@@ -103,7 +146,16 @@ def run_job(job_id: str, organization_id: str) -> None:
 
 def dispatch(db: Session, queue: Any) -> None:
     for event in db.scalars(
-        select(Outbox).where(Outbox.status == "PENDING").with_for_update(skip_locked=True).limit(25)
+        select(Outbox)
+        .join(Job, (Job.id == Outbox.job_id) & (Job.organization_id == Outbox.organization_id))
+        .where(
+            Job.status != "COMPLETED",
+            Job.attempt_count < 3,
+            (Outbox.status == "PENDING")
+            | ((Job.status == "QUEUED") & (Outbox.created_at < now() - timedelta(minutes=5))),
+        )
+        .with_for_update(skip_locked=True)
+        .limit(25)
     ):
         queue.enqueue(
             run_job, event.job_id, event.organization_id, job_timeout=300, result_ttl=3600
@@ -121,10 +173,15 @@ def main() -> None:
     while True:
         try:
             with Session(engine) as db:
-                dispatch(db, queue)
+                organizations = list(
+                    db.scalars(select(Organization.id).where(Organization.status == "ACTIVE"))
+                )
+                for organization_id in organizations:
+                    set_tenant(db, organization_id)
+                    dispatch(db, queue)
             SimpleWorker([queue], connection=redis).work(burst=True)
         except Exception:
-            pass  # Durable PENDING events are retried; no payload/secrets in logs.
+            logging.getLogger(__name__).error("worker_dispatch_unavailable")
         time.sleep(2)
 
 

@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
-from app.access import DB, Current, authenticated, digest, permit
+from app.access import DB, Current, audit, authenticated, digest, permit
 from app.contracts import Problem
 from app.db import now
 from app.models import LoginSession, MemberRole, Membership, Organization, User
@@ -32,7 +32,13 @@ async def provider(request: Request) -> Any:
         client_secret=settings.oidc_client_secret,
         server_metadata_url=(settings.oidc_backchannel or settings.oidc_issuer).rstrip("/")
         + "/.well-known/openid-configuration",
-        client_kwargs={"scope": "openid email profile", "code_challenge_method": "S256"},
+        client_kwargs={
+            "scope": "openid email profile",
+            "code_challenge_method": "S256",
+            "token_endpoint_auth_method": "client_secret_basic"
+            if settings.oidc_client_secret
+            else "none",
+        },
     )
     client = oauth.create_client("idp")
     metadata = await client.load_server_metadata()
@@ -164,3 +170,35 @@ def members(db: DB, current: Current) -> dict[str, Any]:
         ],
         "next_cursor": None,
     }
+
+
+class MemberInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str
+    roles: list[str]
+
+
+@router.post("/organizations/current/members", status_code=201)
+def add_member(payload: MemberInput, request: Request, db: DB, current: Current) -> dict[str, Any]:
+    permit(current, "ADMIN")
+    if (
+        not payload.roles
+        or len(set(payload.roles)) != len(payload.roles)
+        or not set(payload.roles) <= {"ADMIN", "LOGISTICS", "QA"}
+    ):
+        raise Problem(422, "VALIDATION_ERROR", "Invalid roles")
+    # Membership administration only links already-provisioned exact identities; no external invitations.
+    users = list(
+        db.scalars(select(User).where(User.email == payload.email, User.status == "ACTIVE"))
+    )
+    if len(users) != 1:
+        raise Problem(
+            422, "VALIDATION_ERROR", "Email must identify exactly one provisioned identity"
+        )
+    member = Membership(organization_id=current.organization_id, user_id=users[0].id)
+    db.add(member)
+    db.flush()
+    for role in payload.roles:
+        db.add(MemberRole(membership_id=member.id, role=role))
+    audit(db, current, request, "ADD_MEMBER", "membership", member.id, {"roles": payload.roles})
+    return {"membership": {"id": member.id, "status": member.status, "roles": payload.roles}}

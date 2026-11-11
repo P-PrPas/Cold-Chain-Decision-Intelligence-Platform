@@ -40,3 +40,18 @@ export function write(
     },
   };
 }
+
+export async function downloadReport(id: string, org: string) {
+  const response = await fetch(base + `/reports/${id}/download`, {
+    credentials: "include",
+    headers: { "X-Organization-Id": org },
+  });
+  if (!response.ok)
+    throw new Error(`${response.status}: report is unavailable`);
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `decision-report-${id}.pdf`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

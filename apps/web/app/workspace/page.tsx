@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { api, write, type Item } from "./api";
 export default function Workspace() {
+  const [dashboard, setDashboard] = useState<Item | null>(null);
   const [org, setOrg] = useState("");
   const [members, setMembers] = useState<Item[]>([]);
   const [shipments, setShipments] = useState<Item[]>([]);
@@ -24,6 +25,7 @@ export default function Workspace() {
         ]);
         setShipments(s.items);
         setProducts(p.items);
+        setDashboard(await api("/dashboard", org));
       }
     } catch (e) {
       setError(String(e));
@@ -127,6 +129,34 @@ export default function Workspace() {
       )}
       {org && (
         <>
+          {dashboard && (
+            <section>
+              <h2>Organization overview</h2>
+              <p>Pending QA reviews: {String(dashboard.pending_qa)}</p>
+              <ul>
+                {Object.entries(
+                  dashboard.shipment_counts as Record<string, number>,
+                ).map(([status, count]) => (
+                  <li key={status}>
+                    {status}: {count}
+                  </li>
+                ))}
+              </ul>
+              <details>
+                <summary>Recent activity</summary>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      analyses: dashboard.recent_analyses,
+                      decisions: dashboard.recent_decisions,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            </section>
+          )}
           <h2>Create shipment</h2>
           {roles.some((r) => ["ADMIN", "LOGISTICS"].includes(r)) ? (
             <form onSubmit={create}>

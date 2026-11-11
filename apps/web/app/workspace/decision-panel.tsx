@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
-import { api, write, type Item } from "./api";
+import { api, write, downloadReport, type Item } from "./api";
 export default function DecisionPanel({ org }: { org: string }) {
+  const [report, setReport] = useState<Item | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
   const [error, setError] = useState("");
@@ -154,6 +155,58 @@ export default function DecisionPanel({ org }: { org: string }) {
           <pre>{JSON.stringify(detail, null, 2)}</pre>
         </details>
       )}
+      {detail?.snapshot_sha256 ? (
+        <section>
+          <h3>Frozen PDF report</h3>
+          <button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const result = await api(
+                  `/decisions/${detail.id}/reports`,
+                  org,
+                  write("POST", { format: "PDF", language: "en" }),
+                );
+                setReport(result.report);
+              } catch (e) {
+                setError(String(e));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Generate report from selected decision
+          </button>
+          {report && (
+            <>
+              <p>Report: {String(report.status)}</p>
+              <button
+                onClick={async () => {
+                  try {
+                    setReport((await api(`/reports/${report.id}`, org)).report);
+                  } catch (e) {
+                    setError(String(e));
+                  }
+                }}
+              >
+                Refresh report status
+              </button>
+              {report.status === "COMPLETED" && (
+                <button
+                  onClick={() =>
+                    downloadReport(String(report.id), org).catch((e) =>
+                      setError(String(e)),
+                    )
+                  }
+                >
+                  Download private PDF
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      ) : null}
       <h3>Grounded explanation (optional)</h3>
       <p>Explanation never changes scenario eligibility or QA disposition.</p>
       <form

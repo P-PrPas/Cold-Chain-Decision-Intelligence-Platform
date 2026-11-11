@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,3 +19,19 @@ class Settings(BaseSettings):
     secure_cookies: bool = True
     synthetic_only: bool = True
     oidc_backchannel: str = ""
+    rate_limit_enabled: bool = True
+    rate_limit_per_minute: int = Field(default=120, ge=1, le=10000)
+
+    @model_validator(mode="after")
+    def secure_configuration(self) -> "Settings":
+        if self.oidc_issuer and (len(self.session_secret) < 32 or not self.oidc_client_id):
+            raise ValueError(
+                "Configured OIDC requires client ID and at least 32-character session secret"
+            )
+        if not self.synthetic_only and (
+            not self.secure_cookies
+            or not self.oidc_issuer.startswith("https://")
+            or not self.s3_endpoint.startswith("https://")
+        ):
+            raise ValueError("Production requires secure cookies and HTTPS identity/storage")
+        return self

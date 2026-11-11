@@ -10,10 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.contracts import Problem, request_hash, require_same_request
-from app.db import TenantEntity, now, session
+from app.db import TenantEntity, now, session, set_tenant
 from app.models import Audit, Idempotency, LoginSession, MemberRole, Membership, Organization, User
 
-DB = Annotated[Session, Depends(session)]
+DB = Annotated[Session, Depends(session, scope="function")]
 T = TypeVar("T", bound=TenantEntity)
 
 
@@ -61,6 +61,7 @@ def actor(request: Request, db: DB, user: Annotated[User, Depends(authenticated)
     roles = set(
         db.scalars(select(MemberRole.role).where(MemberRole.membership_id == membership.id))
     )
+    set_tenant(db, organization_id)
     return Actor(user.id, organization_id, roles)
 
 

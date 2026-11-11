@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, File, Query, Request, Response, UploadFile
-from pydantic import Field
+from pydantic import Field, model_validator
 from sqlalchemy import or_, select, true
 
 from app.access import DB, Current, audit, owned, permit, remember, replay
@@ -25,6 +25,12 @@ class PolicyInput(Strict):
     effective_from: UTCDateTime
     effective_to: UTCDateTime | None = None
     rules: Rules
+
+    @model_validator(mode="after")
+    def effective_interval(self) -> "PolicyInput":
+        if self.effective_to and self.effective_to <= self.effective_from:
+            raise ValueError("Invalid effective interval")
+        return self
 
 
 class Note(Strict):
@@ -143,7 +149,6 @@ def edit(
     return body
 
 
-@router.post("/quality-policies/{policy_id}/{action}")
 def transition(
     policy_id: UUID,
     action: str,
@@ -224,3 +229,24 @@ def transition(
     )
     response.headers["ETag"] = etag("policy", item.revision)
     return body
+
+
+@router.post("/quality-policies/{policy_id}/submit-review")
+def submit_review_policy(
+    policy_id: UUID, payload: Note, request: Request, response: Response, db: DB, current: Current
+) -> dict[str, Any]:
+    return transition(policy_id, "submit-review", payload, request, response, db, current)
+
+
+@router.post("/quality-policies/{policy_id}/approve")
+def approve_policy(
+    policy_id: UUID, payload: Note, request: Request, response: Response, db: DB, current: Current
+) -> dict[str, Any]:
+    return transition(policy_id, "approve", payload, request, response, db, current)
+
+
+@router.post("/quality-policies/{policy_id}/retire")
+def retire_policy(
+    policy_id: UUID, payload: Note, request: Request, response: Response, db: DB, current: Current
+) -> dict[str, Any]:
+    return transition(policy_id, "retire", payload, request, response, db, current)

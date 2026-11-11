@@ -1,7 +1,9 @@
+import hashlib
 import json
 import logging
 import os
 import re
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -22,6 +24,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response
 
 from app.analyses import router as analyses_router
+from app.body_limit import BodyLimit
 from app.config import Settings
 from app.contracts import Problem, ProblemBody
 from app.datasets import router as datasets_router
@@ -30,6 +33,7 @@ from app.decisions import router as decisions_router
 from app.explanations import router as explanations_router
 from app.identity import router as identity_router
 from app.policies import router as policies_router
+from app.reports import router as reports_router
 from app.shipments import router as shipments_router
 from app.simulations import router as simulations_router
 
@@ -71,6 +75,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="Cold Chain API", version="0.1.0", lifespan=lifespan)
 
+    app.add_middleware(BodyLimit)
     secret = os.environ.get("CC_SESSION_SECRET", "")
     if secret:
         if len(secret) < 32:
@@ -104,6 +109,7 @@ def create_app() -> FastAPI:
     app.include_router(simulations_router)
     app.include_router(decisions_router)
     app.include_router(explanations_router)
+    app.include_router(reports_router)
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request: Request, exc: IntegrityError) -> JSONResponse:
@@ -130,7 +136,32 @@ def create_app() -> FastAPI:
         request.state.request_id = (
             supplied if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", supplied) else str(uuid4())
         )
+        response: Response
         try:
+            settings = request.app.state.settings
+            if settings.rate_limit_enabled and not request.url.path.startswith("/api/v1/health/"):
+                address = request.client.host if request.client else "unknown"
+                key = (
+                    "cc:rate:"
+                    + hashlib.sha256(address.encode()).hexdigest()
+                    + ":"
+                    + str(int(time.time()) // 60)
+                )
+                with Redis.from_url(
+                    settings.redis_url, socket_connect_timeout=2, socket_timeout=2
+                ) as limiter:
+                    count = limiter.eval(
+                        "local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],60) end; return n",
+                        1,
+                        key,
+                    )
+                if int(count) > settings.rate_limit_per_minute:
+                    response = problem_response(
+                        request, Problem(429, "RATE_LIMITED", "Request rate exceeded")
+                    )
+                    response.headers["Retry-After"] = "60"
+                    response.headers["X-Request-Id"] = request.state.request_id
+                    return response
             response = await call_next(request)
         except Exception:
             logger.error("request_failed request_id=%s", request.state.request_id)

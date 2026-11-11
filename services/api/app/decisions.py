@@ -204,7 +204,6 @@ def submit(
     return body
 
 
-@router.post("/decisions/{decision_id}/{action}")
 def review(
     decision_id: UUID,
     action: str,
@@ -283,3 +282,39 @@ def audits(
 ) -> dict[str, Any]:
     permit(current, "ADMIN", "QA")
     return page(db, current, Audit, limit, cursor, "audit", [])
+
+
+@router.post("/decisions/{decision_id}/approve")
+def approve_decision(
+    decision_id: UUID,
+    payload: Review,
+    request: Request,
+    response: Response,
+    db: DB,
+    current: Current,
+) -> dict[str, Any]:
+    return review(decision_id, "approve", payload, request, response, db, current)
+
+
+@router.post("/decisions/{decision_id}/reject")
+def reject_decision(
+    decision_id: UUID,
+    payload: Review,
+    request: Request,
+    response: Response,
+    db: DB,
+    current: Current,
+) -> dict[str, Any]:
+    return review(decision_id, "reject", payload, request, response, db, current)
+
+
+@router.post("/decisions/{decision_id}/request-changes")
+def request_changes_decision(
+    decision_id: UUID,
+    payload: Review,
+    request: Request,
+    response: Response,
+    db: DB,
+    current: Current,
+) -> dict[str, Any]:
+    return review(decision_id, "request-changes", payload, request, response, db, current)
