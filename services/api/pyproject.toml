@@ -2,7 +2,7 @@
 name = "cold-chain-api"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["fastapi", "uvicorn", "pydantic-settings", "psycopg[binary]", "redis", "boto3"]
+dependencies = ["fastapi", "uvicorn", "pydantic-settings", "psycopg[binary]", "redis", "boto3", "sqlalchemy", "alembic", "authlib", "itsdangerous", "httpx", "python-multipart", "rq", "reportlab"]
 [project.optional-dependencies]
 dev = ["pytest", "httpx", "ruff", "mypy", "boto3-stubs[s3]"]
 [tool.pytest.ini_options]

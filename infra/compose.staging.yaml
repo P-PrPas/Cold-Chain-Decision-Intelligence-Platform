@@ -1,0 +1,32 @@
+# Requires owner-supplied managed DB, Redis, private S3, OIDC, TLS reverse proxy.
+# Never substitutes local emulator or demo accounts.
+services:
+  api:
+    build: ../services/api
+    environment: &environment
+      CC_DATABASE_URL: ${DATABASE_URL:?Required}
+      CC_REDIS_URL: ${REDIS_URL:?Required}
+      CC_S3_ENDPOINT: ${S3_ENDPOINT:?Required}
+      CC_S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Required}
+      CC_S3_SECRET_KEY: ${S3_SECRET_KEY:?Required}
+      CC_S3_BUCKET: ${S3_BUCKET:?Required}
+      CC_OIDC_ISSUER: ${OIDC_ISSUER:?Required}
+      CC_OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?Required}
+      CC_OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Required}
+      CC_OIDC_CALLBACK: ${OIDC_CALLBACK:?Required}
+      CC_WEB_ORIGIN: ${WEB_ORIGIN:?Required}
+      CC_SESSION_SECRET: ${SESSION_SECRET:?Required}
+      CC_SECURE_COOKIES: "true"
+      CC_SYNTHETIC_ONLY: "false"
+    restart: unless-stopped
+  worker:
+    build: ../services/api
+    environment: *environment
+    command: ["python", "-m", "app.jobs"]
+    restart: unless-stopped
+  web:
+    build:
+      context: ../apps/web
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:?Required}
+    restart: unless-stopped

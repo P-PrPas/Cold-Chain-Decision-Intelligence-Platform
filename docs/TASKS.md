@@ -332,4 +332,4 @@ PR link, CI run, screenshots where useful, migration ID.
 **Release decision:** PM + Tech Lead + QA Domain Owner sign off independently. This document is an implementation plan, not evidence of completed features or product safety validation.
 
 ## Execution update
-S0 CC-001?CC-005: IN_REVIEW once S0 PR is opened; technical implementation submitted, owner acceptance pending. S1?S6 remain TODO. Current agent implements directly; owner reviews; no automatic merge. See EXECUTION.md and VERIFICATION-S0.md.
+S0–S6: implementation IN_REVIEW in PRs #1–#7. Integrated PostgreSQL, browser OIDC-to-PDF and recovery checks pass; see VERIFICATION-S6.md. All sprints are stacked for one owner review; none is marked accepted/DONE. CC-605 external staging deployment and engineering/domain sign-off require owner infrastructure and acceptance. See EXECUTION.md, RUNBOOKS.md and the PR evidence. No automatic merge or deployment.

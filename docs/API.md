@@ -167,7 +167,7 @@ Requires valid cookie and CSRF; response `204`. Invalidate server session.
 Response `200 {"organization":{"id":"<uuid>","name":"Example Foods","status":"ACTIVE"}}`.
 
 ### GET/POST `/organizations/current/members`
-GET: `limit,cursor`; POST (Admin): `{ "email":"new@example.invalid", "roles":["LOGISTICS"] }`. Response `201 {"membership":{"id":"<uuid>","status":"INVITED", ...}}`; if invitation infrastructure is deferred, only add existing known identities and document limitation. Roles from allowlist `ADMIN`, `LOGISTICS`, `QA`.
+GET: `limit,cursor`; POST (Admin): `{ "email":"new@example.invalid", "roles":["LOGISTICS"] }`. Activates a tenant-scoped PENDING membership prepared by trusted identity provisioning; returns `201 {"membership":{"id":"<uuid>","status":"ACTIVE", ...}}`. There is no global email-directory lookup or invitation delivery. Another tenant's email and an unknown email return the same 404. Roles use allowlist `ADMIN`, `LOGISTICS`, `QA`.
 
 ## 5. Shipments
 
@@ -200,7 +200,7 @@ Response `201`:
 Validation: unique per organization; `departure_at < estimated_arrival_at`; positive/zero cargo values; ISO currency. Request omitted `organization_id` intentionally: backend derives it.
 
 ### GET `/shipments`
-Query: `status`, `product_id`, `reference`, `from`, `to`, `limit`, `cursor`, `sort` (`created_at` or `updated_at`, descending by default). Response paginated `items: [shipment]`.
+Query: `status`, `product_id`, `reference`, `from`, `to`, `limit`, `cursor`, `sort` (`created_at`, descending). `from`/`to` filter departure times as an inclusive/exclusive UTC interval. Response paginated `items: [shipment]`. The candidate explicitly rejects `updated_at` sorting: it uses immutable creation-time keysets so edits cannot silently move records between pages (ADR 0003).
 
 ### GET `/shipments/{shipment_id}`
 Response `{ "shipment": { ... } }`, header `ETag: "shipment-r3"`; includes `latest_dataset_id`, `latest_analysis_id` as optional refs, but prior decisions still pin their own versions.
@@ -228,7 +228,7 @@ Create **DRAFT version** tied to product:
 {
   "product_id": "<product-uuid>",
   "policy_key": "STRAWBERRY_STANDARD",
-  "version": "1.0.0",
+  "version": 1,
   "reference_document_id": "<document-uuid>",
   "effective_from": "2026-11-11T00:00:00Z",
   "rules": {
@@ -488,10 +488,10 @@ Response `200 {"decision":{"id":"<uuid>","status":"APPROVED","reviewed_by":"<qa-
 QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Required evidence missing" }`. `PENDING_QA → REJECTED`.
 
 ### POST `/decisions/{decision_id}/request-changes`
-QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Please attach inspection outcome" }`. `PENDING_QA → CHANGES_REQUESTED`. A revised proposal must create a new revision/draft and preserve old evidence; MVP may require creating a fresh decision referencing a revised simulation rather than editing an immutable submitted snapshot.
+QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Please attach inspection outcome" }`. `PENDING_QA → CHANGES_REQUESTED`. A revised proposal creates a fresh draft with supersedes_decision_id referencing the CHANGES_REQUESTED decision. Its correction ancestry carries forward the existing APPROVED decision until QA approves the replacement, including repeated request-changes. The old links and evidence remain intact; MVP may require creating a fresh decision referencing a revised simulation rather than editing an immutable submitted snapshot.
 
 ### Decision status rules
-`DRAFT → PENDING_QA → APPROVED | REJECTED | CHANGES_REQUESTED`; `DRAFT/PENDING_QA → SUPERSEDED` only with audit reason. No transition out of APPROVED/REJECTED; corrections via new decision with link to prior one. In-progress and final statuses must be derived from DB, not client requests.
+`DRAFT → PENDING_QA → APPROVED | REJECTED | CHANGES_REQUESTED`. At most one APPROVED decision and one PENDING_QA proposal may coexist per shipment, only when the pending proposal explicitly corrects the approval. A correction links `supersedes_decision_id` to a same-shipment PENDING_QA, APPROVED or CHANGES_REQUESTED decision. Submission supersedes non-approved predecessors; an APPROVED predecessor is superseded only in the transaction where QA approves its replacement. Reject/request-changes leaves the existing approval intact. Both supersession paths increment the predecessor revision and append audit. Draft creation revokes nothing. Snapshots/PDFs stay immutable; conflicts return `409 ACTIVE_DECISION_EXISTS`. See ADR 0004.
 
 ## 11. Reports and audit
 
@@ -585,3 +585,29 @@ Error type uses `urn:cold-chain:error:<lowercase_code>` until a documentation do
 Missing If-Match returns 428 PRECONDITION_REQUIRED. Shipment create also requires Idempotency-Key (as specified in section 5).
 Cursor payload includes tenant, query scope (including filters), created_at and id. It is opaque, not an authorization grant; every query still enforces membership and tenant ownership.
 See [S0 ADR](adr/0001-foundation.md) for contract reconciliation and durable idempotency conventions.
+
+## S1 implementation
+Auth login/callback/logout/me, organization current/members read, product CRUD and shipment CRUD are implemented. Callback GET /auth/callback verifies OIDC and issues server session plus CSRF cookie. Unsafe authenticated requests require X-CSRF-Token. See ADR 0002 for local identity provisioning and supported currency contract.
+
+## S2 implementation
+CSV upload uses UPLOADED (not QUEUED) dataset status, with a separate QUEUED job. Validation errors yield INVALID; infrastructure failures yield failed jobs. Raw readings use chronological timestamp/ID cursors and bounded pages; aggregated resolution returns per-sensor min/max buckets without interpolation. See generated OpenAPI for supported resolution values and bounds. Error samples are capped at 100 with errors_truncated indicator.
+
+## S3 implementation
+Policy version is a positive integer (aligned with DB), not semantic version text. POST /reference-documents uploads private evidence for policy approval. Rules include explicit continuous_effect and cumulative_effect; defaults are REVIEW_REQUIRED and HARD_BLOCK respectively. Unknown gaps cannot grant clearance. Dataset sampling times must lie within the policy effective interval. Analysis selects exactly required sensors; unspecified extra sensors produce INDETERMINATE. Excursions and gaps are pinned JSON result arrays on analysis_runs, not separately mutable tables.
+
+## S4 implementation
+Simulation create and recalculate require a complete SimulationInput body. Costs explicitly include all six components and their sources. No unsourced loss probabilities accepted. Cumulative duration is maximum per required sensor (never sums simultaneous exposures). Ranking score is weighted normalized cost/delay, lower first, only ELIGIBLE; equal values contribute zero. All scenarios still require human QA.
+
+## S5 implementation
+Decision approvals require at least one tenant-owned stored reference document, encoded reference:<document UUID>, instead of unverifiable free-text inspection references. HOLD_INSPECTION requires HOLD_IN_CONTROLLED_STORAGE acknowledgement; other permitted actions require REVIEW_PINNED_EVIDENCE. Provider-agnostic explanation adapters may select only existing fact IDs; rendered text remains deterministic. No external provider is configured or called by default.
+
+## S6 implementation
+Decision report requests freeze the submitted snapshot and review metadata, then queue PDF generation. Downloads require tenant authorization and verify the stored SHA256. Dashboard counts and recent activity are tenant-scoped. Request size and Redis rate limits apply before business processing. `/organizations/current/members` activates trusted tenant-scoped provisioning records; no external invitation email is sent. Generated `packages/contracts/openapi.json` records the complete executable route and DTO contract.
+
+## Pre-merge re-review corrections: engine 1.3.0
+
+Analyses pin the shipment coverage window but retain ALL readings. Consecutive real observations may bracket boundaries; their original spacing must satisfy the gap limit before their interval is clipped to the window. Genuinely uncovered portions stay UNKNOWN. Every out-of-range sample outside the window matches R-DATA and contributes to summary min/max; final hot observations still match R-DATA. Duration fields remain integer seconds, with unknown fractional time rounded upward. Confirmed HARD_BLOCK keeps CRITICAL precedence. Event severity uses its own duration. `duration_limit_comparison: AT_OR_ABOVE` makes inclusive threshold behavior explicit.
+
+Simulation creation and decision submission/approval reject legacy engine results or a changed shipment window with `409 ANALYSIS_RECOMPUTE_REQUIRED`. Submit/review idempotency replays return the original decision ETag. Full rationale and historical-data handling: [ADR 0004](adr/0004-evidence-boundaries-and-current-decisions.md).
+
+Engine 1.3.0 also flags a hot interval crossing ETA as OUT_OF_RANGE_INTERVAL_CROSSES_SHIPMENT_END. In-window duration stays clipped, but the tail requires review and reanalysis rather than silently permitting release. The analysis UI displays sensor, temperature, timestamp and evidence reason prominently.

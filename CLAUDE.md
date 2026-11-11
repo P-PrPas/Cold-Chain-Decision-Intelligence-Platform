@@ -1,9 +1,9 @@
-# claude.md — Claude Code Project Instructions
+# CLAUDE.md — Claude Code Project Instructions
 
 **Project:** Cold Chain Decision Intelligence Platform / Transport Simulation  
 **Target:** MVP v1.0 | **Version:** 1.0.0 | **Updated:** 2026-11-11
 
-> **Claude Code discovery note:** Claude Code normally auto-loads a file named **`CLAUDE.md`** (uppercase) in its recognized project locations. The requested `claude.md` filename on a case-sensitive system may **not** be discovered automatically. When installing this into the repository, copy/rename it to `CLAUDE.md`. Keep `AGENT.md` (`AGENTS.md` for agents that expect that spelling) as the shared cross-agent contract.
+> **Claude Code discovery note:** This file uses uppercase `CLAUDE.md` for automatic discovery on case-sensitive systems. `AGENT.md` remains the shared cross-agent contract.
 
 ## 1. Read this first
 
