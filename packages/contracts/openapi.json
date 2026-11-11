@@ -730,6 +730,13 @@
             ],
             "title": "Cumulative Excursion Limit Seconds"
           },
+          "duration_limit_comparison": {
+            "const": "AT_OR_ABOVE",
+            "default": "AT_OR_ABOVE",
+            "description": "Duration equal to the limit matches the rule; QA approves this inclusive threshold semantics.",
+            "title": "Duration Limit Comparison",
+            "type": "string"
+          },
           "max_valid_sampling_gap_seconds": {
             "exclusiveMinimum": 0.0,
             "maximum": 86400.0,

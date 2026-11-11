@@ -6,6 +6,7 @@ from pydantic import Field
 from sqlalchemy import select
 
 from app.access import DB, Current, audit, owned, permit, remember, replay
+from app.analyses import require_current_analysis
 from app.contracts import Problem, etag, request_hash, require_match
 from app.db import now
 from app.models import (
@@ -24,6 +25,32 @@ from app.models import (
 from app.shipments import Strict, page, serialized
 
 router = APIRouter(prefix="/api/v1")
+
+
+def lock_decision_workflow(db: DB, current: Current) -> None:
+    # All decision writers take the same lock BEFORE any decision row lock.
+    db.scalar(
+        select(Organization).where(Organization.id == current.organization_id).with_for_update()
+    )
+
+
+def active_decisions(db: DB, current: Current, shipment_id: str, excluding: str) -> list[Decision]:
+    return list(
+        db.scalars(
+            select(Decision)
+            .join(
+                Simulation,
+                (Simulation.id == Decision.simulation_run_id)
+                & (Simulation.organization_id == Decision.organization_id),
+            )
+            .where(
+                Decision.organization_id == current.organization_id,
+                Simulation.shipment_id == shipment_id,
+                Decision.id != excluding,
+                Decision.status.in_(["PENDING_QA", "APPROVED"]),
+            )
+        )
+    )
 
 
 class DecisionInput(Strict):
@@ -58,6 +85,7 @@ def source_snapshot(
     policy = owned(db, Policy, run.policy_version_id, current)
     analysis = owned(db, Analysis, run.analysis_id, current)
     shipment = owned(db, Shipment, run.shipment_id, current)
+    require_current_analysis(analysis, shipment)
     if (
         dataset.status != "READY"
         or policy.status != "APPROVED"
@@ -93,6 +121,7 @@ def source_snapshot(
 def create(
     payload: DecisionInput, request: Request, response: Response, db: DB, current: Current
 ) -> dict[str, Any]:
+    lock_decision_workflow(db, current)
     run = owned(db, Simulation, str(payload.simulation_run_id), current)
     scenario = owned(db, Scenario, str(payload.selected_scenario_id), current)
     if scenario.simulation_run_id != run.id:
@@ -102,15 +131,22 @@ def create(
     allowed(scenario)
     if not payload.justification.strip():
         raise Problem(422, "VALIDATION_ERROR", "Justification required")
-    if payload.supersedes_decision_id:
-        previous = owned(db, Decision, str(payload.supersedes_decision_id), current)
-        if previous.status != "CHANGES_REQUESTED":
-            raise Problem(
-                409, "INVALID_STATE_TRANSITION", "Only changes-requested decisions may be corrected"
-            )
     key, fingerprint, existing = replay(db, current, request, payload.model_dump(mode="json"))
     if existing:
+        response.headers["ETag"] = etag("decision", existing["decision"]["revision"])
         return existing
+    if payload.supersedes_decision_id:
+        previous = owned(db, Decision, str(payload.supersedes_decision_id), current)
+        previous_run = owned(db, Simulation, previous.simulation_run_id, current)
+        if (
+            previous.status not in {"CHANGES_REQUESTED", "APPROVED", "PENDING_QA"}
+            or previous_run.shipment_id != run.shipment_id
+        ):
+            raise Problem(
+                409,
+                "INVALID_STATE_TRANSITION",
+                "Correction must replace a current decision for the same shipment",
+            )
     item = Decision(
         organization_id=current.organization_id,
         simulation_run_id=run.id,
@@ -165,6 +201,7 @@ def submit(
     db: DB,
     current: Current,
 ) -> dict[str, Any]:
+    lock_decision_workflow(db, current)
     item = owned(db, Decision, str(decision_id), current, True)
     if item.submitted_by != current.user_id:
         raise Problem(403, "PERMISSION_DENIED", "Only proposer can submit")
@@ -172,6 +209,7 @@ def submit(
         db, current, request, {**payload.model_dump(), "if_match": request.headers.get("If-Match")}
     )
     if existing:
+        response.headers["ETag"] = etag("decision", existing["decision"]["revision"])
         return existing
     require_match(request.headers.get("If-Match"), etag("decision", item.revision))
     if item.status != "DRAFT":
@@ -179,6 +217,31 @@ def submit(
     run = owned(db, Simulation, item.simulation_run_id, current)
     scenario = owned(db, Scenario, item.selected_scenario_id, current)
     allowed(scenario)
+    active = active_decisions(db, current, run.shipment_id, item.id)
+    if any(previous.id != item.supersedes_decision_id for previous in active):
+        raise Problem(
+            409, "ACTIVE_DECISION_EXISTS", "Explicitly supersede the current shipment decision"
+        )
+    if item.supersedes_decision_id:
+        previous = owned(db, Decision, item.supersedes_decision_id, current, True)
+        previous_run = owned(db, Simulation, previous.simulation_run_id, current)
+        if previous_run.shipment_id != run.shipment_id or previous.status not in {
+            "PENDING_QA",
+            "APPROVED",
+            "CHANGES_REQUESTED",
+        }:
+            raise Problem(409, "INVALID_STATE_TRANSITION", "Correction source is no longer current")
+        previous.status = "SUPERSEDED"
+        previous.revision += 1
+        audit(
+            db,
+            current,
+            request,
+            "SUPERSEDE",
+            "decision",
+            previous.id,
+            {"replacement_decision_id": item.id, "snapshot_sha256": previous.snapshot_sha256},
+        )
     item.justification = payload.justification
     item.submitted_at = now()
     item.snapshot = {
@@ -216,11 +279,13 @@ def review(
     if action not in {"approve", "reject", "request-changes"}:
         raise Problem(404, "RESOURCE_NOT_FOUND", "Unknown review action")
     permit(current, "QA")
+    lock_decision_workflow(db, current)
     item = owned(db, Decision, str(decision_id), current, True)
     key, fingerprint, existing = replay(
         db, current, request, {**payload.model_dump(), "if_match": request.headers.get("If-Match")}
     )
     if existing:
+        response.headers["ETag"] = etag("decision", existing["decision"]["revision"])
         return existing
     require_match(request.headers.get("If-Match"), etag("decision", item.revision))
     if item.status != "PENDING_QA":
@@ -233,6 +298,13 @@ def review(
     if not item.snapshot or request_hash(item.snapshot) != item.snapshot_sha256:
         raise Problem(409, "INVALID_STATE_TRANSITION", "Snapshot integrity failure")
     if action == "approve":
+        run = owned(db, Simulation, item.simulation_run_id, current)
+        shipment = owned(db, Shipment, run.shipment_id, current, True)
+        require_current_analysis(owned(db, Analysis, run.analysis_id, current), shipment)
+        if active_decisions(db, current, run.shipment_id, item.id):
+            raise Problem(
+                409, "ACTIVE_DECISION_EXISTS", "Another decision is current for this shipment"
+            )
         scenario = owned(db, Scenario, item.selected_scenario_id, current)
         allowed(scenario)
         if not payload.evidence_references:

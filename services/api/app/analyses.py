@@ -1,4 +1,4 @@
-from datetime import UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -7,7 +7,7 @@ from pydantic import Field
 from sqlalchemy import select
 
 from app.access import DB, Current, audit, owned, remember, replay
-from app.analytics import Rules, analyze
+from app.analytics import ENGINE_VERSION, Rules, analyze, coverage_window
 from app.contracts import Problem, request_hash
 from app.jobs import enqueue
 from app.models import Analysis, Dataset, Job, Policy, Reading, Shipment
@@ -63,12 +63,19 @@ def create(
         dataset_id=dataset.id,
         policy_version_id=policy.id,
         selected_sensor_ids=payload.selected_sensor_ids,
+        engine_version=ENGINE_VERSION,
+        result={
+            "coverage_window": coverage_window(shipment.departure_at, shipment.estimated_arrival_at)
+        },
         input_sha256=request_hash(
             {
                 "dataset": dataset.sha256,
                 "policy": policy.content_sha256,
                 "sensors": sorted(payload.selected_sensor_ids),
-                "engine": "1.0.0",
+                "engine": ENGINE_VERSION,
+                "coverage_window": coverage_window(
+                    shipment.departure_at, shipment.estimated_arrival_at
+                ),
             }
         ),
         created_by=current.user_id,
@@ -128,5 +135,22 @@ def execute_analysis(db: DB, job: Job) -> None:
             )
         )
     ]
-    item.result = analyze(rows, Rules.model_validate(policy.rules))
+    window = item.result.get("coverage_window")
+    item.result = analyze(
+        rows,
+        Rules.model_validate(policy.rules),
+        datetime.fromisoformat(window["start_at"]) if window else None,
+        datetime.fromisoformat(window["end_at"]) if window else None,
+    )
     item.status = "COMPLETED"
+
+
+def require_current_analysis(analysis: Analysis, shipment: Shipment) -> None:
+    if analysis.engine_version != ENGINE_VERSION or analysis.result.get(
+        "coverage_window"
+    ) != coverage_window(shipment.departure_at, shipment.estimated_arrival_at):
+        raise Problem(
+            409,
+            "ANALYSIS_RECOMPUTE_REQUIRED",
+            "Reanalyze the current shipment window with the current engine",
+        )

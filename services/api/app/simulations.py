@@ -7,6 +7,7 @@ from pydantic import Field, model_validator
 from sqlalchemy import select
 
 from app.access import DB, Current, audit, owned, remember, replay
+from app.analyses import require_current_analysis
 from app.analytics import Rules
 from app.contracts import Problem, request_hash
 from app.jobs import enqueue
@@ -56,6 +57,7 @@ def submit(
         raise Problem(422, "POLICY_NOT_APPLICABLE", "Source chain mismatch")
     if analysis.status != "COMPLETED":
         raise Problem(409, "ANALYSIS_NOT_READY", "Completed analysis required")
+    require_current_analysis(analysis, shipment)
     if dataset.status != "READY" or policy.status != "APPROVED":
         raise Problem(
             422, "UNAPPROVED_POLICY", "Ready dataset and currently approved policy required"

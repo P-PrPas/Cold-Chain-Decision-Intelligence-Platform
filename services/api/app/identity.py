@@ -180,17 +180,26 @@ def add_member(payload: MemberInput, request: Request, db: DB, current: Current)
         or not set(payload.roles) <= {"ADMIN", "LOGISTICS", "QA"}
     ):
         raise Problem(422, "VALIDATION_ERROR", "Invalid roles")
-    # Membership administration only links already-provisioned exact identities; no external invitations.
-    users = list(
-        db.scalars(select(User).where(User.email == payload.email, User.status == "ACTIVE"))
-    )
-    if len(users) != 1:
-        raise Problem(
-            422, "VALIDATION_ERROR", "Email must identify exactly one provisioned identity"
+    # Provisioning assigns a PENDING membership out-of-band. Tenant admins must
+    # never query the global identity directory by email.
+    members = list(
+        db.scalars(
+            select(Membership)
+            .join(User, User.id == Membership.user_id)
+            .where(
+                Membership.organization_id == current.organization_id,
+                User.email == payload.email,
+                User.status == "ACTIVE",
+            )
+            .with_for_update()
         )
-    member = Membership(organization_id=current.organization_id, user_id=users[0].id)
-    db.add(member)
-    db.flush()
+    )
+    if len(members) != 1:
+        raise Problem(404, "RESOURCE_NOT_FOUND", "Tenant provisioning record unavailable")
+    member = members[0]
+    if member.status != "PENDING":
+        raise Problem(409, "INVALID_STATE_TRANSITION", "Pending tenant provisioning required")
+    member.status = "ACTIVE"
     for role in payload.roles:
         db.add(MemberRole(membership_id=member.id, role=role))
     audit(db, current, request, "ADD_MEMBER", "membership", member.id, {"roles": payload.roles})

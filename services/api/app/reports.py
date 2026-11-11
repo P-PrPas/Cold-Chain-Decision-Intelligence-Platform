@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 
 from app.access import DB, Current, audit, owned, remember, replay
 from app.contracts import Problem, request_hash
+from app.decisions import lock_decision_workflow
 from app.jobs import enqueue
 from app.models import Analysis, Decision, Job, Report, Shipment
 from app.shipments import Strict, serialized
@@ -53,6 +54,7 @@ def render(payload: dict[str, Any]) -> bytes:
 def create(
     decision_id: UUID, payload: ReportInput, request: Request, db: DB, current: Current
 ) -> dict[str, Any]:
+    lock_decision_workflow(db, current)
     item = owned(db, Decision, str(decision_id), current, True)
     if not item.snapshot or not item.snapshot_sha256:
         raise Problem(409, "REPORT_NOT_READY", "Submitted decision snapshot required")

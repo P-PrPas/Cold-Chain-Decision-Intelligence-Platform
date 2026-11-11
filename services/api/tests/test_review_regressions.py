@@ -1,0 +1,162 @@
+import copy
+
+import pytest
+from conftest import use_identity
+from helpers import prepare
+from sqlalchemy import delete
+from sqlalchemy.orm import Session
+from test_decisions import submit_decision
+from test_simulations import parameters
+
+from app.jobs import execute
+from app.models import Job, MemberRole, Membership
+
+
+def test_window_is_pinned_and_changed_trip_requires_reanalysis(platform):
+    result = prepare(platform)
+    client, _, engine = platform
+    response = client.post(
+        f"/api/v1/shipments/{result['shipment']['id']}/analyses",
+        headers={"Idempotency-Key": "pinned-window"},
+        json={
+            "dataset_id": result["dataset"]["id"],
+            "policy_version_id": result["policy"]["id"],
+            "selected_sensor_ids": ["A"],
+        },
+    )
+    assert response.status_code == 202
+    queued = response.json()
+    window = copy.deepcopy(queued["analysis"]["result"]["coverage_window"])
+    changed = client.patch(
+        f"/api/v1/shipments/{result['shipment']['id']}",
+        headers={"If-Match": '"shipment-r1"'},
+        json={"estimated_arrival_at": "2026-01-02T00:00:00Z"},
+    )
+    assert changed.status_code == 200
+    with Session(engine) as db:
+        execute(db, db.get(Job, queued["job"]["id"]), result["store"])
+        db.commit()
+    analysis = client.get("/api/v1/analyses/" + queued["analysis"]["id"]).json()["analysis"]
+    assert analysis["coverage_window"] == window
+    assert analysis["classification"] == "NORMAL"
+    result["analysis"] = analysis
+    blocked = client.post(
+        f"/api/v1/shipments/{result['shipment']['id']}/simulations",
+        headers={"Idempotency-Key": "stale-trip"},
+        json=parameters(result),
+    )
+    assert blocked.status_code == 409 and blocked.json()["code"] == "ANALYSIS_RECOMPUTE_REQUIRED"
+
+
+def test_partial_trip_api_cannot_make_release_eligible(platform):
+    result = prepare(platform, "partial_trip", "2026-01-02T00:00:00Z")
+    client, _, engine = platform
+    analysis = client.get("/api/v1/analyses/" + result["analysis"]["id"]).json()["analysis"]
+    assert analysis["classification"] == "INDETERMINATE"
+    assert analysis["summary"]["unknown_seconds"] == 85800
+    response = client.post(
+        f"/api/v1/shipments/{result['shipment']['id']}/simulations",
+        headers={"Idempotency-Key": "partial-trip"},
+        json=parameters(result),
+    )
+    assert response.status_code == 202
+    with Session(engine) as db:
+        execute(db, db.get(Job, response.json()["job"]["id"]), result["store"])
+        db.commit()
+    scenarios = client.get(
+        "/api/v1/simulations/" + response.json()["simulation"]["id"] + "/scenarios"
+    ).json()["items"]
+    assert all(
+        s["eligibility"] == "INSUFFICIENT_DATA"
+        for s in scenarios
+        if s["type"] == "CONTINUE_DELIVERY"
+    )
+
+
+def draft(client, result, key, supersedes=None):
+    scenario = next(s for s in result["scenarios"] if s["type"] == "REJECT_QUARANTINE_DISPOSE")
+    response = client.post(
+        "/api/v1/decisions",
+        headers={"Idempotency-Key": key},
+        json={
+            "simulation_run_id": result["simulation"]["id"],
+            "selected_scenario_id": scenario["id"],
+            "justification": "Correct the current proposal",
+            "supersedes_decision_id": supersedes,
+        },
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["decision"]
+
+
+@pytest.mark.parametrize("approve_first", [False, True])
+def test_current_decision_superseded_atomically_and_replay_etag(platform, approve_first):
+    result = submit_decision(platform)
+    client, identities, _ = platform
+    original = result["decision"]
+    if approve_first:
+        use_identity(client, identities[1])
+        approved = client.post(
+            f"/api/v1/decisions/{original['id']}/approve",
+            headers={"Idempotency-Key": "approve-original", "If-Match": '"decision-r2"'},
+            json={
+                "review_notes": "Original review",
+                "evidence_references": ["reference:" + result["policy"]["reference_document_id"]],
+                "acknowledged_required_actions": ["HOLD_IN_CONTROLLED_STORAGE"],
+            },
+        )
+        assert approved.status_code == 200, approved.text
+        use_identity(client, identities[0])
+    proposed = draft(client, result, "competing")
+    response = client.post(
+        f"/api/v1/decisions/{proposed['id']}/submit",
+        headers={"Idempotency-Key": "competing-submit", "If-Match": '"decision-r1"'},
+        json={"justification": "Conflicting disposition"},
+    )
+    assert response.status_code == 409 and response.json()["code"] == "ACTIVE_DECISION_EXISTS"
+    correction = draft(client, result, "correction", original["id"])
+    path = f"/api/v1/decisions/{correction['id']}/submit"
+    headers = {"Idempotency-Key": "correction-submit", "If-Match": '"decision-r1"'}
+    payload = {"justification": "Correct previous proposal"}
+    submitted = client.post(path, headers=headers, json=payload)
+    assert submitted.status_code == 200, submitted.text
+    replay = client.post(path, headers=headers, json=payload)
+    assert replay.json() == submitted.json() and replay.headers["ETag"] == submitted.headers["ETag"]
+    old = client.get(f"/api/v1/decisions/{original['id']}").json()["decision"]
+    assert old["status"] == "SUPERSEDED" and old["snapshot_sha256"] == original["snapshot_sha256"]
+    use_identity(client, identities[1])
+    events = client.get("/api/v1/audit-logs").json()["items"]
+    assert any(e["action"] == "SUPERSEDE" and e["entity_id"] == original["id"] for e in events)
+    review = {
+        "acting_role": "QA",
+        "review_notes": "Independent correction review",
+        "evidence_references": ["reference:" + result["policy"]["reference_document_id"]],
+        "acknowledged_required_actions": ["REVIEW_PINNED_EVIDENCE"],
+    }
+    reviewed = client.post(
+        f"/api/v1/decisions/{correction['id']}/approve",
+        headers={"Idempotency-Key": "review-correction", "If-Match": '"decision-r2"'},
+        json=review,
+    )
+    assert reviewed.status_code == 200, reviewed.text
+    repeated = client.post(
+        f"/api/v1/decisions/{correction['id']}/approve",
+        headers={"Idempotency-Key": "review-correction", "If-Match": '"decision-r2"'},
+        json=review,
+    )
+    assert repeated.headers["ETag"] == reviewed.headers["ETag"]
+
+
+def test_roleless_membership_denied_and_email_not_enumerable(platform):
+    client, identities, engine = platform
+    use_identity(client, identities[0])
+    path = "/api/v1/organizations/current/members"
+    registered = client.post(path, json={"email": "user2@example.invalid", "roles": ["QA"]})
+    absent = client.post(path, json={"email": "absent@example.invalid", "roles": ["QA"]})
+    assert registered.status_code == absent.status_code == 404
+    assert registered.json()["detail"] == absent.json()["detail"]
+    with Session(engine) as db:
+        membership = db.query(Membership).filter_by(user_id=identities[0]["user"]).one()
+        db.execute(delete(MemberRole).where(MemberRole.membership_id == membership.id))
+        db.commit()
+    assert client.get("/api/v1/shipments").status_code == 403

@@ -9,7 +9,7 @@ from app.jobs import execute
 from app.models import Job
 
 
-def prepare(platform, name="normal"):
+def prepare(platform, name="normal", arrival="2026-01-01T00:10:00Z"):
     client, identities, engine = platform
     use_identity(client, identities[0])
     store = MemoryStore()
@@ -26,7 +26,7 @@ def prepare(platform, name="normal"):
             "origin": {"name": "A"},
             "destination": {"name": "B"},
             "departure_at": "2026-01-01T00:00:00Z",
-            "estimated_arrival_at": "2026-01-01T01:00:00Z",
+            "estimated_arrival_at": arrival,
             "cargo_value": "100.00",
             "currency": "THB",
         },

@@ -61,6 +61,8 @@ def actor(request: Request, db: DB, user: Annotated[User, Depends(authenticated)
     roles = set(
         db.scalars(select(MemberRole.role).where(MemberRole.membership_id == membership.id))
     )
+    if not roles:
+        raise Problem(403, "PERMISSION_DENIED", "An assigned role is required")
     set_tenant(db, organization_id)
     return Actor(user.id, organization_id, roles)
 
@@ -147,7 +149,7 @@ def audit(
         Audit(
             organization_id=actor.organization_id,
             actor_id=actor.user_id,
-            acting_role=role or sorted(actor.roles)[0],
+            acting_role=role or next(iter(sorted(actor.roles)), "NONE"),
             action=action,
             entity_type=entity_type,
             entity_id=identifier,

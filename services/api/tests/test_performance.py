@@ -18,7 +18,9 @@ from app.models import Job
 
 @pytest.mark.skipif(not os.environ.get("CC_TEST_POSTGRES_URL"), reason="PostgreSQL benchmark")
 def test_reference_workload(platform):
-    result = prepare(platform)
+    result = prepare(
+        platform, arrival=(datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=99999)).isoformat()
+    )
     client, _, engine = platform
     start = datetime(2026, 1, 1, tzinfo=UTC)
     content = (

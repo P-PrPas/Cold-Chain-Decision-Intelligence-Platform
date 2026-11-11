@@ -41,6 +41,25 @@ def test_atomic_concurrent_qa_reviews(platform):
     assert sorted(statuses) == [200, 412]
 
 
+def test_distinct_decisions_cannot_become_current_concurrently(platform):
+    from test_review_regressions import draft
+    from test_simulations import simulate
+
+    result = simulate(platform)
+    client, _, _ = platform
+    decisions = [draft(client, result, "parallel-draft-" + str(index)) for index in range(2)]
+
+    def submit(index):
+        return client.post(
+            f"/api/v1/decisions/{decisions[index]['id']}/submit",
+            headers={"Idempotency-Key": f"parallel-submit-{index}", "If-Match": '"decision-r1"'},
+            json={"justification": "Concurrent disposition"},
+        ).status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(submit, [0, 1])) == [200, 409]
+
+
 def test_database_immutability_and_non_bypass_rls(platform):
     result = submit_decision(platform)
     _, identities, engine = platform
