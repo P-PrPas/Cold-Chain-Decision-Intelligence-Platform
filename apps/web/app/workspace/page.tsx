@@ -189,7 +189,7 @@ export default function Workspace() {
             >
               Sign out
             </button>
-            <Link href="/demo">Open sample workspace</Link>
+            <Link href="/studio">Open sample workspace</Link>
           </details>
           <label>
             Organization
