@@ -206,17 +206,29 @@ def decisions(
     db: DB,
     current: Current,
     status: str | None = None,
+    shipment_id: UUID | None = None,
     limit: int = Query(25, ge=1, le=100),
     cursor: str | None = None,
 ) -> dict[str, Any]:
+    filters = [Decision.status == status] if status else []
+    if shipment_id:
+        owned(db, Shipment, str(shipment_id), current)
+        filters.append(
+            Decision.simulation_run_id.in_(
+                select(Simulation.id).where(
+                    Simulation.organization_id == current.organization_id,
+                    Simulation.shipment_id == str(shipment_id),
+                )
+            )
+        )
     return page(
         db,
         current,
         Decision,
         limit,
         cursor,
-        f"decisions:{status}",
-        [Decision.status == status] if status else [],
+        f"decisions:{status}:{shipment_id}",
+        filters,
     )
 
 

@@ -18,7 +18,7 @@ from app.contracts import (
     etag,
     require_match,
 )
-from app.models import Product, Shipment
+from app.models import Analysis, Decision, Product, Shipment, Simulation
 
 router = APIRouter(prefix="/api/v1")
 
@@ -217,6 +217,7 @@ def shipments(
     cursor: str | None = None,
     status: str | None = None,
     reference: str | None = None,
+    q: str | None = Query(None, max_length=200),
     product_id: UUID | None = None,
     from_at: UTCDateTime | None = Query(None, alias="from"),
     to_at: UTCDateTime | None = Query(None, alias="to"),
@@ -233,6 +234,16 @@ def shipments(
         filters.append(Shipment.status == status)
     if reference:
         filters.append(Shipment.reference == reference)
+    if q and q.strip():
+        term = q.strip().replace("/", "//").replace("%", "/%").replace("_", "/_")
+        pattern = f"%{term}%"
+        filters.append(
+            or_(
+                Shipment.reference.ilike(pattern, escape="/"),
+                Shipment.origin["name"].as_string().ilike(pattern, escape="/"),
+                Shipment.destination["name"].as_string().ilike(pattern, escape="/"),
+            )
+        )
     if product_id:
         filters.append(Shipment.product_id == str(product_id))
     return page(
@@ -241,7 +252,7 @@ def shipments(
         Shipment,
         limit,
         cursor,
-        f"shipments:{status}:{reference}:{product_id}:{from_at}:{to_at}:{sort}",
+        f"shipments:{status}:{reference}:{product_id}:{from_at}:{to_at}:{sort}:{q}",
         filters,
     )
 
@@ -292,3 +303,34 @@ def update_shipment(
     audit(db, current, request, "UPDATE", "shipment", item.id, body)
     response.headers["ETag"] = etag("shipment", item.revision)
     return body
+
+
+@router.get("/shipments/{shipment_id}/workflow")
+def workflow(shipment_id: UUID, db: DB, current: Current) -> dict[str, Any]:
+    shipment = owned(db, Shipment, str(shipment_id), current)
+
+    def latest(model: Any, *filters: Any) -> Any:
+        return db.scalar(
+            select(model)
+            .where(model.organization_id == current.organization_id, *filters)
+            .order_by(model.created_at.desc(), model.id.desc())
+            .limit(1)
+        )
+
+    analysis = latest(Analysis, Analysis.shipment_id == shipment.id, Analysis.status == "COMPLETED")
+    run = latest(
+        Simulation, Simulation.shipment_id == shipment.id, Simulation.status == "COMPLETED"
+    )
+    run_ids = select(Simulation.id).where(
+        Simulation.organization_id == current.organization_id, Simulation.shipment_id == shipment.id
+    )
+    decision = latest(Decision, Decision.simulation_run_id.in_(run_ids))
+    approved = latest(
+        Decision, Decision.simulation_run_id.in_(run_ids), Decision.status == "APPROVED"
+    )
+    return {
+        "analysis": serialized(analysis) if analysis else None,
+        "simulation": serialized(run) if run else None,
+        "decision": serialized(decision) if decision else None,
+        "approved_decision": serialized(approved) if approved else None,
+    }

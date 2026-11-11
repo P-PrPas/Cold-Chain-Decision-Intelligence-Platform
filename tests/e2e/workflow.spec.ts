@@ -67,13 +67,28 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   const operator = await signIn(browser, "operator");
   const reviewer = await signIn(browser, "reviewer");
   const org = operator.me.memberships[0].organization_id;
+  const createdProduct = await call(
+    operator.context,
+    org,
+    "/products",
+    "POST",
+    {
+      name: "E2E product " + Date.now(),
+      category: "TEST",
+      packaging_type: "DEMO",
+    },
+  );
+  await operator.page.reload();
   await operator.page
     .getByLabel("Organization", { exact: true })
     .selectOption(org);
   await operator.page
+    .getByRole("button", { name: "Create shipment", exact: true })
+    .click();
+  await operator.page
     .getByLabel("Reference", { exact: true })
     .fill("E2E-" + Date.now());
-  const products = await call(operator.context, org, "/products");
+  const products = { items: [createdProduct.product] };
   await operator.page
     .getByLabel("Product", { exact: true })
     .selectOption(products.items[0].id);
@@ -92,14 +107,22 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   await operator.page
     .getByLabel("Cargo value (THB)", { exact: true })
     .fill("1000.00");
-  await operator.page
-    .getByRole("button", { name: "Create shipment", exact: true })
-    .click();
+  const [createdShipment] = await Promise.all([
+    operator.page.waitForResponse(
+      (response) =>
+        response.url() === api + "/shipments" &&
+        response.request().method() === "POST",
+    ),
+    operator.page
+      .getByRole("button", { name: "Create shipment", exact: true })
+      .click(),
+  ]);
+  expect(createdShipment.ok(), await createdShipment.text()).toBeTruthy();
+  const shipment = (await createdShipment.json()).shipment;
+  expect(shipment.product_id).toBe(createdProduct.product.id);
   await expect(
-    operator.page.getByRole("link", { name: /E2E-/ }).first(),
+    operator.page.getByRole("link", { name: shipment.reference, exact: true }),
   ).toBeVisible();
-  const shipments = await call(operator.context, org, "/shipments");
-  const shipment = shipments.items[0];
   const csrf = (await operator.context.cookies()).find(
     (c) => c.name === "cc_csrf",
   )!.value;
@@ -281,12 +304,17 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   await operator.page.goto(
     `http://localhost:3000/workspace/shipments/${shipment.id}?org=${org}`,
   );
+  await operator.page
+    .getByText("Temperature evidence / Ready dataset available", {
+      exact: true,
+    })
+    .click();
   await expect(
     operator.page.getByRole("heading", { name: "Temperature evidence" }),
   ).toBeVisible();
   await expect(
     operator.page.getByRole("heading", {
-      name: "Decision proposals and QA inbox",
+      name: "Proposal and QA review",
     }),
   ).toBeVisible();
   await operator.context.close();

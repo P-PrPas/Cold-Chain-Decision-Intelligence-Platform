@@ -1,12 +1,15 @@
 "use client";
+import { EvidenceView } from "../evidence-view";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, type Item } from "./api";
 export default function TemperaturePanel({
   shipmentId,
   org,
+  onReady,
 }: {
   shipmentId: string;
   org: string;
+  onReady?: (ready: boolean) => void;
 }) {
   const [datasets, setDatasets] = useState<Item[]>([]);
   const [selected, setSelected] = useState("");
@@ -45,6 +48,9 @@ export default function TemperaturePanel({
     }, 1500);
     return () => clearInterval(timer);
   }, [job, org, shipmentId]);
+  useEffect(() => {
+    onReady?.(datasets.some((d) => d.status === "READY"));
+  }, [datasets, onReady]);
   async function choose(id: string, cursor?: string) {
     setSelected(id);
     setBusy(true);
@@ -112,7 +118,9 @@ export default function TemperaturePanel({
       <h2>Temperature evidence</h2>
       {error && <p role="alert">{error}</p>}
       {busy && (
-        <p role="status">{job ? "Import queued or processing?" : "Loading?"}</p>
+        <p role="status">
+          {job ? "Import queued or processing..." : "Loading..."}
+        </p>
       )}
       <form onSubmit={upload}>
         <label>
@@ -150,7 +158,7 @@ export default function TemperaturePanel({
           <option value="">Select dataset</option>
           {datasets.map((d) => (
             <option key={String(d.id)} value={String(d.id)}>
-              Version {String(d.version)} ? {String(d.status)}
+              Version {String(d.version)} / {String(d.status)}
             </option>
           ))}
         </select>
@@ -162,35 +170,48 @@ export default function TemperaturePanel({
             Validation: {String(validation.status)}; invalid rows:{" "}
             {String(validation.invalid_rows ?? 0)}
           </p>
-          <pre>{JSON.stringify(validation.errors, null, 2)}</pre>
+          <EvidenceView value={validation.errors} />
         </>
       )}
       {rows.length > 0 && (
         <>
-          <svg
-            viewBox="0 0 640 220"
-            role="img"
-            aria-label="Observed temperature samples; points are not connected across unknown intervals"
+          <p>
+            Readings shown: {rows.length}. Range {Math.min(...values)} to{" "}
+            {Math.max(...values)} Celsius. {new Date(minTime).toISOString()} to{" "}
+            {new Date(maxTime).toISOString()} (UTC). Scroll the chart for the
+            full displayed interval.
+          </p>
+          <div
+            className="chart-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Temperature samples; scroll horizontally"
           >
-            {rows.map((r, i) => (
-              <circle
-                key={String(r.id)}
-                cx={
-                  20 + ((times[i] - minTime) / (maxTime - minTime || 1)) * 600
-                }
-                cy={
-                  200 - ((values[i] - minValue) / (maxValue - minValue)) * 180
-                }
-                r="4"
-                fill="#08766b"
-              >
-                <title>
-                  {String(r.sensor_id)}: {String(r.timestamp_utc)} /{" "}
-                  {String(r.temperature_c)} C
-                </title>
-              </circle>
-            ))}
-          </svg>
+            <svg
+              viewBox="0 0 640 220"
+              role="img"
+              aria-label="Observed temperature samples; points are not connected across unknown intervals"
+            >
+              {rows.map((r, i) => (
+                <circle
+                  key={String(r.id)}
+                  cx={
+                    20 + ((times[i] - minTime) / (maxTime - minTime || 1)) * 600
+                  }
+                  cy={
+                    200 - ((values[i] - minValue) / (maxValue - minValue)) * 180
+                  }
+                  r="4"
+                  fill="var(--accent)"
+                >
+                  <title>
+                    {String(r.sensor_id)}: {String(r.timestamp_utc)} /{" "}
+                    {String(r.temperature_c)} C
+                  </title>
+                </circle>
+              ))}
+            </svg>
+          </div>
           <p>
             Observed samples only. Gaps and risk require a pinned policy
             analysis. Showing one page; no interpolation.
