@@ -64,8 +64,49 @@ def upgrade():
             ["organization_id", "dataset_id", "sensor_id", "timestamp_utc"],
         )
 
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute(
+            """CREATE OR REPLACE FUNCTION protect_policy_body() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF OLD.status IN ('APPROVED','RETIRED') AND (TG_OP='DELETE' OR (to_jsonb(NEW)-ARRAY['status','revision']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','revision']) OR NEW.status NOT IN ('APPROVED','RETIRED') OR (OLD.status='RETIRED' AND NEW.status!='RETIRED')) THEN RAISE EXCEPTION 'immutable approved policy'; END IF; RETURN NEW; END $$"""
+        )
+        op.execute(
+            "CREATE TRIGGER reference_immutable BEFORE UPDATE OR DELETE ON reference_documents FOR EACH ROW EXECUTE FUNCTION prevent_audit_mutation()"
+        )
+        op.execute(
+            """CREATE FUNCTION prevent_late_readings() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF EXISTS(SELECT 1 FROM temperature_datasets WHERE id=NEW.dataset_id AND organization_id=NEW.organization_id AND status='READY') THEN RAISE EXCEPTION 'immutable ready readings'; END IF; RETURN NEW; END $$"""
+        )
+        op.execute(
+            "CREATE TRIGGER late_readings BEFORE INSERT ON temperature_readings FOR EACH ROW EXECUTE FUNCTION prevent_late_readings()"
+        )
+        op.execute(
+            """CREATE FUNCTION prevent_late_scenarios() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF EXISTS(SELECT 1 FROM simulation_runs WHERE id=NEW.simulation_run_id AND organization_id=NEW.organization_id AND status='COMPLETED') THEN RAISE EXCEPTION 'immutable completed scenarios'; END IF; RETURN NEW; END $$"""
+        )
+        op.execute(
+            "CREATE TRIGGER late_scenarios BEFORE INSERT ON simulation_scenarios FOR EACH ROW EXECUTE FUNCTION prevent_late_scenarios()"
+        )
+        op.execute(
+            """CREATE FUNCTION protect_dataset_source() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.raw_object_key IS DISTINCT FROM OLD.raw_object_key OR NEW.sha256 IS DISTINCT FROM OLD.sha256 OR NEW.mapping::text IS DISTINCT FROM OLD.mapping::text OR NEW.source_timezone IS DISTINCT FROM OLD.source_timezone OR NEW.shipment_id IS DISTINCT FROM OLD.shipment_id OR NEW.organization_id IS DISTINCT FROM OLD.organization_id OR NEW.version IS DISTINCT FROM OLD.version THEN RAISE EXCEPTION 'immutable dataset source'; END IF; RETURN NEW; END $$"""
+        )
+        op.execute(
+            "CREATE TRIGGER dataset_source BEFORE UPDATE ON temperature_datasets FOR EACH ROW EXECUTE FUNCTION protect_dataset_source()"
+        )
+
 
 def downgrade():
+    if op.get_bind().dialect.name == "postgresql":
+        for trigger, table in [
+            ("reference_immutable", "reference_documents"),
+            ("late_readings", "temperature_readings"),
+            ("late_scenarios", "simulation_scenarios"),
+            ("dataset_source", "temperature_datasets"),
+        ]:
+            op.execute(f"DROP TRIGGER {trigger} ON {table}")
+        for function in [
+            "prevent_late_readings",
+            "prevent_late_scenarios",
+            "protect_dataset_source",
+        ]:
+            op.execute(f"DROP FUNCTION {function}()")
+
     if op.get_bind().dialect.name == "postgresql":
         op.drop_index("ix_readings_tenant_dataset_sensor_time", table_name="temperature_readings")
         for table in Base.metadata.sorted_tables:

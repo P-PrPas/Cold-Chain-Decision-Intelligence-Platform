@@ -184,4 +184,5 @@ def execute_simulation(db: DB, job: Job) -> None:
                 result=result,
             )
         )
+    db.flush()
     run.status = "COMPLETED"

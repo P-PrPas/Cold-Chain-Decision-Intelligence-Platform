@@ -61,7 +61,6 @@ def execute(db: Session, job: Job, store: Store) -> None:
         )
         dataset.validation = summary
         dataset.row_count = summary["valid_rows"] + summary["invalid_rows"]
-        dataset.status = "INVALID" if summary["errors"] else "READY"
         if rows:
             db.bulk_insert_mappings(
                 Reading.__mapper__,
@@ -70,6 +69,7 @@ def execute(db: Session, job: Job, store: Store) -> None:
                     for row in rows
                 ],
             )
+        dataset.status = "INVALID" if summary["errors"] else "READY"
     elif job.type == "ANALYSIS":
         from app.analyses import execute_analysis
 
@@ -110,7 +110,10 @@ def run_job(job_id: str, organization_id: str) -> None:
                     job.status = "RUNNING"
                     execute(db, job, S3Store(settings))
                     db.flush()
-            except Exception:
+            except Exception as exc:
+                logging.getLogger(__name__).error(
+                    "job_failed type=%s error_type=%s", job.type, type(exc).__name__
+                )
                 job.status = "FAILED"
                 job.error_code = "PROCESSING_FAILED"
                 resource_models: dict[str, Any] = {

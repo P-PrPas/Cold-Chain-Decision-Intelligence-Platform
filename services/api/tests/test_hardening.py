@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 from conftest import use_identity
@@ -93,3 +94,28 @@ def test_chunked_request_limit(platform):
         "/api/v1/auth/login", content=chunks(), headers={"Content-Type": "application/json"}
     )
     assert response.status_code == 413 and response.json()["code"] == "FILE_TOO_LARGE"
+
+
+def test_outbox_queue_failure_preserves_durable_event(platform):
+    from sqlalchemy import select
+
+    from app.jobs import dispatch
+    from app.models import Outbox
+
+    result = prepare(platform)
+    _, _, engine = platform
+
+    class BrokenQueue:
+        def enqueue(self, *args, **kwargs):
+            raise ConnectionError("Queue unavailable")
+
+    with Session(engine) as db:
+        # Add a newly queued job without executing it; committed outbox survives enqueue failure.
+        from app.jobs import enqueue
+
+        enqueue(db, result["shipment"]["organization_id"], "EXPLANATION", str(uuid4()))
+        db.commit()
+        with pytest.raises(ConnectionError):
+            dispatch(db, BrokenQueue())
+        db.rollback()
+        assert db.scalar(select(Outbox).where(Outbox.status == "PENDING")) is not None
