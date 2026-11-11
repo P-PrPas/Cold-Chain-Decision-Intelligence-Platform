@@ -46,10 +46,12 @@ jobs:
           docker compose exec -T postgres pg_dump -U coldchain -d coldchain --no-owner --no-privileges > /tmp/coldchain-backup.sql
           docker compose exec -T postgres createdb -U coldchain cc_restore
           docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U coldchain -d cc_restore < /tmp/coldchain-backup.sql
-          original=$(docker compose exec -T postgres psql -U coldchain -d coldchain -tAc 'SELECT count(*) FROM decisions')
-          restored=$(docker compose exec -T postgres psql -U coldchain -d cc_restore -tAc 'SELECT count(*) FROM decisions')
+          query="SELECT md5(string_agg(snapshot_sha256, ',' ORDER BY id)) FROM decisions"
+          original=$(docker compose exec -T postgres psql -U coldchain -d coldchain -tAc "$query")
+          restored=$(docker compose exec -T postgres psql -U coldchain -d cc_restore -tAc "$query")
+          test -n "$original"
           test "$original" = "$restored"
-          docker compose exec -T api python -m app.recovery
+          docker compose exec -T -e CC_RECOVERY_DATABASE=cc_restore api python -m app.recovery
       - uses: actions/upload-artifact@v4
         if: failure()
         with: {name: browser-traces, path: test-results/}
