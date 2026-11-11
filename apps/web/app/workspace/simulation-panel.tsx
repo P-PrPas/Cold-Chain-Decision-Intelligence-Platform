@@ -138,6 +138,15 @@ export default function SimulationPanel({
           { ...write("POST", payload), signal: controller.signal },
         );
         if (!active) return;
+        if (
+          !Array.isArray(data.items) ||
+          !data.items.length ||
+          data.analysis_id !== payload.analysis_id
+        ) {
+          throw new Error(
+            "The preview response did not contain results for this analysis.",
+          );
+        }
         setResult({ key, items: data.items, kind: "preview", run: "" });
         setPreviewStatus("");
       } catch (e) {
