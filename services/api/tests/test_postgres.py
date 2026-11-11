@@ -53,8 +53,20 @@ def test_database_immutability_and_non_bypass_rls(platform):
             ),
             ("UPDATE analysis_runs SET result='{}' WHERE id=:id", {"id": result["analysis"]["id"]}),
             ("UPDATE audit_logs SET action='tampered'", {}),
+            (
+                "UPDATE reference_documents SET sha256='tampered' WHERE id=:id",
+                {"id": result["policy"]["reference_document_id"]},
+            ),
+            (
+                "UPDATE temperature_datasets SET source_timezone='tampered' WHERE id=:id",
+                {"id": result["dataset"]["id"]},
+            ),
+            (
+                "UPDATE simulation_scenarios SET result='{}' WHERE simulation_run_id=:id",
+                {"id": result["simulation"]["id"]},
+            ),
         ]:
-            with pytest.raises(DBAPIError):
+            with pytest.raises(DBAPIError, match="immutable|append only"):
                 db.execute(text(statement), params)
                 db.commit()
             db.rollback()
@@ -75,3 +87,61 @@ def test_database_immutability_and_non_bypass_rls(platform):
         with engine.begin() as connection:
             connection.execute(text(f"DROP OWNED BY {role}"))
             connection.execute(text(f"DROP ROLE {role}"))
+
+
+def test_concurrent_shipment_reference_and_dataset_versions(platform):
+    import json
+
+    from helpers import prepare
+    from test_temperature import MAPPING, ROOT
+
+    result = prepare(platform)
+    client, _, _ = platform
+    shipment = result["shipment"]
+    body = {
+        key: shipment[key]
+        for key in (
+            "product_id",
+            "origin",
+            "destination",
+            "departure_at",
+            "estimated_arrival_at",
+            "cargo_value",
+            "currency",
+        )
+    }
+    body["reference"] = "CONCURRENT"
+
+    def create(index):
+        return client.post(
+            "/api/v1/shipments",
+            json=body,
+            headers={"Idempotency-Key": f"parallel-shipment-{index}"},
+        ).status_code
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(create, [1, 2])) == [201, 409]
+
+    def upload(index):
+        response = client.post(
+            f"/api/v1/shipments/{shipment['id']}/temperature-datasets",
+            headers={"Idempotency-Key": f"parallel-dataset-{index}"},
+            data={"mapping": json.dumps(MAPPING)},
+            files={"file": ("normal.csv", (ROOT / "normal.csv").read_bytes(), "text/csv")},
+        )
+        assert response.status_code == 202, response.text
+        return response.json()["dataset"]["version"]
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(upload, [1, 2])) == [2, 3]
+
+
+def test_disposable_migration_round_trip(platform):
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config
+
+    config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
+    command.downgrade(config, "base")
+    command.upgrade(config, "head")

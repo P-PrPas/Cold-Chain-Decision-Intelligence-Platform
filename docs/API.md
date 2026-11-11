@@ -590,7 +590,7 @@ See [S0 ADR](adr/0001-foundation.md) for contract reconciliation and durable ide
 Auth login/callback/logout/me, organization current/members read, product CRUD and shipment CRUD are implemented. Callback GET /auth/callback verifies OIDC and issues server session plus CSRF cookie. Unsafe authenticated requests require X-CSRF-Token. See ADR 0002 for local identity provisioning and supported currency contract.
 
 ## S2 implementation
-CSV upload uses UPLOADED (not QUEUED) dataset status, with a separate QUEUED job. Validation errors yield INVALID; infrastructure failures yield failed jobs. Raw readings are paginated, maximum 100 per page; aggregated resolution is explicitly rejected until min/max-envelope aggregation is implemented. Error samples are capped at 100 with errors_truncated indicator.
+CSV upload uses UPLOADED (not QUEUED) dataset status, with a separate QUEUED job. Validation errors yield INVALID; infrastructure failures yield failed jobs. Raw readings use chronological timestamp/ID cursors and bounded pages; aggregated resolution returns per-sensor min/max buckets without interpolation. See generated OpenAPI for supported resolution values and bounds. Error samples are capped at 100 with errors_truncated indicator.
 
 ## S3 implementation
 Policy version is a positive integer (aligned with DB), not semantic version text. POST /reference-documents uploads private evidence for policy approval. Rules include explicit continuous_effect and cumulative_effect; defaults are REVIEW_REQUIRED and HARD_BLOCK respectively. Unknown gaps cannot grant clearance. Dataset sampling times must lie within the policy effective interval. Analysis selects exactly required sensors; unspecified extra sensors produce INDETERMINATE. Excursions and gaps are pinned JSON result arrays on analysis_runs, not separately mutable tables.
@@ -600,3 +600,6 @@ Simulation create and recalculate require a complete SimulationInput body. Costs
 
 ## S5 implementation
 Decision approvals require at least one tenant-owned stored reference document, encoded reference:<document UUID>, instead of unverifiable free-text inspection references. HOLD_INSPECTION requires HOLD_IN_CONTROLLED_STORAGE acknowledgement; other permitted actions require REVIEW_PINNED_EVIDENCE. Provider-agnostic explanation adapters may select only existing fact IDs; rendered text remains deterministic. No external provider is configured or called by default.
+
+## S6 implementation
+Decision report requests freeze the submitted snapshot and review metadata, then queue PDF generation. Downloads require tenant authorization and verify the stored SHA256. Dashboard counts and recent activity are tenant-scoped. Request size and Redis rate limits apply before business processing. `/organizations/current/members` supports administrator provisioning of an already known identity; no external invitation email is sent. Generated `packages/contracts/openapi.json` records the complete executable route and DTO contract.
