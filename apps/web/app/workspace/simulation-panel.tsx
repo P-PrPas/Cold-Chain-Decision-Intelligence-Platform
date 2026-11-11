@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, write, type Item } from "./api";
+import Scene, { scenarioNames } from "../scene";
 const types = [
   "CONTINUE_DELIVERY",
   "HOLD_INSPECTION",
@@ -10,10 +11,13 @@ const types = [
 export default function SimulationPanel({
   shipmentId,
   org,
+  completedAnalysis,
 }: {
   shipmentId: string;
+  completedAnalysis?: string;
   org: string;
 }) {
+  const [selected, setSelected] = useState("CONTINUE_DELIVERY");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState("");
@@ -47,6 +51,7 @@ export default function SimulationPanel({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
+    setScenarios([]);
     setError("");
     const form = new FormData(event.currentTarget);
     try {
@@ -103,7 +108,26 @@ export default function SimulationPanel({
   }
   return (
     <section>
-      <h2>What-if comparison</h2>
+      <span className="eyebrow">03 / SIMULATION STUDIO</span>
+      <h2>Explore the alternatives.</h2>
+      <div
+        className="scenario-tabs"
+        role="group"
+        aria-label="Visualize a scenario"
+      >
+        {types.map((type) => (
+          <button
+            type="button"
+            key={type}
+            aria-pressed={selected === type}
+            onClick={() => setSelected(type)}
+          >
+            {scenarioNames[type]}
+          </button>
+        ))}
+      </div>
+      <Scene scenario={selected} />
+      <h3>What-if comparison</h3>
       <p>
         Costs below are user estimates; probability and expected loss remain
         unknown. Every proposed action requires QA review.
@@ -113,7 +137,18 @@ export default function SimulationPanel({
       <form onSubmit={submit}>
         <label>
           Completed analysis ID
-          <input name="analysis" required />
+          <input
+            key={completedAnalysis || "manual"}
+            name="analysis"
+            defaultValue={completedAnalysis || ""}
+            required
+          />
+          {completedAnalysis && (
+            <span>
+              Latest completed analysis from this session is selected. Previous
+              runs remain unchanged.
+            </span>
+          )}
         </label>
         <label>
           Receiver acceptance
@@ -125,7 +160,7 @@ export default function SimulationPanel({
         </label>
         {types.map((type) => (
           <fieldset key={type}>
-            <legend>{type}</legend>
+            <legend>{scenarioNames[type]}</legend>
             <label>
               Estimated direct cost
               <input
@@ -188,7 +223,15 @@ export default function SimulationPanel({
           <tbody>
             {scenarios.map((s) => (
               <tr key={String(s.id)}>
-                <td>{String(s.type)}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="quiet"
+                    onClick={() => setSelected(String(s.type))}
+                  >
+                    {scenarioNames[String(s.type)] || String(s.type)}
+                  </button>
+                </td>
                 <td>{String(s.eligibility)}</td>
                 <td>
                   {String(s.direct_incremental_cost)} {String(s.currency)}

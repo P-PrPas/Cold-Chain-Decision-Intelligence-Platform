@@ -182,7 +182,7 @@ export default function TemperaturePanel({
                   200 - ((values[i] - minValue) / (maxValue - minValue)) * 180
                 }
                 r="4"
-                fill="#08766b"
+                fill="var(--accent)"
               >
                 <title>
                   {String(r.sensor_id)}: {String(r.timestamp_utc)} /{" "}
