@@ -2,6 +2,7 @@
 # Never substitutes local emulator or demo accounts.
 services:
   api:
+    image: cold-chain-api:staging
     build: ../services/api
     environment: &environment
       CC_DATABASE_URL: ${DATABASE_URL:?Required}
@@ -20,6 +21,7 @@ services:
       CC_SYNTHETIC_ONLY: "false"
     restart: unless-stopped
   worker:
+    image: cold-chain-api:staging
     build: ../services/api
     environment: *environment
     command: ["python", "-m", "app.jobs"]
