@@ -373,7 +373,7 @@ main.ws table.ws-table {
 .ws-menu {
   position: relative;
 }
-.ws-menu > summary {
+main.ws .ws-menu > summary {
   display: inline-flex;
   align-items: center;
   min-height: 40px;
@@ -674,9 +674,6 @@ main.ws section.ws-card {
 .ws-h3 {
   margin-top: 12px;
 }
-.ws-foot {
-  margin-top: 24px;
-}
 
 /* Evidence timeline */
 main.ws figure.ws-timeline {
@@ -975,7 +972,7 @@ main.ws .ws-sim {
   flex-wrap: wrap;
   max-width: 100%;
 }
-.ws-menu > summary {
+main.ws .ws-menu > summary {
   white-space: nowrap;
 }
 .ws-menu-body {

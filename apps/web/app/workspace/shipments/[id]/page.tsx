@@ -516,7 +516,6 @@ export default function ShipmentDetail({
               />
             </div>
           </div>
-          <p className="ws-note ws-foot">{t("footerDisclaimer")}</p>
         </>
       )}
     </main>
