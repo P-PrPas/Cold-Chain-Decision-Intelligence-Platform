@@ -20,6 +20,7 @@ services:
   storage:
     build: infra/storage
   storage-init:
+    image: cold-chain-dev-api
     build: services/api
     depends_on: [storage]
     environment:
@@ -37,6 +38,7 @@ services:
     ports: ["127.0.0.1:8080:8080"]
     volumes: ["./infra/keycloak:/opt/keycloak/data/import:ro"]
   api:
+    image: cold-chain-dev-api
     build: services/api
     environment: &api-environment
       CC_DATABASE_URL: postgresql://coldchain:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/coldchain
@@ -62,6 +64,7 @@ services:
       interval: 10s
       retries: 12
   worker:
+    image: cold-chain-dev-api
     build: services/api
     environment: *api-environment
     command: ["python", "-m", "app.jobs"]

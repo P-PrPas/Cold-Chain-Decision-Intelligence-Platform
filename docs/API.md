@@ -30,6 +30,16 @@
 `POST /auth/login` below is defined as an OIDC login bootstrap, **not** a plaintext username/password endpoint. For a managed OIDC provider, backend verifies tokens/callback and then creates a secure session; production OAuth/OIDC redirection may live under a dedicated identity gateway. Do not implement a homegrown password flow just to mirror a draft route.
 
 ### Common response envelopes
+
+Implemented workspace query extensions:
+
+- `POST /shipments/{shipment_id}/simulation-preview` accepts `SimulationInput`, uses the saved-run validation/calculation path, and returns `items`, `analysis_id`, `assumptions_sha256`, `persisted: false`. This authenticated calculation creates no job/run/history and cannot be referenced as a saved proposal source. See [factor preview contract](FACTOR_PREVIEW_CONTRACT.md).
+
+- `GET /shipments?q=<text>&status=<status>&limit=25&cursor=<opaque>` searches reference, origin name and destination name across the authorized organization. Search is case-insensitive literal substring matching; `%` and `_` are not wildcards. Cursors are bound to search and filter context.
+- `GET /shipments/{shipment_id}/analyses` lists that shipment's analysis history with standard cursor pagination.
+- `GET /shipments/{shipment_id}/workflow` returns `analysis` (latest completed), `simulation` (latest completed), `decision` (latest) and `approved_decision` (latest approved), each nullable. They are separate saved records; clients must check source IDs before treating a run as belonging to a selected analysis. This endpoint does not declare old evidence current or authorize release.
+- `GET /decisions?shipment_id=<uuid>&limit=25&cursor=<opaque>` filters decision history on the server; its cursor includes the shipment/status scope. The shipment must belong to the selected authorized organization.
+
 Single-resource successful responses return one named resource object, e.g. `{ "shipment": {...} }`. List responses use:
 
 ```json
