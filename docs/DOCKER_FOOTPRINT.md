@@ -28,7 +28,7 @@ Deleting Docker content freed blocks inside the Linux disk, but Windows C: initi
 
 ## Keep rebuilds bounded
 
-Use `docker system df -v` to distinguish volumes, images and build cache. After a series of builds, `docker builder prune --all --force --keep-storage 2GB` can bound **reclaimable cache** on the shared builder; it may make other projects' next builds slower. It does not delete volumes or source files. The retained limit is a cleanup target, not a hard maximum during a build. Post-verification cache measured 1.896 GB in this session.
+Use `docker system df -v` to distinguish volumes, images and build cache. After a series of builds, `docker buildx prune --force --max-used-space 2GB --reserved-space 512MB` can bound **reclaimable cache** on the shared builder; it may make other projects' next builds slower. It does not delete volumes or source files. The retained limit is a cleanup target, not a hard maximum during a build. Post-verification cache was approximately 2 GB in this session.
 
 Do not routinely use `compose down --volumes` or volume prune: those delete application data. The reset in this session was explicitly requested by the owner. Docker Desktop's RAM figures in the container list are not disk usage. Host free space can differ from Docker's reclaimed-space report because of VHD allocation and shared/compressed layers.
 

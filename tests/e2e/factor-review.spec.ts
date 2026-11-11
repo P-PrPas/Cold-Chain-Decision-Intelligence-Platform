@@ -103,6 +103,7 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
           },
         ],
         persisted: false,
+        analysis_id: baseline.analysis_id,
       };
     }
     await route.fulfill({ json });
