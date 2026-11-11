@@ -9,7 +9,7 @@ from test_decisions import submit_decision
 from test_simulations import parameters
 
 from app.jobs import execute
-from app.models import Job, MemberRole, Membership
+from app.models import Analysis, Job, MemberRole, Membership
 
 
 def test_window_is_pinned_and_changed_trip_requires_reanalysis(platform):
@@ -175,3 +175,57 @@ def test_roleless_membership_denied_and_email_not_enumerable(platform):
         db.execute(delete(MemberRole).where(MemberRole.membership_id == membership.id))
         db.commit()
     assert client.get("/api/v1/shipments").status_code == 403
+
+
+def test_legacy_analysis_cannot_start_new_simulation(platform):
+    result = prepare(platform)
+    client, identities, engine = platform
+    with Session(engine) as db:
+        source = db.get(Analysis, result["analysis"]["id"])
+        legacy = Analysis(
+            organization_id=source.organization_id,
+            shipment_id=source.shipment_id,
+            dataset_id=source.dataset_id,
+            policy_version_id=source.policy_version_id,
+            selected_sensor_ids=source.selected_sensor_ids,
+            status="COMPLETED",
+            engine_version="1.0.0",
+            input_sha256=source.input_sha256,
+            result=copy.deepcopy(source.result),
+            created_by=identities[0]["user"],
+        )
+        db.add(legacy)
+        db.flush()
+        legacy_id = legacy.id
+        db.commit()
+    result["analysis"] = {"id": legacy_id}
+    response = client.post(
+        f"/api/v1/shipments/{result['shipment']['id']}/simulations",
+        headers={"Idempotency-Key": "legacy-rejection"},
+        json=parameters(result),
+    )
+    assert response.status_code == 409 and response.json()["code"] == "ANALYSIS_RECOMPUTE_REQUIRED"
+
+
+def test_failed_correction_does_not_supersede_original(platform):
+    result = submit_decision(platform)
+    client, identities, _ = platform
+    original = result["decision"]
+    correction = draft(client, result, "failed-correction", original["id"])
+    use_identity(client, identities[1])
+    retired = client.post(
+        "/api/v1/quality-policies/" + result["policy"]["id"] + "/retire",
+        headers={"Idempotency-Key": "retire-for-correction-test", "If-Match": '"policy-r3"'},
+        json={"reason": "Policy no longer applicable"},
+    )
+    assert retired.status_code == 200, retired.text
+    use_identity(client, identities[0])
+    response = client.post(
+        f"/api/v1/decisions/{correction['id']}/submit",
+        headers={"Idempotency-Key": "failed-correction-submit", "If-Match": '"decision-r1"'},
+        json={"justification": "Unavailable source policy"},
+    )
+    assert response.status_code == 422
+    unchanged = client.get(f"/api/v1/decisions/{original['id']}").json()["decision"]
+    assert unchanged["status"] == "PENDING_QA" and unchanged["revision"] == original["revision"]
+    assert unchanged["snapshot"] == original["snapshot"]
