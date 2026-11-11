@@ -84,7 +84,7 @@ export function SiteHeader() {
         <span className="brand-sub">Simulation Studio</span>
       </Link>
       <nav aria-label={t("navPrimary")}>
-        <Link href="/demo">{t("navDemo")}</Link>
+        <Link href="/studio">{t("navStudio")}</Link>
         <Link href="/workspace">{t("navWorkspace")}</Link>
         <span className="environment">{t("environment")}</span>
         <LangToggle />

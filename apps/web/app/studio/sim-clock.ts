@@ -12,12 +12,7 @@
 export type Reading = number | null;
 
 export type NodeKey =
-  | "origin"
-  | "decision"
-  | "receiver"
-  | "alt"
-  | "inspection"
-  | "quarantine";
+  "origin" | "decision" | "receiver" | "alt" | "inspection" | "quarantine";
 
 /** Schematic world coordinates (x, z). Not geographic. */
 export const NODES: Record<NodeKey, { x: number; z: number }> = {
