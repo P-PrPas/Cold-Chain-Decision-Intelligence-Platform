@@ -47,6 +47,38 @@ def test_security_and_shipments(platform):
     assert client.get("/api/v1/shipments").status_code == 403
 
 
+def test_member_pages_bind_scope_and_role(platform):
+    client, identities, _ = platform
+    use_identity(client, identities[0])
+    first = client.get("/api/v1/organizations/current/members?limit=1").json()
+    assert len(first["items"]) == 1 and first["next_cursor"]
+    second = client.get(
+        "/api/v1/organizations/current/members", params={"limit": 1, "cursor": first["next_cursor"]}
+    ).json()
+    assert second["items"][0]["id"] != first["items"][0]["id"]
+    assert (
+        client.get("/api/v1/products", params={"cursor": first["next_cursor"]}).status_code == 422
+    )
+    use_identity(client, identities[1])
+    assert client.get("/api/v1/organizations/current/members").status_code == 403
+
+
+def test_departure_filter_validation(platform):
+    client, identities, _ = platform
+    use_identity(client, identities[0])
+    assert (
+        client.get(
+            "/api/v1/shipments",
+            params={"from": "2026-01-02T00:00:00Z", "to": "2026-01-01T00:00:00Z"},
+        ).status_code
+        == 422
+    )
+    assert (
+        client.get("/api/v1/shipments", params={"from": "2026-01-01T00:00:00"}).status_code == 422
+    )
+    assert client.get("/api/v1/shipments", params={"sort": "unsupported"}).status_code == 422
+
+
 def test_csrf_logout_and_cursor(platform):
     client, identities, _ = platform
     use_identity(client, identities[0])

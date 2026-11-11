@@ -46,7 +46,9 @@ def platform(monkeypatch):
             connection.execute(text(f'CREATE SCHEMA "{schema}"'))
         url = (
             make_url(database_url(postgres_url))
-            .update_query_dict({"options": f"-csearch_path={schema}"})
+            .update_query_dict(
+                {"options": f"-csearch_path={schema} -cstatement_timeout=30000 -clock_timeout=5000"}
+            )
             .render_as_string(hide_password=False)
         )
         monkeypatch.setenv("CC_DATABASE_URL", url)

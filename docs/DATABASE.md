@@ -7,6 +7,21 @@
 
 > Implementation contract, not a claim that schema or product-specific quality rules are approved. `ARCHITECTUR.md` owns architectural invariants, `API.md` owns external field names and endpoint behavior. Any contract change requires corresponding documentation, migration, and tests. Example values are synthetic and **never approved safety limits**.
 
+## S0–S6 physical implementation notes
+
+The detailed proposal below is retained for review. The executable schema is `services/api/app/models.py` with Alembic revisions `0001`–`0006`; these notes resolve physical differences from the illustrative DDL:
+
+- IDs are canonical UUID strings stored as VARCHAR(36), including tenant composite foreign keys (ADR 0002). JSON documents use PostgreSQL JSONB; money uses NUMERIC and API decimal strings.
+- Identity uses `users.identity_subject`, `sessions`, `organization_memberships` and normalized `membership_roles`. OIDC identity provisioning is separate from membership assignment.
+- `temperature_readings` is typed and indexed by tenant/dataset/sensor/time. Raw object keys, hash, mapping, timezone and version remain on `temperature_datasets`; errors are capped samples inside its validation JSON.
+- Excursions, unknown intervals and rule results are frozen JSON on `analysis_runs`; there is no separate mutable excursion table. Source-chain triggers verify shipment/dataset/product/policy associations.
+- Scenarios are typed `simulation_scenarios` rows plus immutable result JSON. `decisions.snapshot` pins provenance and deterministic results at submission. `reports.frozen_payload` additionally freezes review metadata at report request.
+- `jobs` and `outbox_events` commit alongside queued resources. Completed artifacts, reference documents, approved policies, decision snapshots and audit events are protected by triggers. Inserts into completed datasets/scenarios are also rejected.
+- Forced RLS scopes domain tables via transaction-local `cc.organization_id`. Identity and membership lookup uses explicit server authorization before setting that context. Production credentials must be non-owner and NOBYPASSRLS; CI proves the non-owner read boundary.
+- Keyset lists default to immutable creation time. Raw readings use timestamp/ID. Updated-time sorting is explicitly unsupported in this candidate; see ADR 0003.
+
+The PostgreSQL test suite exercises actual migrations, concurrent review/reference/version allocation, immutable evidence and non-bypass RLS. CI restore verifies decision snapshot hashes plus database-to-object references in a new database and bucket. Environment/retention and qualified QA sign-off remain human gates.
+
 ## 1. Design invariants
 
 1. **Tenant boundary:** every tenant-owned entity has `organization_id UUID NOT NULL`; tenant derived from authenticated membership (`X-Organization-Id` is a selector, not authority). Composite foreign keys must prevent cross-tenant parent references. Return 404 for out-of-tenant resources.
