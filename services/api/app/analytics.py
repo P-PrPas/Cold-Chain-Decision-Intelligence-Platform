@@ -11,10 +11,14 @@ Effect = Literal["HARD_BLOCK", "REVIEW_REQUIRED", "ADVISORY"]
 ENGINE_VERSION = "1.1.0"
 
 
+def utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 def coverage_window(start: datetime, end: datetime) -> dict[str, str]:
     return {
-        "start_at": start.replace(tzinfo=UTC).isoformat(),
-        "end_at": end.replace(tzinfo=UTC).isoformat(),
+        "start_at": utc(start).isoformat(),
+        "end_at": utc(end).isoformat(),
     }
 
 
@@ -76,6 +80,7 @@ def analyze(
     low = rules.temperature_bounds.min_c
     high = rules.temperature_bounds.max_c
     assert low is not None and high is not None
+    readings = [{**row, "timestamp_utc": utc(row["timestamp_utc"])} for row in readings]
     window_known = window_start is not None and window_end is not None
     if window_known:
         assert window_start is not None and window_end is not None

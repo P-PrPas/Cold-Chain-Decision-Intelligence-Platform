@@ -48,12 +48,16 @@ def test_window_is_pinned_and_changed_trip_requires_reanalysis(platform):
     assert blocked.status_code == 409 and blocked.json()["code"] == "ANALYSIS_RECOMPUTE_REQUIRED"
 
 
-def test_partial_trip_api_cannot_make_release_eligible(platform):
-    result = prepare(platform, "partial_trip", "2026-01-02T00:00:00Z")
+@pytest.mark.parametrize(
+    "fixture,arrival,unknown",
+    [("partial_trip", "2026-01-02T00:00:00Z", 85800), ("final_hot", "2026-01-01T00:10:00Z", 0)],
+)
+def test_incomplete_evidence_api_cannot_make_release_eligible(platform, fixture, arrival, unknown):
+    result = prepare(platform, fixture, arrival)
     client, _, engine = platform
     analysis = client.get("/api/v1/analyses/" + result["analysis"]["id"]).json()["analysis"]
     assert analysis["classification"] == "INDETERMINATE"
-    assert analysis["summary"]["unknown_seconds"] == 85800
+    assert analysis["summary"]["unknown_seconds"] == unknown
     response = client.post(
         f"/api/v1/shipments/{result['shipment']['id']}/simulations",
         headers={"Idempotency-Key": "partial-trip"},
@@ -155,6 +159,17 @@ def test_roleless_membership_denied_and_email_not_enumerable(platform):
     absent = client.post(path, json={"email": "absent@example.invalid", "roles": ["QA"]})
     assert registered.status_code == absent.status_code == 404
     assert registered.json()["detail"] == absent.json()["detail"]
+    with Session(engine) as db:
+        db.add(
+            Membership(
+                organization_id=identities[0]["org"],
+                user_id=identities[2]["user"],
+                status="PENDING",
+            )
+        )
+        db.commit()
+    activated = client.post(path, json={"email": "user2@example.invalid", "roles": ["QA"]})
+    assert activated.status_code == 201 and activated.json()["membership"]["status"] == "ACTIVE"
     with Session(engine) as db:
         membership = db.query(Membership).filter_by(user_id=identities[0]["user"]).one()
         db.execute(delete(MemberRole).where(MemberRole.membership_id == membership.id))

@@ -1,6 +1,8 @@
 # Execution status and handoff
 
 ## User-authorized workflow (updated)
+
+Pre-merge review follow-up: final integration branch/PR #7 contains the review fixes; no rebase, stack rewrite or merge to main. Engine 1.1.0 addresses final out-of-range samples, pinned shipment coverage and CRITICAL precedence. Decision corrections atomically supersede a prior current decision; membership lookup, roleless access and ETag replay are hardened. New golden fixtures and concurrency regressions accompany ADR 0004. Review the full `main..feat/sprint-6-release-hardening` diff. CI evidence below describes the original candidate; the review-fix verification is recorded separately in VERIFICATION-REVIEW.md.
 The user superseded delegated implementation: current agent implements directly, implement all S0-S6 without stopping for review between sprints. Open one stacked PR per sprint, based on the prior sprint branch. Owner reviews all after implementation. Leave every PR open. Do not merge or deploy. S0–S6 implementation is submitted in PRs #1–#7 for one owner review. No delegates required. Previously unavailable orchestration tools no longer block work.
 
 ## S0 scope

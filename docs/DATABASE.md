@@ -9,6 +9,8 @@
 
 ## S0–S6 physical implementation notes
 
+Pre-merge review correction (ADR 0004): `analysis_runs.result.coverage_window` pins the window used by engine 1.1.0 and its input hash. No historical result is rewritten. Decision writers serialize on the organization transaction lock before row locks and enforce one current PENDING_QA/APPROVED decision per shipment through the simulation relationship; this invariant is enforced by the API, not a database partial index. Correction submission atomically supersedes the predecessor without changing its snapshot. Tenant membership activation only resolves pre-provisioned PENDING rows within the administrator's own tenant.
+
 The detailed proposal below is retained for review. The executable schema is `services/api/app/models.py` with Alembic revisions `0001`–`0006`; these notes resolve physical differences from the illustrative DDL:
 
 - IDs are canonical UUID strings stored as VARCHAR(36), including tenant composite foreign keys (ADR 0002). JSON documents use PostgreSQL JSONB; money uses NUMERIC and API decimal strings.

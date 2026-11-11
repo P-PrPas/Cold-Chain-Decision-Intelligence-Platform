@@ -167,7 +167,7 @@ Requires valid cookie and CSRF; response `204`. Invalidate server session.
 Response `200 {"organization":{"id":"<uuid>","name":"Example Foods","status":"ACTIVE"}}`.
 
 ### GET/POST `/organizations/current/members`
-GET: `limit,cursor`; POST (Admin): `{ "email":"new@example.invalid", "roles":["LOGISTICS"] }`. Response `201 {"membership":{"id":"<uuid>","status":"INVITED", ...}}`; if invitation infrastructure is deferred, only add existing known identities and document limitation. Roles from allowlist `ADMIN`, `LOGISTICS`, `QA`.
+GET: `limit,cursor`; POST (Admin): `{ "email":"new@example.invalid", "roles":["LOGISTICS"] }`. Activates a tenant-scoped PENDING membership prepared by trusted identity provisioning; returns `201 {"membership":{"id":"<uuid>","status":"ACTIVE", ...}}`. There is no global email-directory lookup or invitation delivery. Another tenant's email and an unknown email return the same 404. Roles use allowlist `ADMIN`, `LOGISTICS`, `QA`.
 
 ## 5. Shipments
 
@@ -491,7 +491,7 @@ QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Required evidence missing"
 QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Please attach inspection outcome" }`. `PENDING_QA → CHANGES_REQUESTED`. A revised proposal must create a new revision/draft and preserve old evidence; MVP may require creating a fresh decision referencing a revised simulation rather than editing an immutable submitted snapshot.
 
 ### Decision status rules
-`DRAFT → PENDING_QA → APPROVED | REJECTED | CHANGES_REQUESTED`; `DRAFT/PENDING_QA → SUPERSEDED` only with audit reason. No transition out of APPROVED/REJECTED; corrections via new decision with link to prior one. In-progress and final statuses must be derived from DB, not client requests.
+`DRAFT → PENDING_QA → APPROVED | REJECTED | CHANGES_REQUESTED`. At most one PENDING_QA or APPROVED decision is current per shipment. A correction links `supersedes_decision_id` to the same shipment's PENDING_QA, APPROVED or CHANGES_REQUESTED decision; submitting it atomically transitions that predecessor to SUPERSEDED and appends an audit event. Draft creation alone does not revoke the predecessor. Historical snapshots and PDFs remain immutable. A conflicting submission returns `409 ACTIVE_DECISION_EXISTS`. See ADR 0004.
 
 ## 11. Reports and audit
 
@@ -602,4 +602,10 @@ Simulation create and recalculate require a complete SimulationInput body. Costs
 Decision approvals require at least one tenant-owned stored reference document, encoded reference:<document UUID>, instead of unverifiable free-text inspection references. HOLD_INSPECTION requires HOLD_IN_CONTROLLED_STORAGE acknowledgement; other permitted actions require REVIEW_PINNED_EVIDENCE. Provider-agnostic explanation adapters may select only existing fact IDs; rendered text remains deterministic. No external provider is configured or called by default.
 
 ## S6 implementation
-Decision report requests freeze the submitted snapshot and review metadata, then queue PDF generation. Downloads require tenant authorization and verify the stored SHA256. Dashboard counts and recent activity are tenant-scoped. Request size and Redis rate limits apply before business processing. `/organizations/current/members` supports administrator provisioning of an already known identity; no external invitation email is sent. Generated `packages/contracts/openapi.json` records the complete executable route and DTO contract.
+Decision report requests freeze the submitted snapshot and review metadata, then queue PDF generation. Downloads require tenant authorization and verify the stored SHA256. Dashboard counts and recent activity are tenant-scoped. Request size and Redis rate limits apply before business processing. `/organizations/current/members` activates trusted tenant-scoped provisioning records; no external invitation email is sent. Generated `packages/contracts/openapi.json` records the complete executable route and DTO contract.
+
+## Pre-merge review corrections: engine 1.1.0
+
+Analyses pin the shipment coverage window in result metadata and the input digest. Leading/trailing uncovered intervals are UNKNOWN per required sensor; no boundary extrapolation is permitted. Out-of-range observations with no known following duration match R-DATA, including the final reading. Confirmed HARD_BLOCK takes classification precedence as CRITICAL while retaining all gap evidence. Each event's classification evaluates only its own duration. `duration_limit_comparison: AT_OR_ABOVE` makes the inclusive threshold behavior explicit in the approval-visible policy schema.
+
+Simulation creation and decision submission/approval reject legacy engine results or a changed shipment window with `409 ANALYSIS_RECOMPUTE_REQUIRED`. Submit/review idempotency replays return the original decision ETag. Full rationale and historical-data handling: [ADR 0004](adr/0004-evidence-boundaries-and-current-decisions.md).
