@@ -203,11 +203,11 @@ button:disabled {
   font-weight: 700;
 }
 .brand-sub {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   border-left: 1px solid var(--line);
-  padding-left: 12px;
-  max-width: 95px;
+  padding-left: 10px;
+  white-space: nowrap;
 }
 .app-header nav {
   display: flex;
@@ -1256,9 +1256,6 @@ summary {
 }
 .demo-chart text {
   font-size: 14px;
-}
-.app-header .brand-sub {
-  display: none;
 }
 @media (max-width: 900px) {
   .demo-studio {
