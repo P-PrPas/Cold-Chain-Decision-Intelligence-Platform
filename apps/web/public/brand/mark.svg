@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Cold Chain Simulation Studio">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="6" y1="0" x2="58" y2="0">
+      <stop offset="0" stop-color="#2563b8"/>
+      <stop offset="0.45" stop-color="#5db4e0"/>
+      <stop offset="1" stop-color="#d98a14"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 46 C20 46 20 20 32 20 C44 20 44 46 58 46" pathLength="100" fill="none" stroke="url(#g)" stroke-width="5" stroke-linecap="round" stroke-dasharray="44 12 44"/>
+</svg>
