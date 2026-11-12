@@ -2,20 +2,37 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, write, downloadReport, type Item } from "./api";
 import DecisionEvidenceSummary from "../decision-summary";
-import { EvidenceView, human } from "../evidence-view";
-import { scenarioNames } from "../scene";
+import { EvidenceView } from "../evidence-view";
+import { useI18n } from "../i18n-provider";
+import { scenarioKey } from "../studio/scenarios";
+import { StatusBadge, type Status } from "../ui/status-badge";
+import FrozenSnapshot from "./snapshot-view";
+import { Callout, RuleList, useErrorText, useFmt, useStatusLabel } from "./ui";
+
 export type ProposalSource = { run: string; scenario: Item };
+export type DecisionView = "propose" | "qa" | "report";
+const KNOWN = ["ELIGIBLE", "REVIEW_REQUIRED", "BLOCKED", "INSUFFICIENT_DATA"];
+
 export default function DecisionPanel({
   org,
   shipmentId,
   proposal,
+  view,
   onSaved,
+  onDecisions,
 }: {
   org: string;
   shipmentId: string;
   proposal: ProposalSource | null;
+  view: DecisionView;
   onSaved?: () => void;
+  /** Newest-first decision list for this shipment; called after each successful load. */
+  onDecisions?: (items: Item[]) => void;
 }) {
+  const { t, lang } = useI18n();
+  const errText = useErrorText();
+  const fmt = useFmt();
+  const statusLabel = useStatusLabel();
   const [draftEvidence, setDraftEvidence] = useState<Item | null>(null);
   const [explanation, setExplanation] = useState<Item | null>(null);
   const [items, setItems] = useState<Item[]>([]),
@@ -39,16 +56,19 @@ export default function DecisionPanel({
           `/decisions?shipment_id=${shipmentId}&limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
           org,
         );
-        setItems((old) => (cursor ? [...old, ...data.items] : data.items));
-        setNextCursor(data.next_cursor);
+        const list: Item[] = data.items ?? [];
+        setItems((old) => (cursor ? [...old, ...list] : list));
+        setNextCursor(data.next_cursor ?? null);
+        if (!cursor) onDecisions?.(list);
       } catch (e) {
-        setInboxError(String(e));
+        setInboxError(errText(e));
         throw e;
       } finally {
         setInboxLoading(false);
       }
     },
-    [org, shipmentId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [org, shipmentId, onDecisions],
   );
   useEffect(() => {
     let active = true;
@@ -63,11 +83,15 @@ export default function DecisionPanel({
         }
       })
       .catch((e) => {
-        if (active) setError(String(e));
+        if (active) {
+          setError(errText(e));
+          onDecisions?.([]);
+        }
       });
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org, refresh]);
   async function openDecision(d: Item) {
     setDetail(null);
@@ -100,10 +124,7 @@ export default function DecisionPanel({
     try {
       await task();
     } catch (e) {
-      setError(
-        String(e) +
-          ". Your inputs are retained. Refresh the evidence if its revision has changed.",
-      );
+      setError(`${errText(e)}. ${t("wsInputsRetained")}`);
     } finally {
       setBusy(false);
     }
@@ -125,9 +146,7 @@ export default function DecisionPanel({
       await openDecision(r.decision);
       onSaved?.();
       await refresh();
-      setMessage(
-        "Draft saved. Review the evidence below before submitting to QA.",
-      );
+      setMessage(t("wsDraftSaved"));
     });
   }
   async function review(e: FormEvent<HTMLFormElement>) {
@@ -165,7 +184,9 @@ export default function DecisionPanel({
       setDetail(r.decision);
       onSaved?.();
       await refresh();
-      setMessage("Decision updated: " + human(r.decision.status));
+      setMessage(
+        `${t("wsDecisionUpdated")}: ${statusLabel(r.decision.status)}`,
+      );
     });
   }
   const snapshot = detail?.snapshot as Item | undefined;
@@ -174,163 +195,224 @@ export default function DecisionPanel({
     scenario?.type === "HOLD_INSPECTION"
       ? "HOLD_IN_CONTROLLED_STORAGE"
       : "REVIEW_PINNED_EVIDENCE";
+  const isQa = roles.includes("QA");
+  const proposalType = String(proposal?.scenario.type ?? "");
+  const title =
+    view === "propose"
+      ? t("wsProposeTitle")
+      : view === "qa"
+        ? t("wsQaTitle")
+        : t("wsReportTitle");
+  const lead =
+    view === "propose"
+      ? t("wsProposeLead")
+      : view === "qa"
+        ? t("wsQaLead")
+        : t("wsReportLead");
+  const canSubmit = detail?.status === "DRAFT" && detail.submitted_by === user;
+  const canReview = detail?.status === "PENDING_QA" && isQa;
   return (
-    <section>
-      <h2>Proposal and QA review</h2>
-      <p>
-        Review evidence before submission. Approval records an internal
-        workflow; it does not release goods or certify safety.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      {message && <p role="status">{message}</p>}
-      {busy && <p role="status">Saving or retrieving evidence...</p>}
-      {proposal ? (
-        <details open>
-          <summary>
-            Selected proposal:{" "}
-            {scenarioNames[String(proposal.scenario.type)] ||
-              human(proposal.scenario.type)}
-          </summary>
-          <EvidenceView
-            value={{
-              eligibility: proposal.scenario.eligibility,
-              cost: proposal.scenario.direct_incremental_cost,
-              missing_information: proposal.scenario.missing_information,
-              receiver_acceptance: proposal.scenario.receiver_acceptance,
-              additional_delay_minutes:
-                proposal.scenario.additional_delay_minutes,
-              reasons: proposal.scenario.rule_results,
-            }}
-          />
-          <form onSubmit={create}>
-            <label>
-              Why is this the appropriate action?
-              <textarea name="notes" required maxLength={4000} />
-            </label>
-            <button disabled={busy}>Save draft for review</button>
-          </form>
-        </details>
-      ) : (
-        <p>
-          Select a permissible scenario from a completed simulation to prepare a
-          proposal.
-        </p>
-      )}
-      <div className="section-heading">
-        <h3>Shipment decisions</h3>
-        <button
-          className="quiet"
-          disabled={busy}
-          onClick={() => void perform(() => refresh())}
-        >
-          Refresh decisions
-        </button>
+    <section className="ws-decision" data-view={view}>
+      <div className="ws-panel-head">
+        <h2>{title}</h2>
+        <p>{lead}</p>
       </div>
-      {inboxLoading && <p role="status">Loading shipment decisions...</p>}
-      {inboxError && (
-        <p role="alert">
-          Unable to load decisions. Use Refresh decisions to retry. {inboxError}
+      {view === "qa" && (
+        <Callout tone="info" title={t("wsQaRuleTitle")}>
+          {t("wsQaRule")}
+        </Callout>
+      )}
+      {error && (
+        <p role="alert" className="ws-alert">
+          {error}
         </p>
       )}
-      {!inboxLoading && !inboxError && !items.length && (
-        <p>No decisions for this shipment.</p>
+      {message && <p role="status">{message}</p>}
+      {busy && (
+        <p role="status" className="ws-busy">
+          {t("wsDecisionBusy")}
+        </p>
       )}
-      {nextCursor && (
-        <button
-          disabled={inboxLoading}
-          onClick={() => void perform(() => refresh(nextCursor))}
-        >
-          Load older decisions
-        </button>
-      )}
-      <ul className="decision-list">
-        {items.map((d) => (
-          <li key={String(d.id)}>
-            <button
-              className="quiet"
-              disabled={busy}
-              onClick={() =>
-                void perform(async () => {
-                  await openDecision(d);
-                })
-              }
-            >
-              {human(d.status)} /{" "}
-              {new Date(String(d.created_at)).toLocaleString()}
-            </button>
-            <p>{String(d.justification)}</p>
-          </li>
+      {view === "propose" &&
+        (proposal ? (
+          <details open className="ws-card ws-proposal">
+            <summary>
+              {t("wsSelectedProposal")}:{" "}
+              {scenarioKey[proposalType]
+                ? t(scenarioKey[proposalType])
+                : proposalType}
+            </summary>
+            <p className="ws-verdict">
+              {KNOWN.includes(String(proposal.scenario.eligibility)) && (
+                <StatusBadge
+                  status={String(proposal.scenario.eligibility) as Status}
+                />
+              )}
+            </p>
+            <RuleList rules={proposal.scenario.rule_results} />
+            <EvidenceView
+              value={{
+                eligibility: proposal.scenario.eligibility,
+                cost: proposal.scenario.direct_incremental_cost,
+                missing_information: proposal.scenario.missing_information,
+                receiver_acceptance: proposal.scenario.receiver_acceptance,
+                additional_delay_minutes:
+                  proposal.scenario.additional_delay_minutes,
+                reasons: proposal.scenario.rule_results,
+              }}
+            />
+            <form onSubmit={create}>
+              <label>
+                <span>{t("wsWhyAppropriate")}</span>
+                <textarea name="notes" required maxLength={4000} />
+              </label>
+              <button disabled={busy}>{t("wsSaveDraftForReview")}</button>
+            </form>
+          </details>
+        ) : (
+          <p className="ws-dim">{t("wsSelectPermissible")}</p>
         ))}
-      </ul>
-      {detail && (
+      <div className="ws-card">
+        <div className="ws-card-head">
+          <h3>{t("wsShipmentDecisions")}</h3>
+          <button
+            className="quiet"
+            disabled={busy}
+            onClick={() => void perform(() => refresh())}
+          >
+            {t("wsRefreshDecisions")}
+          </button>
+        </div>
+        {inboxLoading && (
+          <p role="status" className="ws-busy">
+            {t("wsLoadingDecisions")}
+          </p>
+        )}
+        {inboxError && (
+          <p role="alert" className="ws-alert">
+            {t("wsDecisionsFailed")} {inboxError}
+          </p>
+        )}
+        {!inboxLoading && !inboxError && !items.length && (
+          <p className="ws-dim">{t("wsNoDecisions")}</p>
+        )}
+        {nextCursor && (
+          <button
+            className="quiet"
+            disabled={inboxLoading}
+            onClick={() => void perform(() => refresh(nextCursor))}
+          >
+            {t("wsOlderDecisions")}
+          </button>
+        )}
+        <ul className="decision-list">
+          {items.map((d) => (
+            <li key={String(d.id)} data-selected={detail?.id === d.id}>
+              <button
+                className="quiet"
+                disabled={busy}
+                onClick={() =>
+                  void perform(async () => {
+                    await openDecision(d);
+                  })
+                }
+              >
+                {statusLabel(d.status)} / {fmt.dateTime(d.created_at)}
+              </button>
+              <p>{String(d.justification)}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {detail && view !== "report" && (
         <div
-          className="review-detail"
+          className="review-detail ws-card"
           key={String(detail.id) + String(detail.revision)}
         >
-          <h3>{human(detail.status)} decision</h3>
+          <div className="ws-card-head">
+            <h3>
+              {statusLabel(detail.status)} {t("wsDecisionWord")}
+            </h3>
+            <span className="op-badge" data-op={String(detail.status)}>
+              {String(detail.status)}
+            </span>
+          </div>
           <p>{String(detail.justification)}</p>
-          <p>
-            Revision {String(detail.revision)}.{" "}
-            {detail.snapshot_sha256
-              ? "Evidence snapshot is frozen."
-              : "Evidence will be frozen when submitted."}
+          <p className="ws-note">
+            {t("wsRevision")} {String(detail.revision)}.{" "}
+            {detail.snapshot_sha256 ? t("wsSnapFrozen") : t("wsSnapWillFreeze")}
           </p>
-          {draftEvidence && (
+          {view === "propose" && draftEvidence && (
             <details open>
-              <summary>Source evidence for this draft (not yet frozen)</summary>
+              <summary>{t("wsDraftSource")}</summary>
               <DecisionEvidenceSummary evidence={draftEvidence} />
               <details>
-                <summary>Source traceability</summary>
+                <summary>{t("wsSourceTrace")}</summary>
                 <EvidenceView value={draftEvidence} />
               </details>
             </details>
           )}
-          {snapshot && (
+          {view === "qa" && snapshot && (
             <>
-              <h4>Pinned evidence</h4>
+              <FrozenSnapshot decision={detail} />
+              <h4>{t("wsPinnedEvidence")}</h4>
               <DecisionEvidenceSummary evidence={snapshot} />
-              <EvidenceView
-                value={{
-                  shipment: (snapshot.shipment as Item)?.reference,
-                  scenario: human(scenario?.type),
-                  dataset_version: (snapshot.dataset as Item)?.version,
-                  policy: (snapshot.policy as Item)?.policy_key,
-                  policy_version: (snapshot.policy as Item)?.version,
-                }}
-              />
               {["analysis", "scenario", "policy"].map((key) => (
                 <details key={key}>
-                  <summary>{human(key)} evidence</summary>
+                  <summary>
+                    {t(
+                      key === "analysis"
+                        ? "wsEvAnalysis"
+                        : key === "scenario"
+                          ? "wsEvScenario"
+                          : "wsEvPolicy",
+                    )}
+                  </summary>
                   <EvidenceView value={snapshot[key]} />
                 </details>
               ))}
             </>
           )}
-          {((detail.status === "DRAFT" && detail.submitted_by === user) ||
-            (detail.status === "PENDING_QA" && roles.includes("QA"))) && (
-            <form onSubmit={review}>
+          {view === "propose" && snapshot && (
+            <p className="ws-note">{t("wsAlreadySubmitted")}</p>
+          )}
+          {view === "propose" && detail.status === "DRAFT" && !canSubmit && (
+            <Callout tone="warn">{t("wsOnlyProposerSubmits")}</Callout>
+          )}
+          {view === "qa" && detail.status === "PENDING_QA" && !isQa && (
+            <Callout tone="block" title={t("wsNoQaTitle")}>
+              {t("wsNoQaBody")}
+            </Callout>
+          )}
+          {view === "qa" && detail.status === "DRAFT" && (
+            <Callout tone="warn">{t("wsDraftNotSubmitted")}</Callout>
+          )}
+          {((view === "propose" && canSubmit) ||
+            (view === "qa" && canReview)) && (
+            <form onSubmit={review} className="ws-review-form">
               {detail.status === "DRAFT" ? (
-                <p>
-                  Submitting freezes the source evidence for independent QA
-                  review.
-                </p>
+                <p>{t("wsSubmitFreezes")}</p>
               ) : (
                 <label>
-                  Review outcome
+                  <span>{t("wsReviewOutcome")}</span>
                   <select
                     value={reviewAction}
                     onChange={(e) => setReviewAction(e.target.value)}
                   >
-                    <option value="request-changes">Request changes</option>
-                    <option value="reject">Reject proposal</option>
-                    <option value="approve">Approve internal workflow</option>
+                    <option value="request-changes">
+                      {t("wsRequestChanges")}
+                    </option>
+                    <option value="reject">{t("wsRejectProposal")}</option>
+                    <option value="approve">{t("wsApproveInternal")}</option>
                   </select>
                 </label>
               )}
               <label>
-                {detail.status === "DRAFT"
-                  ? "Submission justification"
-                  : "Review notes"}
+                <span>
+                  {detail.status === "DRAFT"
+                    ? t("wsSubmissionJustification")
+                    : t("wsReviewNotes")}
+                </span>
                 <textarea
                   name="notes"
                   defaultValue={
@@ -345,7 +427,7 @@ export default function DecisionPanel({
               {detail.status === "PENDING_QA" && reviewAction === "approve" && (
                 <>
                   <label>
-                    Supporting reference document (maximum 10 MB)
+                    <span>{t("wsSupportingRef")}</span>
                     <input type="file" name="reference" required />
                   </label>
                   <label className="check-label">
@@ -356,122 +438,174 @@ export default function DecisionPanel({
                       required
                     />
                     {required === "HOLD_IN_CONTROLLED_STORAGE"
-                      ? "I confirm the required hold in controlled storage."
-                      : "I have reviewed the pinned evidence."}
+                      ? t("wsConfirmHold")
+                      : t("wsReviewedPinned")}
                   </label>
                 </>
               )}
               <label className="check-label">
-                <input type="checkbox" required />I have reviewed the evidence
-                and understand this action.
+                <input type="checkbox" required />
+                {t("wsReviewedUnderstand")}
               </label>
+              {detail.status === "PENDING_QA" && (
+                <p className="ws-note">{t("wsRecordedAs")}</p>
+              )}
               <button disabled={busy}>
                 {detail.status === "DRAFT"
-                  ? "Submit to QA"
-                  : "Confirm review outcome"}
+                  ? t("wsSubmitToQa")
+                  : t("wsConfirmReview")}
               </button>
             </form>
           )}
-          {Boolean(detail.review_notes) && (
-            <>
-              <h4>Reviewer notes</h4>
+          {view === "qa" && Boolean(detail.review_notes) && (
+            <div className="ws-card ws-record">
+              <h4>{t("wsRecordedReview")}</h4>
+              <dl className="ws-facts">
+                <div>
+                  <dt>{t("wsActingRole")}</dt>
+                  <dd>
+                    <code>QA</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("wsReviewedBy")}</dt>
+                  <dd>
+                    <code>{String(detail.reviewed_by ?? "—")}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("wsReviewedAt")}</dt>
+                  <dd className="num">{fmt.dateTime(detail.reviewed_at)}</dd>
+                </div>
+              </dl>
+              <h4>{t("wsReviewerNotes")}</h4>
               <p>{String(detail.review_notes)}</p>
               <EvidenceView value={detail.review_evidence} />
-            </>
-          )}
-          {Boolean(detail.snapshot_sha256) && (
-            <>
-              <h4>Frozen report</h4>
-              <button
-                disabled={busy}
-                onClick={() =>
-                  void perform(async () => {
-                    const r = await api(
-                      `/decisions/${detail.id}/reports`,
-                      org,
-                      write("POST", { format: "PDF", language: "en" }),
-                    );
-                    setReport(r.report);
-                    setMessage(
-                      "Report requested. Refresh its status to check completion.",
-                    );
-                  })
-                }
-              >
-                Generate PDF report
-              </button>
-              {report && (
-                <>
-                  <p>Report: {human(report.status)}</p>
-                  <button
-                    className="quiet"
-                    disabled={busy}
-                    onClick={() =>
-                      void perform(async () =>
-                        setReport(
-                          (await api(`/reports/${report.id}`, org)).report,
-                        ),
-                      )
-                    }
-                  >
-                    Refresh report status
-                  </button>
-                  {report.status === "COMPLETED" && (
-                    <button
-                      disabled={busy}
-                      onClick={() =>
-                        void perform(() =>
-                          downloadReport(String(report.id), org),
-                        )
-                      }
-                    >
-                      Download PDF
-                    </button>
-                  )}
-                </>
-              )}
-            </>
+            </div>
           )}
         </div>
       )}
-      {detail && (
-        <details>
-          <summary>Optional grounded explanation</summary>
-          <p>Explains the selected run without changing eligibility.</p>
-          <button
-            disabled={busy}
-            onClick={() =>
-              void perform(async () => {
-                await api(
-                  `/simulations/${detail.simulation_run_id}/explanations`,
-                  org,
-                  write("POST", {}),
-                );
-                setMessage("Explanation requested. Refresh to check progress.");
-              })
-            }
-          >
-            Generate explanation
-          </button>
-          <button
-            className="quiet"
-            disabled={busy}
-            onClick={() =>
-              void perform(async () => {
-                setExplanation(
-                  (
-                    await api(
-                      `/simulations/${detail.simulation_run_id}/explanations/latest`,
-                      org,
-                    )
-                  ).explanation,
-                );
-              })
-            }
-          >
-            Refresh explanation
-          </button>
-          {explanation && <EvidenceView value={explanation} />}
+      {detail && view === "report" && (
+        <div className="review-detail ws-card">
+          <div className="ws-card-head">
+            <h3>
+              {statusLabel(detail.status)} {t("wsDecisionWord")}
+            </h3>
+            <span className="op-badge" data-op={String(detail.status)}>
+              {String(detail.status)}
+            </span>
+          </div>
+          {Boolean(detail.snapshot_sha256) ? (
+            <>
+              <FrozenSnapshot decision={detail} />
+              <h4>{t("wsFrozenReport")}</h4>
+              <p className="ws-note">{t("wsReportFromSnapshot")}</p>
+              <div className="ws-actions">
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void perform(async () => {
+                      const r = await api(
+                        `/decisions/${detail.id}/reports`,
+                        org,
+                        write("POST", { format: "PDF", language: lang }),
+                      );
+                      setReport(r.report);
+                      setMessage(t("wsReportRequested"));
+                    })
+                  }
+                >
+                  {t("wsGeneratePdf")}
+                </button>
+              </div>
+              {report && (
+                <>
+                  <p>
+                    {t("wsReport")}: {statusLabel(report.status)}
+                  </p>
+                  <div className="ws-actions">
+                    <button
+                      className="quiet"
+                      disabled={busy}
+                      onClick={() =>
+                        void perform(async () =>
+                          setReport(
+                            (await api(`/reports/${report.id}`, org)).report,
+                          ),
+                        )
+                      }
+                    >
+                      {t("wsRefreshReport")}
+                    </button>
+                    {report.status === "COMPLETED" && (
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void perform(() =>
+                            downloadReport(String(report.id), org),
+                          )
+                        }
+                      >
+                        {t("wsDownloadPdf")}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <Callout tone="warn">{t("wsBlockNoSnapshot")}</Callout>
+          )}
+        </div>
+      )}
+      {view === "report" && !detail && (
+        <p className="ws-dim">{t("wsPickDecisionForReport")}</p>
+      )}
+      {view === "report" && detail && (
+        <details className="ws-card">
+          <summary>{t("wsExplanationTitle")}</summary>
+          <p>{t("wsExplanationNote")}</p>
+          <div className="ws-actions">
+            <button
+              disabled={busy}
+              onClick={() =>
+                void perform(async () => {
+                  await api(
+                    `/simulations/${detail.simulation_run_id}/explanations`,
+                    org,
+                    write("POST", {}),
+                  );
+                  setMessage(t("wsExplanationRequested"));
+                })
+              }
+            >
+              {t("wsGenerateExplanation")}
+            </button>
+            <button
+              className="quiet"
+              disabled={busy}
+              onClick={() =>
+                void perform(async () => {
+                  setExplanation(
+                    (
+                      await api(
+                        `/simulations/${detail.simulation_run_id}/explanations/latest`,
+                        org,
+                      )
+                    ).explanation,
+                  );
+                })
+              }
+            >
+              {t("wsRefreshExplanation")}
+            </button>
+          </div>
+          {explanation && (
+            <>
+              <p className="ws-note">{t("wsExplanationLabel")}</p>
+              <EvidenceView value={explanation} />
+            </>
+          )}
         </details>
       )}
     </section>

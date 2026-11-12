@@ -1,17 +1,60 @@
 "use client";
 import { use, useCallback, useEffect, useRef, useState } from "react";
-import DecisionPanel, { type ProposalSource } from "../../decision-panel";
-import SimulationPanel from "../../simulation-panel";
+import Link from "next/link";
+import "../../../studio/studio.css";
+import "../../workspace.css";
+import DecisionPanel, {
+  type DecisionView,
+  type ProposalSource,
+} from "../../decision-panel";
+import SimulationPanel, { type SimStatus } from "../../simulation-panel";
 import AnalysisPanel from "../../analysis-panel";
 import TemperaturePanel from "../../temperature-panel";
-import { api, write, type Item } from "../../api";
+import EvidenceTimeline from "../../evidence-timeline";
+import Stepper from "../../step-nav";
+import {
+  deriveSteps,
+  initialStep,
+  type StepId,
+  type StepInput,
+} from "../../stepper";
+import { api, write, ApiError, type Item } from "../../api";
+import { money } from "../../../decision-summary";
+import { useI18n } from "../../../i18n-provider";
+import {
+  Callout,
+  OpStatusBadge,
+  Skeleton,
+  useErrorText,
+  useFmt,
+  useStatusLabel,
+} from "../../ui";
+
+const TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ["READY", "CANCELLED"],
+  READY: ["IN_TRANSIT", "CANCELLED"],
+  IN_TRANSIT: ["ARRIVED", "CANCELLED"],
+  ARRIVED: ["CLOSED"],
+};
+const OP_KEY = {
+  DRAFT: "wsOpDraft",
+  READY: "wsOpReady",
+  IN_TRANSIT: "wsOpTransit",
+  ARRIVED: "wsOpArrived",
+  CLOSED: "wsOpClosed",
+  CANCELLED: "wsOpCancelled",
+} as const;
+
 export default function ShipmentDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [ready, setReady] = useState(false);
+  const { t } = useI18n();
+  const errText = useErrorText();
+  const fmt = useFmt();
+  const statusLabel = useStatusLabel();
   const [proposal, setProposal] = useState<ProposalSource | null>(null);
   const [pendingStatus, setPendingStatus] = useState("");
   const [notice, setNotice] = useState("");
@@ -27,8 +70,18 @@ export default function ShipmentDetail({
   const [savedWorkflow, setSavedWorkflow] = useState<Item | null>(null);
   const [workflowError, setWorkflowError] = useState("");
   const [item, setItem] = useState<Item | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
   const [org, setOrg] = useState("");
+  const [productName, setProductName] = useState("");
+  const [roles, setRoles] = useState<string[] | null>(null);
+  const [datasets, setDatasets] = useState<Item[] | null>(null);
+  const [policies, setPolicies] = useState<Item[] | null>(null);
+  const [decisions, setDecisions] = useState<Item[] | null>(null);
+  const [analysisData, setAnalysisData] = useState<Item | null>(null);
+  const [readings, setReadings] = useState<Item[]>([]);
+  const [sim, setSim] = useState<SimStatus>({ run: "", eligibility: null });
+  const [selectedStep, setSelectedStep] = useState<StepId | null>(null);
+  const [firstStep, setFirstStep] = useState<StepId | null>(null);
   const historyRequest = useRef(0);
   const refreshWorkflow = useCallback(async () => {
     const request = ++historyRequest.current;
@@ -42,10 +95,9 @@ export default function ShipmentDetail({
       }
     } catch (e) {
       if (request === historyRequest.current)
-        setWorkflowError(
-          `Saved history could not refresh. Retry history. ${String(e)}`,
-        );
+        setWorkflowError(`${t("wsHistoryRefreshFailed")} ${errText(e)}`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   const analysisCompleted = useCallback(
     (analysis: string) => {
@@ -63,8 +115,29 @@ export default function ShipmentDetail({
         setOrg(selected);
         setItem(data.shipment);
       })
-      .catch((e) => setError(String(e)));
+      .catch((e) => setError(e));
+    api("/auth/me")
+      .then((me) =>
+        setRoles(
+          me.memberships.find((m: Item) => m.organization_id === selected)
+            ?.roles || [],
+        ),
+      )
+      .catch(() => setRoles([]));
   }, [id]);
+  const productId = item ? String(item.product_id) : "";
+  useEffect(() => {
+    if (!productId || !org) return;
+    let active = true;
+    api(`/products/${productId}`, org)
+      .then((d) => {
+        if (active && d.product?.name) setProductName(String(d.product.name));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [productId, org]);
   useEffect(() => {
     let active = true;
     const organization =
@@ -83,15 +156,31 @@ export default function ShipmentDetail({
         }
       })
       .catch((e) => {
-        if (active) setWorkflowError(String(e));
+        if (active) setWorkflowError(errText(e));
       });
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+  // Pull the selected analysis once so the stepper and timeline can state what it reports.
+  useEffect(() => {
+    if (!completedAnalysis || !org) return;
+    let active = true;
+    api(`/analyses/${completedAnalysis}`, org)
+      .then((d) => {
+        if (active) setAnalysisData(d.analysis ?? null);
+      })
+      .catch(() => {
+        if (active) setAnalysisData(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [completedAnalysis, org]);
   async function transition(status: string) {
     setBusy(true);
-    setError("");
+    setError(null);
     try {
       const data = await api(
         `/shipments/${id}`,
@@ -100,224 +189,345 @@ export default function ShipmentDetail({
       );
       setItem(data.shipment);
       setPendingStatus("");
-      setNotice("Operational status updated.");
+      setNotice(t("wsStatusUpdated"));
       setCompletedAnalysis("");
       setProposal(null);
     } catch (e) {
-      setError(String(e) + ". Reload to obtain current revision.");
+      setError(e);
     } finally {
       setBusy(false);
     }
   }
+
+  const onPropose = useCallback((source: ProposalSource | null) => {
+    setProposal(source);
+    if (source) setSelectedStep("propose");
+  }, []);
+  useEffect(() => {
+    if (proposal) document.getElementById("review")?.focus();
+  }, [proposal]);
+
+  const summary = (analysisData?.summary ?? {}) as Item;
+  const hasAnalysis = !!completedAnalysis;
+  const latestDecision = (decisions?.[0] ??
+    (savedWorkflow?.decision as Item | null) ??
+    null) as Item | null;
+  const savedRunForAnalysis =
+    hasAnalysis &&
+    (savedWorkflow?.simulation as Item | null)?.analysis_id ===
+      completedAnalysis;
+  const input: StepInput = {
+    hasReadyDataset: !!datasets?.some((d) => d.status === "READY"),
+    hasApprovedPolicy: !!policies?.some((p) => p.status === "APPROVED"),
+    hasAnalysis,
+    analysisHasGaps:
+      hasAnalysis &&
+      (Number(summary.unknown_seconds) > 0 ||
+        String(analysisData?.classification) === "INDETERMINATE"),
+    hasSavedRun: hasAnalysis && (!!sim.run || savedRunForAnalysis),
+    selectedEligibility: hasAnalysis ? sim.eligibility : null,
+    hasProposal: !!proposal,
+    decisionStatus: latestDecision ? String(latestDecision.status) : null,
+    decisionFrozen: !!latestDecision?.snapshot_sha256,
+  };
+  const steps = deriveSteps(input);
+  const gate =
+    !!item &&
+    roles !== null &&
+    datasets !== null &&
+    policies !== null &&
+    decisions !== null &&
+    (savedWorkflow !== null || !!workflowError);
+  if (gate && firstStep === null)
+    setFirstStep(initialStep(steps, roles, input.decisionStatus));
+  const step: StepId = selectedStep ?? firstStep ?? "evidence";
+  const ready = !!item && gate && firstStep !== null;
+  const onDatasets = useCallback((items: Item[]) => setDatasets(items), []);
+  const onPolicies = useCallback((items: Item[]) => setPolicies(items), []);
+  const onDecisions = useCallback((items: Item[]) => setDecisions(items), []);
+  const decisionView: DecisionView | null =
+    step === "propose" || step === "qa" || step === "report" ? step : null;
+  const status = error instanceof ApiError ? error.status : 0;
+  const workflow = savedWorkflow ?? {};
+  const latest = workflow.decision as Item | null | undefined;
+  const simReason = steps.find((s) => s.id === "simulate")?.reason;
+
   return (
-    <main id="content">
-      <a href="/workspace">Shipments</a>
-      <h1>{item ? String(item.reference) : "Shipment"}</h1>
+    <main className="studio ws ws-detail" id="content">
+      <nav className="ws-crumb" aria-label={t("wsCrumb")}>
+        <Link href="/workspace">{t("wsShipments")}</Link>
+      </nav>
+      <header className="studio-head">
+        <div className="studio-id">
+          <h1>
+            <span className="num">
+              {item ? String(item.reference) : t("wsShipment")}
+            </span>
+            {productName && (
+              <span className="studio-product">{productName}</span>
+            )}
+          </h1>
+          {item && (
+            <p className="studio-route">
+              <span>
+                {t("studioRoute")}:{" "}
+                {String((item.origin as Item)?.name || t("nodeOrigin"))} &rarr;{" "}
+                {String((item.destination as Item)?.name || t("nodeReceiver"))}
+              </span>
+              <OpStatusBadge status={String(item.status)} />
+              <span className="num">
+                {money(
+                  item.cargo_value,
+                  item.currency,
+                  String(item.cargo_value),
+                )}
+              </span>
+              <span className="ws-dim">
+                {t("wsRevision")} {String(item.revision)}
+              </span>
+            </p>
+          )}
+        </div>
+        {item && (
+          <div className="studio-actions">
+            <details
+              className="ws-menu"
+              onKeyDown={(e) => {
+                if (e.key !== "Escape" || !e.currentTarget.open) return;
+                e.preventDefault();
+                e.currentTarget.open = false;
+                e.currentTarget.querySelector("summary")?.focus();
+              }}
+            >
+              <summary>{t("wsChangeStatus")}</summary>
+              <div className="ws-menu-body">
+                <label>
+                  <span>{t("wsNextState")}</span>
+                  <select
+                    value={pendingStatus}
+                    disabled={busy}
+                    onChange={(e) => setPendingStatus(e.target.value)}
+                  >
+                    <option value="">{t("wsSelectTransition")}</option>
+                    {TRANSITIONS[String(item.status)]?.map((s) => (
+                      <option key={s} value={s}>
+                        {t(OP_KEY[s as keyof typeof OP_KEY])}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="ws-note">{t("wsOpNotQa")}</p>
+                {pendingStatus && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void transition(pendingStatus);
+                    }}
+                  >
+                    <p>
+                      {t("wsChangeFrom")}{" "}
+                      <strong>
+                        {t(OP_KEY[String(item.status) as keyof typeof OP_KEY])}
+                      </strong>{" "}
+                      {t("wsChangeTo")}{" "}
+                      <strong>
+                        {t(OP_KEY[pendingStatus as keyof typeof OP_KEY])}
+                      </strong>
+                      ?
+                    </p>
+                    <label className="check-label">
+                      <input type="checkbox" required />
+                      {t("wsConfirmOpChange")}
+                      {pendingStatus === "CANCELLED"
+                        ? ` ${t("wsAndCancel")}`
+                        : ""}
+                      .
+                    </label>
+                    <button disabled={busy}>{t("wsConfirmStatus")}</button>
+                  </form>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
+      </header>
       {notice && <p role="status">{notice}</p>}
-      {error && (
-        <p role="alert">
-          {error}{" "}
-          <button onClick={() => window.location.reload()}>Reload</button>
-        </p>
+      {error !== null && (
+        <div role="alert" className="ws-alert">
+          <span>
+            {status === 401
+              ? t("wsDetailSignIn")
+              : status === 403
+                ? t("wsDeniedBody")
+                : status === 404
+                  ? t("wsDetailNotFound")
+                  : `${errText(error)} ${t("wsReloadForRevision")}`}
+          </span>
+          {status === 401 ? (
+            <Link href="/workspace" className="button">
+              {t("wsSignIn")}
+            </Link>
+          ) : (
+            <button className="quiet" onClick={() => window.location.reload()}>
+              {t("wsReload")}
+            </button>
+          )}
+        </div>
       )}
-      {!item && !error && <p role="status">Loading...</p>}
+      {!item && error === null && (
+        <div role="status" aria-live="polite">
+          <p className="ws-dim">{t("wsLoading")}</p>
+          <Skeleton rows={3} />
+        </div>
+      )}
       {item && (
         <>
-          <p>
-            Status: {String(item.status)} / revision {String(item.revision)}
-          </p>
-          <p>
-            {String(item.cargo_value)} {String(item.currency)}
-          </p>
-          <details>
-            <summary>Change operational status</summary>
-            <label>
-              Next operational state
-              <select
-                value={pendingStatus}
-                disabled={busy}
-                onChange={(e) => setPendingStatus(e.target.value)}
-              >
-                <option value="">Select transition</option>
-                {(
-                  {
-                    DRAFT: ["READY", "CANCELLED"],
-                    READY: ["IN_TRANSIT", "CANCELLED"],
-                    IN_TRANSIT: ["ARRIVED", "CANCELLED"],
-                    ARRIVED: ["CLOSED"],
-                  } as Record<string, string[]>
-                )[String(item.status)]?.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <p>Operational state never implies QA approval.</p>
-            {pendingStatus && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void transition(pendingStatus);
-                }}
-              >
-                <p>
-                  Change from {String(item.status)} to {pendingStatus}?
-                </p>
-                <label className="check-label">
-                  <input type="checkbox" required />I confirm this operational
-                  change
-                  {pendingStatus === "CANCELLED"
-                    ? " and cancellation of this shipment"
-                    : ""}
-                  .
-                </label>
-                <button disabled={busy}>Confirm status change</button>
-              </form>
-            )}
-          </details>
-          <section className="saved-workflow">
-            <h2>Saved workflow</h2>
-            <button
-              type="button"
-              className="quiet"
-              onClick={() => void refreshWorkflow()}
-            >
-              Refresh saved history
-            </button>
+          <Stepper
+            steps={steps}
+            selected={step}
+            onSelect={(s) => setSelectedStep(s)}
+          />
+          <section
+            className="saved-workflow ws-saved"
+            aria-label={t("wsSavedWorkflow")}
+          >
+            <div className="ws-saved-head">
+              <h2>{t("wsSavedWorkflow")}</h2>
+              <div className="ws-actions">
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => void refreshWorkflow()}
+                >
+                  {t("wsRefreshHistory")}
+                </button>
+                {savedWorkflow && (
+                  <button
+                    className="quiet"
+                    onClick={() => {
+                      selectAnalysis("");
+                      setInitialRun("");
+                    }}
+                  >
+                    {t("wsNewCycle")}
+                  </button>
+                )}
+              </div>
+            </div>
             {workflowError ? (
-              <p role="alert">
-                Cannot load saved history. Reload this page to retry.{" "}
-                {workflowError}
+              <p role="alert" className="ws-alert">
+                {t("wsCannotLoadHistory")} {workflowError}
               </p>
             ) : !savedWorkflow ? (
-              <p role="status">Loading saved workflow...</p>
+              <p role="status" className="ws-dim">
+                {t("wsLoadingWorkflow")}
+              </p>
             ) : (
               <>
                 <p>
-                  Latest decision:{" "}
+                  {t("wsLatestDecision")}:{" "}
                   <strong>
-                    {String(
-                      (savedWorkflow.decision as Item)?.status ||
-                        "None recorded",
-                    )}
+                    {latest ? statusLabel(latest.status) : t("wsNoneRecorded")}
                   </strong>
+                  {latest ? (
+                    <>
+                      {" "}
+                      <code>{String(latest.status)}</code>
+                    </>
+                  ) : null}
                   .{" "}
-                  {savedWorkflow.approved_decision
-                    ? "An approved decision remains in history. Starting a new analysis does not replace that approval."
-                    : "No current approved decision recorded."}
+                  {workflow.approved_decision
+                    ? t("wsApprovedRemains")
+                    : t("wsNoApprovedDecision")}
                 </p>
                 <p>
-                  Completed analysis:{" "}
-                  {(savedWorkflow.analysis as Item)?.created_at
-                    ? new Date(
-                        String((savedWorkflow.analysis as Item).created_at),
-                      ).toLocaleString("en-GB", {
-                        timeZone: "UTC",
-                        timeZoneName: "short",
-                      })
-                    : "None"}
-                  . Completed simulation:{" "}
-                  {(savedWorkflow.simulation as Item)?.created_at
-                    ? new Date(
-                        String((savedWorkflow.simulation as Item).created_at),
-                      ).toLocaleString("en-GB", {
-                        timeZone: "UTC",
-                        timeZoneName: "short",
-                      })
-                    : "None"}
+                  {t("wsCompletedAnalysis")}:{" "}
+                  <span className="num">
+                    {(workflow.analysis as Item)?.created_at
+                      ? fmt.stamp((workflow.analysis as Item).created_at)
+                      : t("wsNone")}
+                  </span>
+                  . {t("wsCompletedSimulation")}:{" "}
+                  <span className="num">
+                    {(workflow.simulation as Item)?.created_at
+                      ? fmt.stamp((workflow.simulation as Item).created_at)
+                      : t("wsNone")}
+                  </span>
                   .
                 </p>
-                <button
-                  className="quiet"
-                  onClick={() => {
-                    selectAnalysis("");
-                    setInitialRun("");
-                  }}
-                >
-                  Start a new analysis cycle
-                </button>
               </>
             )}
           </section>
-          <div className="next-action">
-            <strong>Next step</strong>
-            <p>
-              {!ready
-                ? "Upload and validate temperature data to enable analysis."
-                : !completedAnalysis
-                  ? "Select a ready dataset and an approved policy, then analyze the evidence."
-                  : !proposal
-                    ? "Compare scenario eligibility, cost and delay before preparing a proposal."
-                    : "Review your selected proposal before submitting it to QA."}
-            </p>
-          </div>
-          <nav className="step-nav" aria-label="Shipment workflow">
-            <a href="#evidence">01 Evidence</a>
-            <a href="#analysis">
-              02 Analysis /{" "}
-              {completedAnalysis ? "Completed" : ready ? "Ready" : "Needs data"}
-            </a>
-            <a href="#simulation">
-              03 Simulation / {completedAnalysis ? "Ready" : "Needs analysis"}
-            </a>
-            <a href="#review">04 QA & reports</a>
-          </nav>
-          <div id="evidence">
-            <details open={!ready}>
-              <summary>
-                Temperature evidence /{" "}
-                {ready ? "Ready dataset available" : "Upload required"}
-              </summary>
-              <TemperaturePanel shipmentId={id} org={org} onReady={setReady} />
-            </details>
-          </div>
-          <div id="analysis">
-            {ready ? (
-              <details open={!completedAnalysis}>
-                <summary>
-                  Analysis /{" "}
-                  {completedAnalysis
-                    ? "Selected completed result"
-                    : "Select evidence"}
-                </summary>
-                <AnalysisPanel
-                  shipmentId={id}
-                  productId={String(item.product_id)}
-                  onCompleted={analysisCompleted}
-                  org={org}
-                />
-              </details>
-            ) : (
-              <p>Add a ready temperature dataset before analysis.</p>
-            )}
-          </div>
-          <div id="simulation">
-            {completedAnalysis ? (
-              <SimulationPanel
-                key={`${org}:${id}:${completedAnalysis}`}
+          {!ready && (
+            <div role="status" aria-live="polite">
+              <p className="ws-dim">{t("wsLoading")}</p>
+              <Skeleton rows={4} />
+            </div>
+          )}
+          <div className="ws-steps" aria-busy={!ready}>
+            <div id="evidence" hidden={!ready || step !== "evidence"}>
+              <TemperaturePanel
                 shipmentId={id}
                 org={org}
-                completedAnalysis={completedAnalysis}
-                initialRun={initialRun}
-                shipmentLabel={String(item.reference)}
-                origin={String((item.origin as Item)?.name || "Origin")}
-                destination={String(
-                  (item.destination as Item)?.name || "Original receiver",
-                )}
-                onSaved={refreshWorkflow}
-                onPropose={setProposal}
+                analysis={analysisData}
+                onDatasets={onDatasets}
+                onReadings={setReadings}
               />
-            ) : (
-              <p>Complete an analysis to unlock scenario comparison.</p>
-            )}
-          </div>
-          <div id="review" tabIndex={-1} aria-label="Proposal and QA review">
-            <DecisionPanel
-              key={`${org}:${id}`}
-              org={org}
-              shipmentId={id}
-              proposal={proposal}
-              onSaved={refreshWorkflow}
-            />
+            </div>
+            <div id="analysis" hidden={!ready || step !== "policy"}>
+              <AnalysisPanel
+                shipmentId={id}
+                productId={productId}
+                onCompleted={analysisCompleted}
+                onPolicies={onPolicies}
+                selectedAnalysis={analysisData}
+                org={org}
+              />
+            </div>
+            <div id="simulation" hidden={!ready || step !== "simulate"}>
+              {completedAnalysis ? (
+                <SimulationPanel
+                  key={`${org}:${id}:${completedAnalysis}`}
+                  shipmentId={id}
+                  org={org}
+                  completedAnalysis={completedAnalysis}
+                  initialRun={initialRun}
+                  shipmentLabel={String(item.reference)}
+                  origin={String(
+                    (item.origin as Item)?.name || t("nodeOrigin"),
+                  )}
+                  destination={String(
+                    (item.destination as Item)?.name || t("nodeReceiver"),
+                  )}
+                  onSaved={refreshWorkflow}
+                  onPropose={onPropose}
+                  onStatus={setSim}
+                  timeline={
+                    <EvidenceTimeline rows={readings} analysis={analysisData} />
+                  }
+                />
+              ) : (
+                <Callout tone="block" title={t("wsStepBlockedTitle")}>
+                  {simReason ? t(simReason) : t("wsBlockNoAnalysis")}
+                </Callout>
+              )}
+            </div>
+            <div
+              id="review"
+              tabIndex={-1}
+              aria-label={t("wsReviewRegion")}
+              hidden={!ready || !decisionView}
+            >
+              <DecisionPanel
+                key={`${org}:${id}`}
+                org={org}
+                shipmentId={id}
+                proposal={proposal}
+                view={decisionView ?? "propose"}
+                onSaved={refreshWorkflow}
+                onDecisions={onDecisions}
+              />
+            </div>
           </div>
         </>
       )}

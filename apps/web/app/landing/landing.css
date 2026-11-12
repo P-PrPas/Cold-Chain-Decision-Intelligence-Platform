@@ -60,6 +60,13 @@ body:has(.lp) .app-footer-legal {
 body:has(.lp) #footer-close:empty {
   display: block;
 }
+/* The close sits in the middle of its screen, so no band of empty rows opens up. */
+body:has(.lp) #footer-close:not(:empty) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 body:has(.lp) .app-header-bar {
   flex: none;
 }
@@ -462,7 +469,7 @@ main.lp > section.lp-hero {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 128px;
+  margin-bottom: clamp(40px, 7vh, 72px);
 }
 
 .lp-close .lp-close__name {

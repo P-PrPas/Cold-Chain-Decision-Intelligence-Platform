@@ -32,6 +32,15 @@ export const acceptanceSymbol: Record<Acceptance, string> = {
   REJECTED: "×",
   UNKNOWN: "?",
 };
+/** Glyph plus the word, so acceptance never relies on a symbol alone. */
+export function acceptanceTag(
+  a: Acceptance | undefined,
+  name: string,
+  words: Record<Acceptance, string>,
+): string {
+  const k = a ?? "UNKNOWN";
+  return `${acceptanceSymbol[k]} ${name} · ${words[k]}`;
+}
 export const acceptanceKey: Record<Acceptance, DictKey> = {
   ACCEPTED: "accAccepted",
   REJECTED: "accRejected",
