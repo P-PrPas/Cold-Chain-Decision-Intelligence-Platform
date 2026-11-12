@@ -1,10 +1,10 @@
 "use client";
-import type { Item } from "./workspace/api";
+import type { Item } from "@/app/workspace/api";
 import { human } from "./evidence-view";
-import { useI18n } from "./i18n-provider";
-import { ProvenanceChip } from "./ui/provenance-chip";
-import { StatusBadge, type Status } from "./ui/status-badge";
-import { AnalysisBadge, RuleList } from "./workspace/ui";
+import { useI18n } from "@/i18n/provider";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
+import { AnalysisBadge, RuleList } from "@/app/workspace/ui";
 
 const KNOWN = ["ELIGIBLE", "REVIEW_REQUIRED", "BLOCKED", "INSUFFICIENT_DATA"];
 

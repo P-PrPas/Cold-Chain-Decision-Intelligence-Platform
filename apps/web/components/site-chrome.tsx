@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { BrandMark } from "./brand-mark";
-import { useI18n, useT } from "./i18n-provider";
-import { LANGS, type Lang } from "./i18n";
-import { setTheme, useTheme } from "./prefs";
+import { useI18n, useT } from "@/i18n/provider";
+import { LANGS, type Lang } from "@/i18n";
+import { setTheme, useTheme } from "@/lib/prefs";
 
 const LANG_LABEL: Record<Lang, string> = { en: "EN", th: "ไทย" };
 

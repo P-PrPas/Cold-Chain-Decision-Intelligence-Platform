@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { formatAmount } from "./simulation-assumptions";
+import { formatAmount } from "@/lib/simulation-assumptions";
 
 function cents(v: string): bigint {
   const [whole, fraction = ""] = v.split(".");

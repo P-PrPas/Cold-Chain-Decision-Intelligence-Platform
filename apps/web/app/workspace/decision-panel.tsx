@@ -1,11 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, write, downloadReport, type Item } from "./api";
-import DecisionEvidenceSummary from "../decision-summary";
-import { EvidenceView } from "../evidence-view";
-import { useI18n } from "../i18n-provider";
-import { scenarioKey } from "../studio/scenarios";
-import { StatusBadge, type Status } from "../ui/status-badge";
+import DecisionEvidenceSummary from "@/components/decision-summary";
+import { EvidenceView } from "@/components/evidence-view";
+import { useI18n } from "@/i18n/provider";
+import { scenarioKey } from "@/app/studio/scenarios";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import FrozenSnapshot from "./snapshot-view";
 import { Callout, RuleList, useErrorText, useFmt, useStatusLabel } from "./ui";
 

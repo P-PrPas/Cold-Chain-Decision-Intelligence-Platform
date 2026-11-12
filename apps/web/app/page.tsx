@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Landing from "./landing/landing";
+import Landing from "@/app/landing/landing";
 
 export const metadata: Metadata = {
   title:

@@ -1,9 +1,9 @@
 "use client";
-import { useI18n } from "../i18n-provider";
-import { ProvenanceChip } from "../ui/provenance-chip";
-import { scenarioKey } from "../studio/scenarios";
+import { useI18n } from "@/i18n/provider";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
+import { scenarioKey } from "@/app/studio/scenarios";
 import type { Item } from "./api";
-import { StatusBadge, type Status } from "../ui/status-badge";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import { useFmt } from "./ui";
 
 const text = (v: unknown) => (v == null || v === "" ? "—" : String(v));

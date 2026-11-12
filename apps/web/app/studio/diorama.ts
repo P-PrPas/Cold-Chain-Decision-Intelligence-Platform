@@ -10,7 +10,7 @@ import {
   type Reading,
 } from "./sim-clock";
 import { acceptanceTag, type Acceptance } from "./scenarios";
-import { formatAmount } from "../simulation-assumptions";
+import { formatAmount } from "@/lib/simulation-assumptions";
 
 export type CameraMode = "overview" | "follow";
 

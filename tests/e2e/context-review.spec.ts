@@ -1,4 +1,4 @@
-import { freshAssumptions } from "../../apps/web/app/simulation-assumptions";
+import { freshAssumptions } from "../../apps/web/lib/simulation-assumptions";
 import { test, expect } from "@playwright/test";
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
 test("organization responses cannot overwrite the current scope; server search and pagination", async ({

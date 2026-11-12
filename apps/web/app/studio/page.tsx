@@ -7,18 +7,18 @@ import {
   useSyncExternalStore,
 } from "react";
 import Link from "next/link";
-import FactorControls from "../factor-controls";
-import { ImpactBand } from "../impact-band";
-import { useT } from "../i18n-provider";
+import FactorControls from "@/components/factor-controls";
+import { ImpactBand } from "@/components/impact-band";
+import { useT } from "@/i18n/provider";
 import {
   costCategories,
   draftErrors,
   formatAmount,
   totalCost,
   type Assumptions,
-} from "../simulation-assumptions";
-import { ProvenanceChip } from "../ui/provenance-chip";
-import { StatusBadge } from "../ui/status-badge";
+} from "@/lib/simulation-assumptions";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   DEMO_START_MINUTE,
   DEMO_STEP_MINUTES,

@@ -23,7 +23,7 @@ import {
   type ClockInput,
   type Reading,
 } from "./sim-clock";
-import { freshAssumptions, totalCost } from "../simulation-assumptions";
+import { freshAssumptions, totalCost } from "@/lib/simulation-assumptions";
 
 const readings: Reading[] = [3, 3.2, 3.4, 4, 6.5, 8.1, 7.2, 5.1, 3.7];
 const gapped: Reading[] = [4, 4.2, 4.5, null, null, null, 5.2, 4.8, 4.5];
