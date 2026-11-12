@@ -2,7 +2,7 @@
 
 **Product:** Cold Chain Decision Intelligence Platform (Transport Simulation)  
 **API version:** `v1` | **Document version:** 1.0.1 | **Status:** Proposed / contract-first MVP
-**Date:** 2026-11-11 | **References:** `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`, `ARCHITECTUR.md`
+**Date:** 2026-11-11 | **References:** `docs/product/PRD.md`, `ARCHITECTURE.md`
 
 > This is a human-readable contract for building the MVP, not a deployed API. Generate an OpenAPI 3.1 spec from implemented FastAPI schemas and verify it matches this document. Example identifiers, data and amounts are synthetic and do not constitute approved food-quality thresholds.
 
@@ -366,7 +366,7 @@ All values are illustrative, not approved thresholds or assertions about cargo s
   "next_cursor":null
 }
 ```
-Half-open interval semantics, max sampling gap, unknown intervals and sensor aggregation are defined in `ARCHITECTUR.md`; charts must not fill unknown periods as compliant.
+Half-open interval semantics, max sampling gap, unknown intervals and sensor aggregation are defined in `ARCHITECTURE.md`; charts must not fill unknown periods as compliant.
 
 ## 9. Simulations
 
@@ -587,7 +587,7 @@ Run generated OpenAPI schema validation and TypeScript client compilation in CI.
 
 ## 15. Delivery and change management
 
-- **Source of truth:** PRD describes product requirements, `ARCHITECTUR.md` describes design/invariants, and `API.md` defines external behavior. Code-generated `openapi.json` is the mechanically checkable interface and must match `API.md`.
+- **Source of truth:** PRD describes product requirements, `ARCHITECTURE.md` describes design/invariants, and `API.md` defines external behavior. Code-generated `openapi.json` is the mechanically checkable interface and must match `API.md`.
 - **Breaking changes:** add `/api/v2` or versioned schema migration; never silently alter interpretations of stored quality evidence or monetary results.
 - **Minimum API acceptance:** P0 routes implemented, 401/403/404 tenant behavior consistent, approval guards correct, async jobs recoverable, ETag/idempotency verified, OpenAPI schema published, golden workflow E2E passes.
 - **Open design choices:** exact OIDC provider/callback route, PDF delivery mode, member invitation delivery, tenant retention defaults, domain-policy evidence fields, and production limits must be documented by ADR and customer security review before onboarding real cargo records.

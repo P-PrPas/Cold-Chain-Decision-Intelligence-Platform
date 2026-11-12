@@ -20,7 +20,7 @@ Review: pending; implementation choices below apply to synthetic development onl
 | Product naming | Unique (organization_id, name), version numbers positive integers. | Backend / proposed |
 
 ## Conflicts resolved in companion specs v1.0.1
-- DATABASE section 9 previously held the first part of a long gap; ARCHITECTUR section 7 marks the **whole** interval UNKNOWN. Adopt whole-interval UNKNOWN, the safer higher-priority contract.
+- DATABASE section 9 previously held the first part of a long gap; ARCHITECTURE section 7 marks the **whole** interval UNKNOWN. Adopt whole-interval UNKNOWN, the safer higher-priority contract.
 - API shipment origin/destination are structured objects; DB TEXT would lose shape. Use JSONB validated by API schema, with name required and country optional.
 - API batch_reference is canonical; rename proposed DB batch_lot before migrations exist.
 - API section 5 requires shipment idempotency but section 16 omitted it: retain requirement.

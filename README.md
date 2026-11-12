@@ -37,8 +37,8 @@ Open http://localhost:3000/workspace and sign in as `operator` or `reviewer` wit
 With the stack running, install root test dependencies with `npm ci`, install Chromium with `npx playwright install chromium`, then run `npm run test:e2e`. CI also runs the Python suite against PostgreSQL, including concurrent review and row-level security tests. Set `CC_TEST_POSTGRES_URL` to a disposable PostgreSQL database with schema/role creation rights to run those tests locally.
 
 ## Contracts and review
-- [PRD](docs/Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md)
-- [Architecture](docs/ARCHITECTUR.md), [API](docs/API.md), [database](docs/DATABASE.md)
+- [PRD](docs/product/PRD.md)
+- [Architecture](docs/ARCHITECTURE.md), [API](docs/API.md), [database](docs/DATABASE.md)
 - [S0 ADR and open owner decisions](docs/adr/0001-foundation.md)
 - [Backlog](docs/TASKS.md), [execution evidence](docs/EXECUTION.md)
 - [UX wireframe](docs/UX.md), [synthetic oracles](tests/fixtures/README.md)
