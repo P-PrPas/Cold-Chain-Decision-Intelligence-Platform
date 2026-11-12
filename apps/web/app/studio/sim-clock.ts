@@ -103,7 +103,13 @@ export type Frame = {
   temperatureState: "observed" | "unknown" | "beyond-readings";
   inGap: boolean;
   gap: Gap | null;
+  /** Wall-clock time of the last reading at or before t (UTC); it stops at the decision point. */
   timeLabel: string;
+  /**
+   * Whole simulated minutes elapsed inside the scenario run, or null before it
+   * starts. Schematic: there are no readings during the branch.
+   */
+  branchElapsed: number | null;
   delayMinutes: number | null;
   delayTotal: number | null;
   costTicker: string | null;
@@ -255,6 +261,10 @@ export function stateAt(input: ClockInput, tRaw: number): Frame {
     inGap: gap !== null,
     gap,
     timeLabel: formatClock(startMinute + Math.min(t, journeyEnd)),
+    branchElapsed:
+      phase === "branch" || phase === "arrived"
+        ? Math.floor(t - journeyEnd + 1e-9)
+        : null,
     delayMinutes: delayOk
       ? eased >= 1
         ? input.delayMinutes

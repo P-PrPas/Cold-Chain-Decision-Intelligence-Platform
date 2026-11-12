@@ -16,9 +16,10 @@
 }
 
 main.studio {
-  --stage-h: clamp(380px, calc(100vh - 480px), 640px);
+  /* 84px header + head + presets + timeline: the core loop fits one screen. */
+  --stage-h: clamp(320px, calc(100dvh - 436px), 640px);
   max-width: 1680px;
-  padding: 16px 2.2vw 40px;
+  padding: 12px 2.2vw 40px;
 }
 main.studio h1 {
   font-size: 24px;
@@ -39,8 +40,8 @@ main.studio h1 {
   align-items: flex-end;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px 24px;
-  margin-bottom: 16px;
+  gap: 8px 24px;
+  margin-bottom: 10px;
 }
 .studio-route {
   display: flex;
@@ -91,7 +92,7 @@ main.studio h1 {
     "hint hint hint"
     "evidence evidence evidence"
     "prepare prepare prepare";
-  gap: 16px;
+  gap: 12px 16px;
   align-items: start;
 }
 .rail {
@@ -106,7 +107,7 @@ main.studio h1 {
 .inspector {
   grid-area: inspector;
   min-width: 0;
-  max-height: calc(var(--stage-h) + 56px);
+  max-height: calc(var(--stage-h) + 52px);
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -218,10 +219,10 @@ main.studio h1 {
   margin-bottom: 8px;
   font-size: 12px;
   color: var(--muted);
-  min-height: 36px;
+  min-height: 44px;
 }
 .chip {
-  min-height: 36px;
+  min-height: 44px;
   padding: 4px 12px;
   gap: 6px;
   border: 1px solid var(--line-strong);
@@ -235,6 +236,7 @@ main.studio h1 {
   background: var(--accent-soft);
 }
 .stage {
+  container-type: inline-size;
   position: relative;
   height: var(--stage-h, 380px);
   min-height: 320px;
@@ -316,9 +318,10 @@ main.studio h1 {
   display: flex;
   gap: 8px;
 }
+/* Bottom-left keeps the card clear of the origin label at the decision moment. */
 .hud-tl {
   left: 12px;
-  top: 12px;
+  bottom: 12px;
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
@@ -371,8 +374,8 @@ main.studio h1 {
   background: var(--panel);
 }
 .hud .seg-btn {
-  min-height: 36px;
-  min-width: 36px;
+  min-height: 44px;
+  min-width: 44px;
 }
 .compare-btn {
   border: 1px solid var(--line-strong);
@@ -411,7 +414,7 @@ main.studio h1 {
 .schematic-note {
   position: absolute;
   left: 12px;
-  bottom: 12px;
+  top: 12px;
   z-index: 2;
   margin: 0;
   padding: 2px 8px;
@@ -472,7 +475,7 @@ main.studio h1 {
   position: absolute;
   z-index: 4;
   left: 50%;
-  bottom: 56px;
+  top: 60px;
   transform: translateX(-50%);
   display: grid;
   gap: 4px 12px;
@@ -498,7 +501,7 @@ main.studio h1 {
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
-  min-height: 36px;
+  min-height: 44px;
   padding: 4px 14px;
   background: var(--bg);
   color: var(--text);
@@ -672,7 +675,7 @@ main.studio .result-card h2 {
 /* Timeline */
 .timeline {
   margin: 0;
-  padding: 12px 16px 6px;
+  padding: 8px 16px 4px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
@@ -724,8 +727,8 @@ main.studio .result-card h2 {
 }
 .tl-track {
   position: relative;
-  height: 124px;
-  margin-top: 10px;
+  height: 84px;
+  margin-top: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg);
@@ -974,6 +977,12 @@ main.studio .prepare h2 {
 
 /* Mobile: sticky canvas, timeline under it, assumptions in a bottom sheet */
 @media (max-width: 760px) {
+  /* The rail and the canvas stay pinned: focused controls below them scroll clear of them. */
+  .studio-body
+    > :not(.rail):not(.studio-stage)
+    :is(button, a, input, select, summary, [tabindex]) {
+    scroll-margin-top: calc(56px + max(250px, 42vh) + 24px);
+  }
   main.studio {
     --rail-h: 56px;
     padding: 8px 12px 96px;
@@ -1059,6 +1068,7 @@ main.studio .prepare h2 {
   .hud-tl {
     left: 8px;
     top: 8px;
+    bottom: auto;
     padding: 4px 8px;
     min-width: 0;
   }
@@ -1102,11 +1112,13 @@ main.studio .prepare h2 {
   .schematic-note {
     left: auto;
     right: 8px;
+    top: auto;
     bottom: 8px;
     font-size: 9px;
     padding: 1px 6px;
   }
   .coach {
+    top: auto;
     bottom: 40px;
   }
   .ghost-chip {
@@ -1195,6 +1207,10 @@ main.studio .prepare h2 {
   .studio-actions {
     flex-wrap: wrap;
   }
+  /* The camera buttons take the whole bottom row; the note sits above them. */
+  .schematic-note {
+    bottom: 60px;
+  }
   .hud-tl {
     max-width: calc(100% - 120px);
   }
@@ -1206,5 +1222,29 @@ main.studio .prepare h2 {
   .ghost-chip,
   .coach {
     animation: none;
+  }
+}
+
+/* The scenario-time note stays visible on small screens: branch time is schematic. */
+.hud-tl .hud-branch-note {
+  display: block;
+  max-width: 190px;
+}
+
+/* A lazy stage keeps its size while three.js loads; the 2D schematic shows meanwhile. */
+.network-canvas[data-pending] {
+  visibility: hidden;
+}
+
+.prepare-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* On a narrow stage the delay and cost card would sit on the temperature card. */
+@container (max-width: 500px) {
+  .hud-br {
+    display: none;
   }
 }

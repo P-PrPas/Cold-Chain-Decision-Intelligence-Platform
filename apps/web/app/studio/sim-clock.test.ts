@@ -136,6 +136,24 @@ describe("phases and decision pause", () => {
   });
 });
 
+describe("branch elapsed time", () => {
+  it("is null on the journey and at the decision point", () => {
+    expect(stateAt(base(readings), 100).branchElapsed).toBeNull();
+    expect(stateAt(base(readings), J).branchElapsed).toBeNull();
+  });
+  it("counts scenario minutes while the reading time stays at the last reading", () => {
+    const f = stateAt(base(readings), J + 45);
+    expect(f.phase).toBe("branch");
+    expect(f.branchElapsed).toBe(45);
+    expect(f.timeLabel).toBe("12:00");
+  });
+  it("ends at the full branch length", () => {
+    const f = stateAt(base(readings), TOTAL);
+    expect(f.phase).toBe("arrived");
+    expect(f.branchElapsed).toBe(BRANCH_MINUTES);
+  });
+});
+
 describe("delay clock and cost ticker", () => {
   it("are zero before the branch starts", () => {
     const f = stateAt(base(readings), J);

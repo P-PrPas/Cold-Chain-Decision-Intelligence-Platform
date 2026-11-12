@@ -31,25 +31,25 @@ const en = {
     "One route stroke runs from cold blue to amber with a single break in the middle. The break stands for a data gap that the product never fills in.",
   brandOnLight: "On light",
   brandOnDark: "On dark",
-  brandMarkColour: "Colour mark",
+  brandMarkColour: "Color mark",
   brandMarkMono: "Monochrome mark",
   brandLockup: "Lockup",
   brandFavicon: "Favicon",
-  brandColour: "Colour tokens",
+  brandColour: "Color tokens",
   brandColourNote:
     "Contrast ratios are measured live from the active theme. Body text needs at least 4.5 : 1.",
   brandPair: "Pair",
   brandRatio: "Contrast",
   brandThermal: "Thermal scale",
   brandThermalNote:
-    "Saturated colour is reserved for temperature data. Cold on the left, hot on the right.",
+    "Saturated color is reserved for temperature data. Cold on the left, hot on the right.",
   brandUnknown: "Unknown data",
   brandUnknownNote:
     "Missing readings are never interpolated and never shown as compliant. They are hatched grey.",
   brandNoReadings: "No readings",
   brandStatus: "Status badges",
   brandStatusNote:
-    "Each status has a shape, a label and a colour. No status is shown as safe, certified or approved.",
+    "Each status has a shape, a label and a color. No status is shown as safe, certified or approved.",
   brandProvenance: "Provenance chips",
   brandProvenanceNote: "Shown beside a figure so its origin is clear.",
   brandType: "Type scale",
@@ -87,12 +87,10 @@ const th: Dict = {
   switchToDark: "เปลี่ยนเป็นธีมมืด",
   switchToLight: "เปลี่ยนเป็นธีมสว่าง",
   footerEvidence: "หลักฐาน / สถานการณ์จำลอง / การทบทวนโดยคน",
-  footerDisclaimer:
-    "ใช้สนับสนุนการตัดสินใจเท่านั้น ไม่ใช่การรับรองความปลอดภัยของอาหาร",
+  footerDisclaimer: "ใช้สนับสนุนการตัดสินใจเท่านั้น ไม่ใช่การรับรองความปลอดภัยของอาหาร",
 
   brandTitle: "แบรนด์และโทเคนการออกแบบ",
-  brandIntro:
-    "เอกสารอ้างอิงภายในของระบบภาพ Frost paper ไม่มีลิงก์จากเมนูของผลิตภัณฑ์",
+  brandIntro: "เอกสารอ้างอิงภายในของระบบภาพ Frost paper ไม่มีลิงก์จากเมนูของผลิตภัณฑ์",
   brandLogo: "โลโก้ The Gap",
   brandLogoNote:
     "เส้นทางเส้นเดียวไล่จากสีน้ำเงินเย็นไปเป็นสีอำพัน และขาดช่วงหนึ่งจุดตรงกลาง ช่องว่างนี้แทนข้อมูลที่หายไป ซึ่งระบบจะไม่เติมให้เอง",
@@ -103,8 +101,7 @@ const th: Dict = {
   brandLockup: "โลโก้พร้อมชื่อ",
   brandFavicon: "ไอคอนแท็บเบราว์เซอร์",
   brandColour: "โทเคนสี",
-  brandColourNote:
-    "ค่าคอนทราสต์วัดจากธีมที่ใช้อยู่ขณะนี้ ข้อความทั่วไปต้องไม่ต่ำกว่า 4.5 : 1",
+  brandColourNote: "ค่าคอนทราสต์วัดจากธีมที่ใช้อยู่ขณะนี้ ข้อความทั่วไปต้องไม่ต่ำกว่า 4.5 : 1",
   brandPair: "คู่สี",
   brandRatio: "คอนทราสต์",
   brandThermal: "สเกลอุณหภูมิ",
