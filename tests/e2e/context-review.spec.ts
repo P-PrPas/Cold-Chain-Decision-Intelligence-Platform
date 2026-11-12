@@ -163,17 +163,20 @@ test("changing analysis clears old results and proposal; failed recalculation st
   });
   await page.goto(web + "/workspace/shipments/ship?org=org");
   await expect(page.getByText("APPROVED", { exact: true })).toBeVisible();
+  const step = (id: string) => page.locator(`li[data-step="${id}"] button`);
+  const proposalText = page.getByText("Selected proposal: Continue delivery");
+  await step("simulate").click();
   await page.getByRole("button", { name: "Prepare proposal" }).click();
-  await expect(
-    page.getByText("Selected proposal: Continue delivery"),
-  ).toBeVisible();
+  // Preparing a proposal moves to the Propose step, where it is shown.
+  await expect(proposalText).toBeVisible();
+  await step("simulate").click();
   await page
     .getByRole("group", { name: "Select scenario" })
     .getByRole("button", { name: "Hold for inspection" })
     .click();
-  await expect(
-    page.getByText("Selected proposal: Continue delivery"),
-  ).not.toBeVisible();
+  await step("propose").click();
+  await expect(proposalText).not.toBeVisible();
+  await step("simulate").click();
   await expect(
     page.getByRole("region", { name: "Simulation explorer" }),
   ).toContainText("Draft preview (not saved)");
@@ -182,11 +185,12 @@ test("changing analysis clears old results and proposal; failed recalculation st
     .getByRole("button", { name: "Continue delivery", exact: true })
     .click();
   await page.getByRole("button", { name: "Prepare proposal" }).click();
-  await page.locator("#analysis > details > summary").click();
+  await expect(proposalText).toBeVisible();
+  await step("policy").click();
   await page.getByLabel("Resume a recent analysis").selectOption("a2");
-  await expect(
-    page.getByText("Selected proposal: Continue delivery"),
-  ).not.toBeVisible();
+  await step("propose").click();
+  await expect(proposalText).not.toBeVisible();
+  await step("simulate").click();
   await expect(
     page.getByRole("button", { name: "Prepare proposal" }),
   ).not.toBeVisible();

@@ -210,7 +210,13 @@ Response `201`:
 Validation: unique per organization; `departure_at < estimated_arrival_at`; positive/zero cargo values; ISO currency. Request omitted `organization_id` intentionally: backend derives it.
 
 ### GET `/shipments`
-Query: `status`, `product_id`, `reference`, `from`, `to`, `limit`, `cursor`, `sort` (`created_at`, descending). `from`/`to` filter departure times as an inclusive/exclusive UTC interval. Response paginated `items: [shipment]`. The candidate explicitly rejects `updated_at` sorting: it uses immutable creation-time keysets so edits cannot silently move records between pages (ADR 0003).
+Query: `status`, `product_id`, `reference`, `from`, `to`, `limit`, `cursor`, `sort` (`created_at`, descending). `from`/`to` filter departure times as an inclusive/exclusive UTC interval. Response paginated `items: [shipment]`. Each item keeps every existing shipment key and adds three additive, read-only keys (`q`, filters and cursor pagination are unchanged; `last_activity_at` and `evidence` appear on the list only):
+
+- `updated_at`: UTC timestamp of the last shipment edit (`PATCH`), `null` if never edited. Present on all shipment responses.
+- `last_activity_at`: UTC timestamp, the latest of the shipment's creation, last edit, and the creation/submission/review time of its datasets, analysis runs, simulation runs, decisions and reports.
+- `evidence`: `null` when the shipment has no `COMPLETED` analysis; otherwise the stored output of its latest completed analysis, echoed and never recomputed: `analysis_id`, `classification`, `unknown_seconds`, `excursion_count`, `coverage_window_known`, `coverage_window` (`{start_at,end_at}` or `null`). Unknown time is reported as unknown (`unknown_seconds`); a non-zero value or `INDETERMINATE` classification is never compliant. A queued/running/failed newer analysis does not replace it. This is evidence state, not release authorization.
+
+The candidate explicitly rejects `updated_at` sorting: it uses immutable creation-time keysets so edits cannot silently move records between pages (ADR 0003).
 
 ### GET `/shipments/{shipment_id}`
 Response `{ "shipment": { ... } }`, header `ETag: "shipment-r3"`; includes `latest_dataset_id`, `latest_analysis_id` as optional refs, but prior decisions still pin their own versions.
@@ -506,10 +512,10 @@ QA, `If-Match`, `Idempotency-Key`: `{ "review_notes":"Please attach inspection o
 ## 11. Reports and audit
 
 ### POST `/decisions/{decision_id}/reports`
-Header `Idempotency-Key`. Request `{ "format":"PDF", "language":"en" }`; response `202` with `report.id`/`job.id`. Render only from decision snapshot, not latest policy/dataset. Policy and decision states are labeled explicitly; report cannot imply regulatory release.
+Header `Idempotency-Key`. Request `{ "format":"PDF", "language":"en" }` where `language` is `en` (default) or `th`; any other value is `422`. `language` changes presentation labels and headings only (Thai uses an embedded Noto Sans Thai font); the data section is the frozen snapshot, identical in both languages, and both carry the English "Not food-safety certification. No automatic release or dispatch." line. A `th` and an `en` request for the same decision create distinct reports; reusing an `Idempotency-Key` with a different language is `409 IDEMPOTENCY_KEY_REUSED`. Response `202` with `report.id`/`job.id`. Render only from decision snapshot, not latest policy/dataset. Policy and decision states are labeled explicitly; report cannot imply regulatory release.
 
 ### GET `/reports/{report_id}`
-Response `200 {"report":{"id":"<uuid>","decision_id":"<uuid>","status":"COMPLETED","format":"PDF","sha256":"<64-hex>","created_at":"..."}}`. If not ready, `status=QUEUED|RUNNING|FAILED`.
+Response `200 {"report":{"id":"<uuid>","decision_id":"<uuid>","status":"COMPLETED","format":"PDF","language":"en","sha256":"<64-hex>","created_at":"..."}}`. If not ready, `status=QUEUED|RUNNING|FAILED`.
 
 ### GET `/reports/{report_id}/download`
 Authenticated tenant-authorized. Return private binary `200 application/pdf` or `302` to a short-lived signed URL. `409 REPORT_NOT_READY` before completion. Avoid logging signed URLs.

@@ -198,6 +198,7 @@ function HeroStudio() {
         destinationLabel={t("nodeReceiverShort")}
         compare={false}
         currency="THB"
+        lazy
       />
       <ol className="lp-rail" aria-label={t("railTitle")}>
         {views.map((v, i) => (
@@ -464,6 +465,11 @@ function Scenarios() {
                   gap: t("gapNoReadings"),
                   blocked: t("barrierBlocked"),
                   title: t("svgTitle"),
+                  acc: {
+                    ACCEPTED: t("accAccepted"),
+                    REJECTED: t("accRejected"),
+                    UNKNOWN: t("accUnknown"),
+                  },
                 }}
               />
               <p className="schematic-note">{t("schematicNote")}</p>
