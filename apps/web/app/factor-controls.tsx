@@ -87,7 +87,11 @@ export default function FactorControls({
     <fieldset className="factor-controls" disabled={disabled}>
       <legend>{t("sheetOpen")}</legend>
       <div className="factor-tabs" role="group" aria-label={t("fcGroups")}>
-        {["Delay", "Cost", "Receiver", "Advanced"].map((name) => (
+        {/* Ranking weights apply only after engine eligibility, which the sandbox never runs. */}
+        {(demo
+          ? ["Delay", "Cost", "Receiver"]
+          : ["Delay", "Cost", "Receiver", "Advanced"]
+        ).map((name) => (
           <button
             type="button"
             key={name}
@@ -226,56 +230,57 @@ export default function FactorControls({
         </label>
         <small>{t("fcRecvNote")}</small>
       </div>
-      <div hidden={group !== "Advanced"}>
-        {demo && <p className="notice">{t("fcDemoNote")}</p>}
-        <label>
-          {t("fcWeight")}
-          <input
-            aria-label={t("fcWeightSlider")}
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={value.ranking_weights.cost}
-            onChange={(e) =>
-              onChange({
-                ...value,
-                ranking_weights: {
-                  cost: e.target.value,
-                  delay: (1 - Number(e.target.value)).toFixed(2),
-                },
-              })
-            }
-          />
-          <input
-            type="number"
-            aria-label={t("fcWeight")}
-            aria-invalid={!!errors.weights}
-            aria-describedby={`${id}-weight-error`}
-            min="0"
-            max="1"
-            step="0.01"
-            required
-            value={value.ranking_weights.cost}
-            onChange={(e) =>
-              onChange({
-                ...value,
-                ranking_weights: {
-                  cost: e.target.value,
-                  delay: (1 - Number(e.target.value)).toFixed(2),
-                },
-              })
-            }
-          />
-        </label>
-        <span className="field-error" id={`${id}-weight-error`}>
-          {errors.weights ? t("fcErrWeights") : ""}
-        </span>
-        <small>
-          {t("fcDelayWeight")} {value.ranking_weights.delay}.{" "}
-          {t("fcWeightNote")}
-        </small>
-      </div>
+      {!demo && (
+        <div hidden={group !== "Advanced"}>
+          <label>
+            {t("fcWeight")}
+            <input
+              aria-label={t("fcWeightSlider")}
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={value.ranking_weights.cost}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  ranking_weights: {
+                    cost: e.target.value,
+                    delay: (1 - Number(e.target.value)).toFixed(2),
+                  },
+                })
+              }
+            />
+            <input
+              type="number"
+              aria-label={t("fcWeight")}
+              aria-invalid={!!errors.weights}
+              aria-describedby={`${id}-weight-error`}
+              min="0"
+              max="1"
+              step="0.01"
+              required
+              value={value.ranking_weights.cost}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  ranking_weights: {
+                    cost: e.target.value,
+                    delay: (1 - Number(e.target.value)).toFixed(2),
+                  },
+                })
+              }
+            />
+          </label>
+          <span className="field-error" id={`${id}-weight-error`}>
+            {errors.weights ? t("fcErrWeights") : ""}
+          </span>
+          <small>
+            {t("fcDelayWeight")} {value.ranking_weights.delay}.{" "}
+            {t("fcWeightNote")}
+          </small>
+        </div>
+      )}
       <button
         type="button"
         className="quiet"

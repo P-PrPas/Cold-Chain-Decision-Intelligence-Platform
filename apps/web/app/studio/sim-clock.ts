@@ -38,8 +38,21 @@ export const DESTINATION: Record<string, NodeKey> = {
   REJECT_QUARANTINE_DISPOSE: "quarantine",
 };
 
-/** Simulated minutes the scenario run takes on the shared time scale. */
-export const BRANCH_MINUTES = 120;
+/**
+ * Schematic drive time from the decision point to a scenario's node, in axis
+ * minutes. It is not a modelled travel time and is never shown as a figure.
+ */
+export const LEG_MINUTES = 60;
+/** Delays up to this many minutes are drawn to scale; longer ones are compressed. */
+export const LINEAR_DELAY = 240;
+/** Longest delay the inputs accept (one year). */
+export const MAX_DELAY = 525600;
+const COMPRESS_SCALE = 90;
+/**
+ * Where on its leg the truck waits out the delay: at the decision point
+ * (delayed departure) for Continue, at the scenario node for the others.
+ */
+const DWELL_AT: Record<string, number> = { CONTINUE_DELIVERY: 0 };
 /** Fraction of a blocked branch the truck reaches before the barrier. */
 export const BARRIER_AT = 0.55;
 /** Used when no readings are supplied. */
@@ -106,10 +119,16 @@ export type Frame = {
   /** Wall-clock time of the last reading at or before t (UTC); it stops at the decision point. */
   timeLabel: string;
   /**
-   * Whole simulated minutes elapsed inside the scenario run, or null before it
-   * starts. Schematic: there are no readings during the branch.
+   * Whole minutes of the delay clock once the scenario run has started, or null
+   * before it and when the delay is unknown. Schematic: no readings exist here.
    */
   branchElapsed: number | null;
+  /** The truck is currently waiting out the delay. */
+  dwelling: boolean;
+  /** The delay is longer than LINEAR_DELAY, so its drawn length is compressed. */
+  axisCompressed: boolean;
+  /** The scenario run is finished. Never true while the delay is unknown. */
+  complete: boolean;
   delayMinutes: number | null;
   delayTotal: number | null;
   costTicker: string | null;
@@ -132,8 +151,93 @@ export function journeyMinutes(
     : DEFAULT_JOURNEY_MINUTES;
 }
 
-export function totalMinutes(readings: Reading[], stepMinutes: number): number {
-  return journeyMinutes(readings, stepMinutes) + BRANCH_MINUTES;
+export function validDelay(delayMinutes: number): boolean {
+  return (
+    Number.isFinite(delayMinutes) &&
+    delayMinutes >= 0 &&
+    delayMinutes <= MAX_DELAY
+  );
+}
+
+/**
+ * Axis minutes that a delay of `delayMinutes` real minutes occupies. Up to
+ * LINEAR_DELAY it is 1:1; beyond that the axis is compressed (log scale) so a
+ * year-long delay stays playable. Monotonic, so longer delays always look
+ * longer. Only the drawn length is compressed, never a displayed number.
+ */
+export function dwellAxis(delayMinutes: number): number {
+  if (!(delayMinutes > LINEAR_DELAY)) return Math.max(0, delayMinutes);
+  return (
+    LINEAR_DELAY +
+    COMPRESS_SCALE * Math.log1p((delayMinutes - LINEAR_DELAY) / COMPRESS_SCALE)
+  );
+}
+
+/** Inverse of dwellAxis: real minutes after `axisMinutes` of dwell. */
+export function dwellReal(axisMinutes: number): number {
+  if (!(axisMinutes > LINEAR_DELAY)) return Math.max(0, axisMinutes);
+  return (
+    LINEAR_DELAY +
+    COMPRESS_SCALE * Math.expm1((axisMinutes - LINEAR_DELAY) / COMPRESS_SCALE)
+  );
+}
+
+export type Branch = {
+  /** Axis minutes driving before the wait. */
+  pre: number;
+  /** Axis minutes of the wait (0 when the delay is unknown). */
+  dwell: number;
+  /** Axis minutes driving after the wait. */
+  post: number;
+  /** pre + dwell + post. */
+  span: number;
+  /** Fraction of the leg at which the truck waits. */
+  at: number;
+  delayKnown: boolean;
+  /** The delay is longer than LINEAR_DELAY, so the axis is compressed. */
+  compressed: boolean;
+};
+
+/**
+ * Timeline of one scenario run after the decision point. A null, negative,
+ * non-finite or over-limit delay is unknown, not 0: the truck gets as far as
+ * its waiting point and never completes.
+ */
+export function branchOf(type: string, delayMinutes: number): Branch {
+  const at = DWELL_AT[type] ?? 1;
+  const delayKnown = validDelay(delayMinutes);
+  const dwell = delayKnown ? dwellAxis(delayMinutes) : 0;
+  const pre = at * LEG_MINUTES;
+  const post = (1 - at) * LEG_MINUTES;
+  return {
+    pre,
+    dwell,
+    post,
+    span: pre + dwell + post,
+    at,
+    delayKnown,
+    compressed: delayKnown && delayMinutes > LINEAR_DELAY,
+  };
+}
+
+export type DelayInput = { type: string; delayMinutes: number };
+
+/** Longest scenario run on the shared axis; `only` limits it to one scenario. */
+export function axisSpan(scenarios: DelayInput[], only?: string): number {
+  const spans = scenarios
+    .filter((s) => only === undefined || s.type === only)
+    .map((s) => branchOf(s.type, s.delayMinutes).span);
+  return spans.length ? Math.max(...spans) : LEG_MINUTES;
+}
+
+/** Axis length: the journey plus the longest scenario run shown. */
+export function totalMinutes(
+  readings: Reading[],
+  stepMinutes: number,
+  scenarios: DelayInput[],
+  only?: string,
+): number {
+  return journeyMinutes(readings, stepMinutes) + axisSpan(scenarios, only);
 }
 
 export function findGaps(
@@ -188,19 +292,23 @@ function lerp(a: number, b: number, k: number) {
 export function stateAt(input: ClockInput, tRaw: number): Frame {
   const { readings, startMinute, stepMinutes: step } = input;
   const journeyEnd = journeyMinutes(readings, step);
-  const total = journeyEnd + BRANCH_MINUTES;
-  const t = Math.min(total, Math.max(0, Number.isFinite(tRaw) ? tRaw : 0));
+  const br = branchOf(input.scenario, input.delayMinutes);
+  const total = journeyEnd + br.span;
+  // Shared time: not clamped to this run's end, so compared runs stay on one axis.
+  const t = Math.max(0, Number.isFinite(tRaw) ? tRaw : 0);
   const dest: NodeKey = DESTINATION[input.scenario] ?? "receiver";
   const gaps = findGaps(readings, startMinute, step);
+  const b = Math.min(br.span, Math.max(0, t - journeyEnd));
+  const done = br.delayKnown && t >= total - 1e-9;
 
   const phase: Phase =
     t < journeyEnd - 1e-9
       ? "journey"
       : Math.abs(t - journeyEnd) <= 1e-9
         ? "decision"
-        : t < total - 1e-9
-          ? "branch"
-          : "arrived";
+        : done
+          ? "arrived"
+          : "branch";
 
   let temperatureState: Frame["temperatureState"];
   let tempC: number | null = null;
@@ -227,11 +335,17 @@ export function stateAt(input: ClockInput, tRaw: number): Frame {
   const O = NODES.origin;
   const D = NODES.decision;
   const T = NODES[dest];
-  const branchFrac = Math.min(
-    1,
-    Math.max(0, (t - journeyEnd) / BRANCH_MINUTES),
-  );
-  const blockedAtBarrier = !!input.blocked && branchFrac > 0;
+  // Position on the leg: drive to the waiting point, wait, then finish the
+  // leg. An unknown delay never ends the wait.
+  const waitEnd = br.pre + br.dwell;
+  const waited = Math.min(br.dwell, Math.max(0, b - br.pre));
+  const branchFrac =
+    b < br.pre
+      ? b / LEG_MINUTES
+      : !br.delayKnown || b < waitEnd
+        ? br.at
+        : Math.min(1, (b - br.dwell) / LEG_MINUTES);
+  const blockedAtBarrier = !!input.blocked && b > 0;
   const progressOnBranch = input.blocked
     ? Math.min(branchFrac, BARRIER_AT)
     : branchFrac;
@@ -240,9 +354,14 @@ export function stateAt(input: ClockInput, tRaw: number): Frame {
   const from = approach ? O : D;
   const to = approach ? D : T;
 
-  const eased = easeOutCubic(branchFrac);
-  const delayOk =
-    Number.isFinite(input.delayMinutes) && input.delayMinutes >= 0;
+  const eased = easeOutCubic(b / br.span);
+  const started = phase === "branch" || phase === "arrived";
+  // The clock counts real minutes; it ends on exactly the entered value.
+  const clock = br.delayKnown
+    ? b >= waitEnd - 1e-9
+      ? input.delayMinutes
+      : Math.floor(dwellReal(waited))
+    : null;
   return {
     t,
     total,
@@ -261,16 +380,17 @@ export function stateAt(input: ClockInput, tRaw: number): Frame {
     inGap: gap !== null,
     gap,
     timeLabel: formatClock(startMinute + Math.min(t, journeyEnd)),
-    branchElapsed:
-      phase === "branch" || phase === "arrived"
-        ? Math.floor(t - journeyEnd + 1e-9)
-        : null,
-    delayMinutes: delayOk
-      ? eased >= 1
-        ? input.delayMinutes
-        : Math.floor(input.delayMinutes * eased)
-      : null,
-    delayTotal: delayOk ? input.delayMinutes : null,
+    branchElapsed: started ? clock : null,
+    dwelling:
+      started &&
+      br.delayKnown &&
+      br.dwell > 0 &&
+      b >= br.pre - 1e-9 &&
+      b < waitEnd - 1e-9,
+    axisCompressed: br.compressed,
+    complete: done,
+    delayMinutes: clock,
+    delayTotal: br.delayKnown ? input.delayMinutes : null,
     costTicker: moneyAt(input.totalCost, eased),
     costTotal: input.totalCost,
     destination: dest,

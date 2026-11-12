@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "./i18n-provider";
 import StudioScene from "./studio/studio-scene";
 import { Player } from "./studio/player";
@@ -41,13 +41,6 @@ export default function Scene({
   compact?: boolean;
 }) {
   const { t } = useI18n();
-  const [player] = useState(() => {
-    const total = totalMinutes([], 30);
-    const p = new Player(DEFAULT_JOURNEY_MINUTES, total);
-    p.seek(total);
-    return p;
-  });
-  const [compare, setCompare] = useState(false);
   const acc = normAcceptance(acceptance);
   const views = SCENARIO_ORDER.map((type) => ({
     type,
@@ -56,6 +49,18 @@ export default function Scene({
     acceptance: type === scenario ? acc : ("UNKNOWN" as const),
     blocked: type === scenario && blocked,
   }));
+  // The view always rests on the final frame, which depends on the delay.
+  const total = totalMinutes([], 30, views, scenario);
+  const [player] = useState(() => {
+    const p = new Player(DEFAULT_JOURNEY_MINUTES, total);
+    p.seek(total);
+    return p;
+  });
+  useEffect(() => {
+    player.setAxis(DEFAULT_JOURNEY_MINUTES, total);
+    player.seek(total);
+  }, [player, total]);
+  const [compare, setCompare] = useState(false);
   const names = [
     origin,
     `${t("nodeDecision")} (${t("wsNotGps")})`,

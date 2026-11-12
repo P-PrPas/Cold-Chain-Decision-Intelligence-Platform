@@ -42,9 +42,11 @@ Motion that tells the simulation:
 2. **Thermal ribbon (signature visual).** The truck leaves a ribbon behind it. Ribbon height is temperature and ribbon colour is the thermal band, so the chart lives inside the 3D world.
 3. **Honest gap.** Where readings are missing the ribbon stops, a hatched ghost frame takes its place, the truck turns grey and a "No readings 09:30–10:30" label appears. No interpolation.
 4. **Decision point.** The sim auto-pauses at the decision point, the camera pulls back and the four routes branch out.
-5. **Scenario run.** The truck continues along the chosen branch. The delay clock counts up and the cost ticker counts up to the Decimal total.
-6. **Compare mode (`C`).** Four ghost trucks run in parallel on the same time scale. A BLOCKED one stops at a barrier and shows the rule reason.
-7. **What-if feedback.** After a slider change, a ghost of the previous value stays visible for about 1 s.
+5. **Scenario run.** The truck continues along the chosen branch and waits out the entered delay (at the decision point for Continue, at the facility for the others). The delay clock counts the wait and the cost ticker counts up to the Decimal total. Delays above 240 min are drawn on a compressed axis (break mark and note); every number shown is the entered value.
+6. **Compare mode (`C`).** Four ghost trucks run in parallel on one shared time axis, so arrivals differ with the delays. Each truck tags its own running total and delay clock. A BLOCKED one stops at a barrier and shows the rule reason.
+7. **What-if feedback.** After a slider change, a ghost of the previous value (chip, cost bar and chart position) stays visible for about 1 s.
+
+Every value a user can adjust in the sandbox has a visible numeric effect: delay (time), the six cost categories (stacked bar, tags), the delay-and-cost chart (position only, no ranking) and the sample temperatures ("Edit readings", synthetic, never saved). The ranking weight is not offered in the sandbox because ranking only follows engine eligibility.
 
 Ease of use:
 

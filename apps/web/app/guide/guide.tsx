@@ -251,6 +251,8 @@ const KEYS: [string[], DictKey][] = [
   [["C"], "gdKeyC"],
   [["R"], "gdKeyR"],
   [["1", "2", "3", "4"], "gdKey14"],
+  [["↑", "↓"], "gdKeyPoint"],
+  [["Delete"], "gdKeyDelete"],
   [["Esc"], "gdKeyEsc"],
 ];
 const FAQ = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
@@ -350,9 +352,20 @@ export default function Guide() {
               <p>{t("gdWhatIfLead")}</p>
               <Figure id="studio-factors" />
             </Section>
+            <Section id="visible-factors" level={3} title={t("gdVisibleH")}>
+              <p>{t("gdVisibleLead")}</p>
+              <Figure id="studio-chart" />
+              <p>{t("gdVisibleNote")}</p>
+            </Section>
             <Section id="compare" level={3} title={t("gdCompareH")}>
               <p>{t("gdCompareLead")}</p>
               <Figure id="studio-compare" />
+              <p>{t("gdAxisNote")}</p>
+            </Section>
+            <Section id="edit-readings" level={3} title={t("gdEditH")}>
+              <p>{t("gdEditLead")}</p>
+              <Figure id="studio-edit" />
+              <p>{t("gdEditNote")}</p>
             </Section>
             <Section id="cameras" level={3} title={t("gdCameraH")}>
               <p>{t("gdCameraLead")}</p>
