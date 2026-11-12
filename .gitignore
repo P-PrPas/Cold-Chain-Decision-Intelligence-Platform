@@ -19,3 +19,6 @@ htmlcov/
 
 playwright-report/
 test-results/
+
+.taste-skill/
+shots/

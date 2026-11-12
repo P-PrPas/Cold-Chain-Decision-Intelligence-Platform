@@ -45,6 +45,8 @@ export default function StudioScene({
   onCompare,
   currency,
   ghost,
+  lazy = false,
+  announce = false,
   children,
 }: {
   player: Player;
@@ -60,6 +62,13 @@ export default function StudioScene({
   onCompare?: () => void;
   currency: string;
   ghost?: Ghost | null;
+  /**
+   * Show the 2D schematic first and load three.js only after first paint, once
+   * the stage is near the viewport. The stage keeps its size, so nothing shifts.
+   */
+  lazy?: boolean;
+  /** Announce the decision point and arrival to screen readers (politely, nothing else). */
+  announce?: boolean;
   children?: ReactNode;
 }) {
   const t = useT();
@@ -70,6 +79,7 @@ export default function StudioScene({
   const engine = useRef<Diorama | null>(null);
   const [mode, setMode] = useState<Mode>("overview");
   const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(!lazy);
 
   const series = readings ?? EMPTY;
   const gaps = useMemo(
@@ -90,7 +100,8 @@ export default function StudioScene({
   const blocked = Object.fromEntries(
     scenarios.map((s) => [s.type, !!s.blocked]),
   );
-  const effective2d = mode === "2d" || failed;
+  const pending = lazy && !ready && !failed;
+  const effective2d = mode === "2d" || failed || pending;
 
   const labels = {
     origin: originLabel,
@@ -101,6 +112,11 @@ export default function StudioScene({
     quarantine: t("nodeQuarantineShort"),
     gap: t("gapNoReadings"),
     blocked: t("barrierBlocked"),
+    acc: {
+      ACCEPTED: t("accAccepted"),
+      REJECTED: t("accRejected"),
+      UNKNOWN: t("accUnknown"),
+    },
   };
   const config: DioramaConfig = {
     readings: series,
@@ -125,36 +141,80 @@ export default function StudioScene({
   });
 
   // Mount the diorama once. If WebGL is unavailable the 2D view takes over.
+  // A lazy stage waits for first paint and for the viewport before it fetches
+  // three.js, and shows the 2D schematic meanwhile.
   useEffect(() => {
     const el = host.current;
     if (!el) return;
     let cancelled = false;
+    let started = false;
+    const cleanups: (() => void)[] = [];
     const lost = (e: Event) => {
       e.preventDefault();
       if (!cancelled) setFailed(true);
     };
     el.addEventListener("webglcontextlost", lost, true);
-    import("./diorama")
-      .then((m) => {
-        if (cancelled) return;
-        try {
-          const d = m.mountDiorama(el);
-          engine.current = d;
-          d.setConfig(latest.current.config);
-          d.setFrames({ all: latest.current.frames });
-        } catch {
-          setFailed(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
+    const start = () => {
+      if (started || cancelled) return;
+      started = true;
+      import("./diorama")
+        .then((m) => {
+          if (cancelled) return;
+          try {
+            const d = m.mountDiorama(el);
+            engine.current = d;
+            d.setConfig(latest.current.config);
+            d.setFrames({ all: latest.current.frames });
+            setReady(true);
+          } catch {
+            setFailed(true);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setFailed(true);
+        });
+    };
+    if (!lazy) start();
+    else {
+      let painted = false;
+      let near = false;
+      const go = () => {
+        if (painted && near) start();
+      };
+      const afterPaint = () => {
+        const run = () => {
+          painted = true;
+          go();
+        };
+        const h = window.setTimeout(run, 300);
+        cleanups.push(() => window.clearTimeout(h));
+      };
+      if (document.readyState === "complete") afterPaint();
+      else {
+        window.addEventListener("load", afterPaint, { once: true });
+        cleanups.push(() => window.removeEventListener("load", afterPaint));
+      }
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            near = true;
+            io.disconnect();
+            go();
+          }
+        },
+        { rootMargin: "300px" },
+      );
+      io.observe(el);
+      cleanups.push(() => io.disconnect());
+    }
     return () => {
       cancelled = true;
+      cleanups.forEach((c) => c());
       el.removeEventListener("webglcontextlost", lost, true);
       engine.current?.dispose();
       engine.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const firstTheme = useRef(theme);
@@ -180,9 +240,12 @@ export default function StudioScene({
     origin: t("nodeOrigin"),
     decision: t("nodeDecision"),
   }[destKey];
-  const sceneAria = t("sceneAria")
+  const accWord = (type: string) => labels.acc[acceptance[type] ?? "UNKNOWN"];
+  const sceneAria = `${t("sceneAria")
     .replace("{from}", originLabel)
-    .replace("{to}", destName);
+    .replace("{to}", destName)} ${t("sceneAriaAcceptance")
+    .replace("{a}", accWord("CONTINUE_DELIVERY"))
+    .replace("{b}", accWord("CONDITIONAL_REROUTE"))}`;
 
   const phaseKey = {
     journey: "phaseJourney",
@@ -198,13 +261,18 @@ export default function StudioScene({
   ];
 
   return (
-    <div className="stage" data-mode={effective2d ? "2d" : mode}>
+    <div
+      className="stage"
+      data-mode={effective2d ? "2d" : mode}
+      data-three={failed ? "failed" : ready ? "ready" : "pending"}
+    >
       <div
         ref={host}
         className="network-canvas"
         role="img"
         aria-label={sceneAria}
-        hidden={effective2d}
+        hidden={mode === "2d" || failed}
+        data-pending={pending || undefined}
       />
       {effective2d && (
         <>
@@ -234,8 +302,24 @@ export default function StudioScene({
         </>
       )}
 
-      <div className="hud hud-tl" aria-hidden="true" data-phase={main.phase}>
-        <span className="hud-time num">{main.timeLabel} UTC</span>
+      <div
+        className="hud hud-tl"
+        aria-hidden="true"
+        data-phase={main.phase}
+        data-keepout
+      >
+        <span className="hud-time num">
+          {main.timeLabel} UTC
+          {main.branchElapsed !== null && (
+            <>
+              {" "}
+              + {main.branchElapsed} {t("unitMin")}
+            </>
+          )}
+        </span>
+        {main.branchElapsed !== null && (
+          <span className="hud-sub hud-branch-note">{t("hudBranchTime")}</span>
+        )}
         {readings === null ? (
           <span className="hud-temp" data-state="unknown">
             {t("noTraceHere")}
@@ -265,7 +349,12 @@ export default function StudioScene({
       </div>
 
       <div className="hud hud-tr">
-        <div className="seg" role="group" aria-label={t("cameraGroup")}>
+        <div
+          className="seg"
+          role="group"
+          aria-label={t("cameraGroup")}
+          data-keepout
+        >
           {modes.map(([m, label]) => (
             <button
               key={m}
@@ -282,19 +371,22 @@ export default function StudioScene({
           <button
             type="button"
             className="seg-btn compare-btn"
+            data-keepout
             aria-pressed={compare}
             aria-keyshortcuts="C"
             title={t("compareHint")}
             onClick={onCompare}
           >
-            {t("compare")} <kbd>C</kbd>
+            {t("compare")} <kbd aria-hidden="true">C</kbd>
           </button>
         )}
       </div>
 
-      <p className="schematic-note">{t("schematicNote")}</p>
+      <p className="schematic-note" data-keepout>
+        {t("schematicNote")}
+      </p>
 
-      <div className="hud hud-br" aria-hidden="true">
+      <div className="hud hud-br" aria-hidden="true" data-keepout>
         <span>
           {t("hudDelay")}{" "}
           <b className="num">
@@ -321,9 +413,19 @@ export default function StudioScene({
           {t("unavailable3d")}
         </p>
       )}
-      <p className="sr-only" role="status">
-        {sName}. {t(phaseKey[main.phase])}
-      </p>
+      {announce && (
+        <p
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-live-phase={main.phase}
+        >
+          {main.phase === "decision" || main.phase === "arrived"
+            ? `${sName}. ${t(phaseKey[main.phase])}`
+            : ""}
+        </p>
+      )}
       {children}
     </div>
   );

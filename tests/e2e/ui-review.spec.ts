@@ -137,7 +137,7 @@ test("work queue shows organization name and keeps create form closed", async ({
   await expect(
     page.getByRole("heading", { name: "Create shipment", exact: true }),
   ).not.toBeVisible();
-  await expect(page.locator(".queue-summary")).toBeVisible();
+  await expect(page.locator(".ws-stats")).toBeVisible();
   await expect(page.getByRole("status")).not.toBeVisible();
   await page.screenshot({
     path: "test-results/work-queue.png",
@@ -202,10 +202,17 @@ test("QA requires explicit acknowledgement and sends only the checked action", a
     await route.fulfill({ json: body });
   });
   await page.goto(`${web}/workspace/shipments/shipment-demo?org=org-demo`);
+  // Without a ready dataset the simulate step is blocked and says why.
+  await expect(page.locator('li[data-step="simulate"]')).toHaveAttribute(
+    "data-state",
+    "blocked",
+  );
   await expect(
-    page.getByText("Complete an analysis to unlock scenario comparison."),
+    page
+      .locator('li[data-step="simulate"]')
+      .getByText("Upload a CSV and wait for a ready dataset first."),
   ).toBeVisible();
-  await page.getByRole("button", { name: /Pending qa/ }).click();
+  await page.getByRole("button", { name: /Pending QA/ }).click();
   await page.getByLabel("Review outcome").selectOption("approve");
   await page
     .getByLabel("Review notes", { exact: true })

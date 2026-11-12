@@ -1,0 +1,1019 @@
+/* Workspace: shipment list and the shipment journey. Shares the Studio shell and the Frost paper tokens. */
+
+main.ws {
+  max-width: 1320px;
+}
+main.ws.studio {
+  max-width: 1680px;
+}
+main.ws [hidden] {
+  display: none !important;
+}
+/* The global section card is not used inside the workspace; cards are explicit. */
+main.ws section {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+}
+main.ws section section {
+  padding: 0;
+}
+main.ws p {
+  max-width: 78ch;
+}
+main.ws label {
+  margin: 0 0 14px;
+  gap: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+main.ws label > span:first-child {
+  color: var(--muted);
+}
+main.ws input,
+main.ws select,
+main.ws textarea {
+  max-width: none;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-color: var(--line-strong);
+  font-size: 14px;
+}
+main.ws textarea {
+  min-height: 96px;
+}
+main.ws input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+  padding: 0;
+}
+main.ws input[type="range"] {
+  min-height: 0;
+  padding: 0;
+  background: none;
+}
+main.ws form {
+  margin: 12px 0;
+}
+main.ws h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+main.ws h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+main.ws h4 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+main.ws details > summary {
+  min-height: 44px;
+  padding: 8px 0;
+  font-size: 14px;
+}
+main.ws code {
+  font-family: var(--font-mono-stack);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ws-dim {
+  color: var(--muted);
+}
+.ws-note {
+  margin: 8px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ws-right {
+  text-align: right;
+}
+.ws-link {
+  display: inline-block;
+  margin-top: 12px;
+}
+.ws-busy {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+/* List page */
+.ws-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+main.ws .ws-head h1 {
+  margin: 0 0 4px;
+}
+.ws-head p {
+  margin: 0;
+  font-size: 14px;
+}
+.ws-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+main.ws .ws-org {
+  margin: 0;
+  min-width: 220px;
+}
+.ws-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 12px 0;
+}
+p.ws-alert {
+  display: block;
+}
+.ws-obs h4 {
+  margin: 0 0 4px;
+}
+.ws-obs ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+.ws-empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 32px 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+}
+.ws-empty h2 {
+  color: var(--text);
+}
+.ws-empty p {
+  margin: 0;
+}
+.ws-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 20px;
+}
+.ws-stats > div {
+  min-width: 120px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.ws-stats dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ws-stats dd {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+.ws-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 0 16px;
+  margin-bottom: 4px;
+}
+main.ws section.ws-create {
+  margin: 0 0 20px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.ws-create form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+.ws-create form > p,
+.ws-form-actions {
+  grid-column: 1 / -1;
+}
+.ws-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+  min-width: 0;
+}
+main.ws .ws-field label {
+  margin: 0;
+}
+.ws-field [aria-invalid="true"] {
+  border-color: var(--st-blocked-line);
+}
+.ws-field .field-error {
+  color: var(--st-blocked-fg);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ws-form-actions {
+  display: flex;
+  gap: 8px;
+}
+.ws-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+main.ws table.ws-table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ws-table caption {
+  padding: 12px 16px 0;
+  font-size: 12px;
+}
+.ws-table th {
+  padding: 10px 16px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.ws-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+.ws-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.ws-table tbody tr:hover {
+  background: var(--panel-2);
+}
+.ws-table td small {
+  display: block;
+  font-size: 12px;
+}
+.ws-ref {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ws-table button {
+  min-height: 44px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.ws-more {
+  margin: 16px 0 0;
+}
+.ws-skeleton div {
+  height: 48px;
+  margin-bottom: 8px;
+  border-radius: var(--radius);
+  background: linear-gradient(
+    90deg,
+    var(--panel-2) 0%,
+    var(--panel) 50%,
+    var(--panel-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: ws-shimmer 1.6s linear infinite;
+}
+@keyframes ws-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Operational and workflow status chips. Neutral on purpose: none of these is a quality verdict. */
+.op-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.op-badge[data-op="IN_TRANSIT"],
+.op-badge[data-op="PENDING_QA"],
+.op-badge[data-op="PENDING_REVIEW"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.op-badge[data-op="CANCELLED"],
+.op-badge[data-op="RETIRED"],
+.op-badge[data-op="REJECTED"] {
+  color: var(--muted);
+  border-style: dashed;
+}
+.ws-callout {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-size: 13px;
+}
+.ws-callout strong {
+  display: block;
+}
+.ws-callout p {
+  margin: 2px 0 0;
+  color: var(--text);
+}
+.ws-callout[data-tone="warn"] {
+  border-left-color: var(--st-review-line);
+  background: var(--st-review-bg);
+}
+.ws-callout[data-tone="warn"] p,
+.ws-callout[data-tone="warn"] strong {
+  color: var(--st-review-fg);
+}
+.ws-callout[data-tone="block"] {
+  border-left-color: var(--st-blocked-line);
+  background: var(--st-blocked-bg);
+}
+.ws-callout[data-tone="block"] p,
+.ws-callout[data-tone="block"] strong {
+  color: var(--st-blocked-fg);
+}
+
+/* Shipment page */
+.ws-crumb {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.ws-detail .studio-route {
+  gap: 6px 14px;
+}
+.ws-menu {
+  position: relative;
+}
+main.ws .ws-menu > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 500;
+  list-style: none;
+  cursor: pointer;
+}
+.ws-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.ws-menu-body {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  width: min(360px, 90vw);
+  margin-top: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 10px 30px var(--shadow);
+}
+.ws-stepper ol {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.ws-stepper li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+main.ws .ws-step {
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  font-weight: 500;
+}
+main.ws .ws-step:hover {
+  background: var(--panel-2);
+}
+main.ws .ws-step[aria-current="step"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.ws-step-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+li[data-state="done"] .ws-step-icon {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+li[data-state="current"] .ws-step-icon {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ws-step-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.ws-step-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ws-step-state {
+  font-size: 12px;
+  color: var(--muted);
+}
+li[data-state="blocked"] .ws-step {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+li[data-state="blocked"] .ws-step:hover {
+  background: transparent;
+}
+.ws-step-why {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.ws-step-why[data-kind="note"] {
+  color: var(--st-review-fg);
+}
+main.ws section.ws-saved {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-size: 13px;
+}
+.ws-saved p {
+  margin: 4px 0;
+  color: var(--text);
+}
+.ws-saved-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+main.ws .ws-saved-head h2 {
+  font-size: 14px;
+}
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.ws-actions button,
+.ws-saved-head button {
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.ws-panel-head {
+  margin-bottom: 16px;
+}
+.ws-panel-head p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.ws-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+main.ws .ws-card,
+main.ws section.ws-card {
+  padding: 16px;
+  margin: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.ws-split > .ws-card {
+  margin-bottom: 0;
+}
+.ws-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+.ws-card-head button {
+  min-height: 44px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.ws-card h3 svg {
+  vertical-align: -2px;
+}
+.ws-row2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+.ws-policies {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ws-policies > li {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.ws-policy-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+.ws-confirm {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ws-author {
+  margin-top: 8px;
+}
+.ws-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 20px;
+  margin: 8px 0 12px;
+}
+.ws-facts > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ws-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ws-facts dd {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ws-hashes {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.ws-hashes > div {
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ws-hashes dd {
+  display: grid;
+  gap: 2px;
+}
+.ws-rules {
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.ws-rules li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 6px 0;
+}
+.ws-rules small {
+  flex-basis: 100%;
+  color: var(--st-blocked-fg);
+  font-size: 12px;
+}
+.ws-effect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font-family: var(--font-mono-stack);
+  font-size: 11px;
+  font-weight: 600;
+}
+.ws-effect-HARD_BLOCK {
+  border-color: var(--st-blocked-line);
+  background: var(--st-blocked-bg);
+  color: var(--st-blocked-fg);
+}
+.ws-effect-REVIEW_REQUIRED {
+  border-color: var(--st-review-line);
+  background: var(--st-review-bg);
+  color: var(--st-review-fg);
+}
+.ws-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.ws-h3 {
+  margin-top: 12px;
+}
+
+/* Evidence timeline */
+main.ws figure.ws-timeline {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.ws-timeline figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+.ws-timeline .chart-scroll {
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--bg);
+}
+.ws-timeline .tl-t {
+  font-size: 11px;
+  fill: var(--muted);
+  font-family: var(--font-mono-stack);
+}
+.ws-timeline-empty {
+  padding: 20px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.ws-timeline-empty p {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+.ws-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.ws-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.ws-dot,
+.ws-hatch,
+.ws-box {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+}
+.ws-dot {
+  border-radius: 50%;
+  background: var(--accent);
+}
+.ws-hatch {
+  border: 1px dashed var(--st-unknown-line);
+  background: var(--unknown-hatch);
+}
+.ws-box {
+  border: 2px solid var(--st-review-line);
+}
+.ws-ev-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.ws-ev-unknown {
+  color: var(--st-unknown-fg);
+}
+
+/* Simulate step: the Studio shell */
+main.ws .ws-sim {
+  margin: 0;
+}
+.ws-sim-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.ws-sim-head p {
+  margin: 4px 0 0;
+}
+.ws-sim .studio-body {
+  grid-template-areas: "rail stage inspector";
+  margin-bottom: 16px;
+}
+.ws-sim .network-explorer {
+  padding: 0 !important;
+}
+.ws-sim .scene-toolbar {
+  padding: 0 0 8px;
+}
+.ws-sim .scene-toolbar h3 {
+  font-size: 15px;
+}
+.ws-sim .network-explorer > details {
+  margin-top: 4px;
+}
+.ws-sim .rail-elig {
+  grid-area: tag;
+}
+.ws-sim .rail-elig .status-badge {
+  padding: 0 6px;
+  font-size: 11px;
+}
+.ws-sim .inspector .sheet-body {
+  gap: 12px;
+}
+.ws-sim .result-card h2 {
+  font-size: 15px;
+}
+.ws-sim .ws-h3 {
+  font-size: 13px;
+}
+.ws-sim-actions {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.ws-sim-actions button {
+  width: 100%;
+}
+.ws-status-line {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ws-compare {
+  margin: 0 0 12px;
+}
+.ws-compare table {
+  margin: 0;
+}
+.ws-compare td button {
+  min-height: 44px;
+  padding: 4px 10px;
+}
+.ws-sim .scene-missing {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.ws-sim .factor-controls {
+  margin: 0;
+}
+
+/* Decision steps */
+.ws-decision .decision-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ws-decision .decision-list li {
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ws-decision .decision-list li[data-selected="true"] button {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.ws-decision .decision-list p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.ws-decision .review-detail {
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.ws-decision .ws-record h4:first-child {
+  margin-top: 0;
+}
+.ws-proposal > summary {
+  font-weight: 600;
+}
+.ws-review-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ws-decision .decision-summary h4 {
+  margin: 12px 0 6px;
+}
+.ws-decision .evidence-grid > div {
+  padding: 8px 0;
+}
+
+@media (max-width: 1099px) {
+  .ws-stepper ol {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ws-sim .studio-body {
+    grid-template-areas:
+      "rail stage"
+      "inspector inspector";
+  }
+  .ws-split {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  main.ws {
+    padding: 16px 16px 96px;
+  }
+  .ws-head {
+    align-items: flex-start;
+  }
+  .ws-head-actions {
+    width: 100%;
+  }
+  main.ws .ws-org {
+    flex: 1;
+    min-width: 0;
+  }
+  .ws-filters,
+  .ws-create form,
+  .ws-row2 {
+    grid-template-columns: 1fr;
+  }
+  .ws-stepper ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ws-hashes > div {
+    grid-template-columns: 1fr;
+  }
+  .ws-menu-body {
+    right: auto;
+    left: 0;
+  }
+  .ws-sim .rail-elig {
+    display: none;
+  }
+  .ws-sim .studio-body {
+    grid-template-areas: none;
+  }
+  /* Tables become one card per row. */
+  .ws-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .ws-table,
+  .ws-table tbody,
+  .ws-table tr,
+  .ws-table td {
+    display: block;
+    width: 100%;
+  }
+  main.ws table.ws-table {
+    display: block;
+  }
+  .ws-table tr {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .ws-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .ws-table td {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 8px;
+    padding: 6px 14px;
+    border: 0;
+    text-align: left;
+  }
+  .ws-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .ws-table td.ws-right {
+    text-align: left;
+  }
+}
+@media (max-width: 400px) {
+  .ws-stepper ol {
+    grid-template-columns: 1fr;
+  }
+  .ws-table td {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.ws-timeline .chart-scroll svg {
+  max-width: 760px;
+}
+.ws-detail .studio-actions {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+main.ws .ws-menu > summary {
+  white-space: nowrap;
+}
+.ws-menu-body {
+  right: auto;
+  left: 0;
+}
+/* Below 1100px the actions wrap to the left edge, so the menu opens rightwards. */
+@media (min-width: 1100px) {
+  .ws-menu-body {
+    left: auto;
+    right: 0;
+  }
+}
+main.ws .ws-menu > summary {
+  padding: 8px 14px;
+}
+
+/* The organization picker takes its own row so its name is readable. */
+@media (max-width: 520px) {
+  main.ws .ws-org {
+    flex-basis: 100%;
+  }
+}
+
+/* Stand-alone links in the workspace are 44px tap targets. */
+main.ws a.ws-ref,
+.ws-crumb a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.ws-h4 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+}

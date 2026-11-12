@@ -20,7 +20,7 @@ export const studioEn = {
   scnRerouteShort: "Reroute",
   scnQuarantineShort: "Reject",
   scenarioGroup: "Select scenario",
-  railTitle: "How to proceed",
+  railTitle: "Scenarios",
   railHint: "Keys 1 to 4",
   illustrativePick: "Illustrative pick",
   illustrativeNote:
@@ -35,13 +35,15 @@ export const studioEn = {
   camFollow: "Follow truck",
   cam2d: "2D",
   compare: "Compare",
-  compareHint: "Compare all four options (C)",
+  compareHint: "Compare all four scenarios (C)",
   schematicNote: "Schematic, not GPS",
   unavailable3d:
     "3D is unavailable. The same scenario and evidence remain available in 2D.",
   sceneLabel: "Simulation explorer",
   sceneAria: "Schematic route from {from} through the decision point to {to}.",
   svgTitle: "Schematic route, 2D view",
+  sceneAriaAcceptance:
+    "Receiver acceptance is an assumption: original receiver {a}, alternative receiver {b}.",
   noTraceHere:
     "The temperature trace is not shown in this view. See the evidence section for readings.",
 
@@ -50,6 +52,7 @@ export const studioEn = {
   hudUnknown: "Unknown",
   hudNoReading: "No reading",
   hudBeyond: "No temperature model after the last reading",
+  hudBranchTime: "scenario time, schematic (no readings)",
   gapNoReadings: "No readings",
   hudDelay: "Delay clock",
   hudCost: "Cost",
@@ -106,15 +109,15 @@ export const studioEn = {
   sliderRun: "scenario run {p}%",
   sliderNoReading: "no readings",
   kbdHint:
-    "Space play/pause. Left/Right scrub. C compare. R reset. 1 to 4 scenario.",
-  legendScale: "Colour scale is for display only. It is not a limit.",
+    "Space play/pause. Left/Right scrub. C compare. R reset. 1 to 4 pick a scenario.",
+  legendScale: "Color scale is for display only. It is not a limit.",
   legendCold: "Cooler",
   legendHot: "Warmer",
   legendUnknown: "Unknown",
 
-  coachTitle: "Choose how to proceed",
+  coachTitle: "Choose a scenario",
   coachBody:
-    "Pick one of the four options on the left. The truck then drives that branch.",
+    "Pick one of the four scenarios on the left. The truck then drives that branch.",
   coachDismiss: "Got it",
 
   evidenceTitle: "Temperature evidence",
@@ -128,7 +131,7 @@ export const studioEn = {
   evTemp: "Temperature",
   evMissing: "Missing reading",
 
-  prepTitle: "Prepare a decision",
+  prepTitle: "Prepare a proposal",
   prepIntro:
     "Real proposals require a saved engine run and QA review. This is a demo preview only.",
   prepReview:
@@ -181,7 +184,7 @@ export const studioTh = {
   scnRerouteShort: "เปลี่ยนทาง",
   scnQuarantineShort: "ปฏิเสธ",
   scenarioGroup: "เลือกสถานการณ์",
-  railTitle: "เลือกวิธีดำเนินการ",
+  railTitle: "สถานการณ์",
   railHint: "กดปุ่ม 1 ถึง 4",
   illustrativePick: "ตัวอย่างที่เน้น",
   illustrativeNote: "เน้นไว้เพื่อการสาธิตเท่านั้น ไม่ใช่การตัดสินตามนโยบาย",
@@ -195,13 +198,15 @@ export const studioTh = {
   camFollow: "ตามรถ",
   cam2d: "2D",
   compare: "เปรียบเทียบ",
-  compareHint: "เปรียบเทียบทั้งสี่ทางเลือก (C)",
+  compareHint: "เปรียบเทียบทั้งสี่สถานการณ์ (C)",
   schematicNote: "ภาพแผนผัง ไม่ใช่ GPS",
   unavailable3d:
     "ไม่สามารถแสดง 3D ได้ สถานการณ์และหลักฐานเดียวกันยังดูได้ในมุมมอง 2D",
   sceneLabel: "ตัวสำรวจการจำลอง",
   sceneAria: "แผนผังเส้นทางจาก {from} ผ่านจุดตัดสินใจ ไปยัง {to}",
   svgTitle: "แผนผังเส้นทาง มุมมอง 2D",
+  sceneAriaAcceptance:
+    "การยอมรับของผู้รับเป็นสมมติฐาน: ผู้รับเดิม{a} ผู้รับทางเลือก{b}",
   noTraceHere: "มุมมองนี้ไม่แสดงกราฟอุณหภูมิ ดูค่าอ่านได้ในส่วนหลักฐาน",
 
   hudTime: "เวลา (UTC)",
@@ -209,6 +214,7 @@ export const studioTh = {
   hudUnknown: "ไม่ทราบ",
   hudNoReading: "ไม่มีค่าอ่าน",
   hudBeyond: "ไม่มีแบบจำลองอุณหภูมิหลังค่าอ่านสุดท้าย",
+  hudBranchTime: "เวลาในสถานการณ์ (แผนผัง ไม่มีค่าอ่าน)",
   gapNoReadings: "ไม่มีค่าอ่าน",
   hudDelay: "นาฬิกาความล่าช้า",
   hudCost: "ค่าใช้จ่าย",
@@ -271,8 +277,8 @@ export const studioTh = {
   legendHot: "อุ่นกว่า",
   legendUnknown: "ไม่ทราบ",
 
-  coachTitle: "เลือกวิธีดำเนินการ",
-  coachBody: "เลือกหนึ่งในสี่ทางเลือกทางซ้าย แล้วรถจะวิ่งตามเส้นทางนั้น",
+  coachTitle: "เลือกสถานการณ์",
+  coachBody: "เลือกหนึ่งในสี่สถานการณ์ทางซ้าย แล้วรถจะวิ่งตามเส้นทางนั้น",
   coachDismiss: "เข้าใจแล้ว",
 
   evidenceTitle: "หลักฐานอุณหภูมิ",
@@ -286,11 +292,11 @@ export const studioTh = {
   evTemp: "อุณหภูมิ",
   evMissing: "ไม่มีค่าอ่าน",
 
-  prepTitle: "เตรียมการตัดสินใจ",
+  prepTitle: "เตรียมข้อเสนอ",
   prepIntro:
     "ข้อเสนอจริงต้องมีผลรันจากเอนจินที่บันทึกไว้และการทบทวนโดย QA นี่เป็นเพียงตัวอย่างสาธิต",
   prepReview:
-    "ฉันได้ทบทวนหลักฐานจำลองและข้อจำกัดของหลักฐานสำหรับตัวเลือกนี้แล้ว",
+    "ฉันได้ทบทวนหลักฐานจำลองและข้อจำกัดของหลักฐานสำหรับสถานการณ์นี้แล้ว",
   prepPreview: "ดูตัวอย่างข้อเสนอสาธิต",
   prepNotSaved: "ไม่ได้บันทึกหรือส่งข้อเสนอใด ๆ",
   prepLine: "ร่างเพื่อสาธิต ไม่มีผลรันจากเอนจิน",
