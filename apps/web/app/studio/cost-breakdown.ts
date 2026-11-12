@@ -3,7 +3,7 @@ import {
   totalCost,
   type CostCategory,
   type ScenarioAssumption,
-} from "../simulation-assumptions";
+} from "@/lib/simulation-assumptions";
 
 export type CostPart = {
   key: CostCategory;

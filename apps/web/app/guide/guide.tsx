@@ -4,10 +4,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import "./guide.css";
 import manifestJson from "./guide-images.json";
 import { FIGURES, type FigureId } from "./guide-figures";
-import type { DictKey, Lang } from "../i18n";
-import { useI18n } from "../i18n-provider";
-import { ProvenanceChip, type Provenance } from "../ui/provenance-chip";
-import { StatusBadge, type Status } from "../ui/status-badge";
+import type { DictKey, Lang } from "@/i18n";
+import { useI18n } from "@/i18n/provider";
+import {
+  ProvenanceChip,
+  type Provenance,
+} from "@/components/ui/provenance-chip";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 
 type ImageInfo = {
   w: number;

@@ -1,6 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
-import { LANG_KEY, THEME_KEY, isLang, type Lang } from "./i18n";
+import { LANG_KEY, THEME_KEY, isLang, type Lang } from "@/i18n";
 
 export type Theme = "light" | "dark";
 

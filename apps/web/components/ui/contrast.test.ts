@@ -3,7 +3,10 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import { contrastRatio, parseColor } from "./contrast";
 
-const css = readFileSync(join(__dirname, "..", "globals.css"), "utf8");
+const css = readFileSync(
+  join(__dirname, "..", "..", "app", "globals.css"),
+  "utf8",
+);
 
 function tokens(selector: string) {
   const start = css.indexOf(selector + ",\n");

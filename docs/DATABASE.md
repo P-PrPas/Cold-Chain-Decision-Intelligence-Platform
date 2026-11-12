@@ -3,9 +3,9 @@
 **Product:** Cold Chain Decision Intelligence Platform / Transport Simulation  
 **Target:** MVP v1.0 · **Version:** 1.0.1 · **Status:** Proposed for Sprint-0 review
 **Date:** 2026-11-11 · **DBMS:** PostgreSQL 16+ · **ORM:** SQLAlchemy 2 · **Migration:** Alembic  
-**References:** `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`, `ARCHITECTUR.md`, `API.md`, `AGENT.md`, `claude.md`
+**References:** `docs/product/PRD.md`, `ARCHITECTURE.md`, `API.md`, `AGENT.md`, `claude.md`
 
-> Implementation contract, not a claim that schema or product-specific quality rules are approved. `ARCHITECTUR.md` owns architectural invariants, `API.md` owns external field names and endpoint behavior. Any contract change requires corresponding documentation, migration, and tests. Example values are synthetic and **never approved safety limits**.
+> Implementation contract, not a claim that schema or product-specific quality rules are approved. `ARCHITECTURE.md` owns architectural invariants, `API.md` owns external field names and endpoint behavior. Any contract change requires corresponding documentation, migration, and tests. Example values are synthetic and **never approved safety limits**.
 
 ## S0–S6 physical implementation notes
 
@@ -180,7 +180,7 @@ All tenant tables below have `organization_id`, `created_at` (where applicable),
 - `id`, `organization_id`, `type TEXT NOT NULL`, `resource_id UUID`, `status TEXT CHECK IN ('QUEUED','RUNNING','COMPLETED','FAILED','SKIPPED')`, `attempt_count INTEGER NOT NULL DEFAULT 0`, `dedupe_key TEXT NOT NULL`, `result_jsonb JSONB`, `error_code TEXT`, `created_at`, `started_at`, `finished_at`.
 - `UNIQUE (organization_id,dedupe_key)`; distinguish retry of same job versus new analysis run.
 
-**`outbox_events`** (required by `ARCHITECTUR.md`)
+**`outbox_events`** (required by `ARCHITECTURE.md`)
 - `id UUID PK`, `organization_id UUID NOT NULL`, `event_type TEXT NOT NULL`, `aggregate_type TEXT NOT NULL`, `aggregate_id UUID NOT NULL`, `payload_jsonb JSONB NOT NULL`, `status TEXT CHECK IN ('PENDING','DELIVERED','FAILED')`, `attempt_count INTEGER NOT NULL DEFAULT 0`, `available_at TIMESTAMPTZ NOT NULL DEFAULT now()`, `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`, `delivered_at TIMESTAMPTZ`.
 - Claim batches with `FOR UPDATE SKIP LOCKED`, dispatcher retries with backoff; consumer dedupes by `event.id`/stable job dedupe key. Worker must be idempotent despite at-least-once delivery.
 

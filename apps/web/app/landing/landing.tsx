@@ -9,32 +9,32 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import "./landing.css";
-import { BrandMark } from "../brand-mark";
-import { useT } from "../i18n-provider";
-import { FOOTER_CLOSE_ID } from "../site-chrome";
-import { useTheme } from "../prefs";
-import { formatAmount, totalCost } from "../simulation-assumptions";
+import { BrandMark } from "@/components/brand-mark";
+import { useT } from "@/i18n/provider";
+import { FOOTER_CLOSE_ID } from "@/components/site-chrome";
+import { useTheme } from "@/lib/prefs";
+import { formatAmount, totalCost } from "@/lib/simulation-assumptions";
 import {
   DEMO_START_MINUTE,
   DEMO_STEP_MINUTES,
   demoBaseline,
   demoShipments,
-} from "../studio/demo-data";
-import { usePlaying, useReducedMotion } from "../studio/hooks";
-import { Player } from "../studio/player";
-import SchematicSvg from "../studio/schematic-svg";
-import { scenarioKey } from "../studio/scenarios";
-import StudioScene, { type ScenarioView } from "../studio/studio-scene";
-import Timeline from "../studio/timeline";
+} from "@/app/studio/demo-data";
+import { usePlaying, useReducedMotion } from "@/app/studio/hooks";
+import { Player } from "@/app/studio/player";
+import SchematicSvg from "@/app/studio/schematic-svg";
+import { scenarioKey } from "@/app/studio/scenarios";
+import StudioScene, { type ScenarioView } from "@/app/studio/studio-scene";
+import Timeline from "@/app/studio/timeline";
 import {
   compareFrames,
   findGaps,
   journeyMinutes,
   thermalBand,
   totalMinutes,
-} from "../studio/sim-clock";
-import { ProvenanceChip } from "../ui/provenance-chip";
-import { StatusBadge } from "../ui/status-badge";
+} from "@/app/studio/sim-clock";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 const HERO = demoShipments[0];
 const GAP_DEMO = demoShipments[2];

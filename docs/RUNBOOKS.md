@@ -1,7 +1,7 @@
 # Operations and release runbooks
 
 ## Review and deployment boundaries
-All seven sprint PRs remain open for owner review. CI is a disposable release-candidate environment, not a deployed customer staging site. No production deployment or actual quality-policy approval has occurred.
+The sprint work (S0–S6) and the web redesign are merged to `main`. CI is a disposable release-candidate environment, not a deployed customer staging site. No production deployment or actual quality-policy approval has occurred.
 Local Compose creates synthetic identities, ephemeral S3 and a persistent local PostgreSQL volume. Never load real customer evidence there. Operator/reviewer password is `synthetic-demo-only`, intentionally public fixture data.
 
 ## Start / stop local candidate

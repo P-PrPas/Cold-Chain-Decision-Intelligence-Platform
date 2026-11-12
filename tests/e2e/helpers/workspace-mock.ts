@@ -1,5 +1,5 @@
 import { type Page } from "@playwright/test";
-import { freshAssumptions } from "../../../apps/web/app/simulation-assumptions";
+import { freshAssumptions } from "../../../apps/web/lib/simulation-assumptions";
 
 type Cfg = {
   roles?: string[];

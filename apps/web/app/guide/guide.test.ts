@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dictionaries, LANGS } from "../i18n";
+import { dictionaries, LANGS } from "@/i18n";
 import { FIGURES } from "./guide-figures";
 import manifest from "./guide-images.json";
 

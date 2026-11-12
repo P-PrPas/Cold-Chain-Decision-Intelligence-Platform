@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
-import { useI18n } from "./i18n-provider";
-import type { DictKey } from "./i18n";
+import { useI18n } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
 
 export function human(value: unknown): string {
   return String(value ?? "Not available")

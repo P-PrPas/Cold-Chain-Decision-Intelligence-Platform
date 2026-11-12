@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { useT } from "../i18n-provider";
+import { useT } from "@/i18n/provider";
 import {
   EDIT_MAX,
   EDIT_MIN,

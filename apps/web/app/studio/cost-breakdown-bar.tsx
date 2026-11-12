@@ -1,8 +1,8 @@
 "use client";
-import { useT } from "../i18n-provider";
-import type { DictKey } from "../i18n";
-import { formatAmount, type CostCategory } from "../simulation-assumptions";
-import { ProvenanceChip } from "../ui/provenance-chip";
+import { useT } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
+import { formatAmount, type CostCategory } from "@/lib/simulation-assumptions";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
 import { percentText, type CostBreakdown } from "./cost-breakdown";
 
 const LABEL: Record<CostCategory, DictKey> = {

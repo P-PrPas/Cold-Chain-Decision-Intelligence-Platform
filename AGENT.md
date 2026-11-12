@@ -25,9 +25,9 @@ The team's core principle: **Every recommendation must be reproducible, explaina
 
 ## 2. Source-of-truth hierarchy
 
-1. `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md` — **product intent and scope**.
-2. `ARCHITECTUR.md` — **proposed system design, boundaries, algorithms and infrastructure**.
-3. `API.md` — **HTTP contract, validation, idempotency, RBAC and response semantics**.
+1. `docs/product/PRD.md` — **product intent and scope**.
+2. `docs/ARCHITECTURE.md` — **proposed system design, boundaries, algorithms and infrastructure**.
+3. `docs/API.md` — **HTTP contract, validation, idempotency, RBAC and response semantics**.
 4. ADRs under `docs/adr/` — **approved project-specific changes** to the above.
 5. `AGENT.md` / `AGENTS.md` and `claude.md` / `CLAUDE.md` — **agent workflow**, subordinate to the specifications above.
 
@@ -57,7 +57,7 @@ repo/
   services/api/app/{api,core,identity,shipments,products,policies,temperature,analytics,simulations,decisions,ai,reports,audit,db,jobs}/
   services/api/tests/{unit,integration,contract,e2e}/
   packages/contracts/
-  docs/{PRD.md,ARCHITECTUR.md,API.md,adr/}
+  docs/{product/PRD.md,ARCHITECTURE.md,API.md,adr/}
   infrastructure/{compose,nginx,monitoring}/
   fixtures/{csv,policies,expected_outputs}/
 ```
@@ -81,7 +81,7 @@ The current source files may initially live at repository root. Link or copy the
 3. Put authentication, authorization, row ownership and state-transition checks on the server.
 4. Use service/repository boundaries and typed DTOs; don't embed simulation or policy logic inside HTTP handlers.
 5. Create an Alembic migration for schema changes; preserve existing data and test upgrade/rollback procedures when feasible.
-6. Update OpenAPI, `API.md` and contract tests together for any external contract change.
+6. Update OpenAPI, `docs/API.md` and contract tests together for any external contract change.
 7. Treat uploaded files, CSV metadata, user notes and LLM responses as untrusted input; defend against injection and unsafe file processing.
 8. Keep AI prompt/provider interactions out of tests by default; use fixtures/fakes and stable golden outputs.
 9. Do not hard-code secrets, tokens, real customer data, cloud credentials or actual organization identifiers.
@@ -135,7 +135,7 @@ Do not claim tests passed if you did not run them. Never fabricate benchmark num
 
 ## 7. Interface and state machine guardrails
 
-- Follow `API.md` endpoint inventory exactly unless an approved contract change is made.
+- Follow `docs/API.md` endpoint inventory exactly unless an approved contract change is made.
 - Standardize errors and `request_id`. Hide internal paths, database IDs belonging to other tenants, stack traces and secrets.
 - Long-running dataset import, analysis, simulation or reporting uses durable jobs (`QUEUED/RUNNING/COMPLETED/FAILED`) and tenant-scoped polling.
 - Keep `Shipment`, `Dataset`, `Analysis`, `Simulation`, `Policy`, and `Decision` lifecycle states distinct. A shipment marked `ARRIVED` does not imply QA approved product acceptance.
@@ -177,7 +177,7 @@ Partition tasks by ownership (`web`, `API`, `policy/simulation`, `data`, `tests/
 ## 12. Quick start for a newly connected agent
 
 1. Locate repository root and inspect `git status`, project manifests and readme.
-2. Read `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`, `ARCHITECTUR.md`, `API.md` and any ADRs.
+2. Read `docs/product/PRD.md`, `docs/ARCHITECTURE.md`, `docs/API.md` and any ADRs.
 3. Confirm actual stack/scripts versus proposed stack.
 4. Find the smallest current task and write its acceptance tests.
 5. Implement with safeguards; validate; summarize evidence and unresolved decisions.

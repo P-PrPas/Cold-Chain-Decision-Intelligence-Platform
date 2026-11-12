@@ -1,11 +1,14 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { BrandMark } from "../brand-mark";
-import { useT } from "../i18n-provider";
-import { useTheme } from "../prefs";
-import { contrastRatio, parseColor } from "../ui/contrast";
-import { ProvenanceChip, type Provenance } from "../ui/provenance-chip";
-import { StatusBadge, type Status } from "../ui/status-badge";
+import { BrandMark } from "@/components/brand-mark";
+import { useT } from "@/i18n/provider";
+import { useTheme } from "@/lib/prefs";
+import { contrastRatio, parseColor } from "@/components/ui/contrast";
+import {
+  ProvenanceChip,
+  type Provenance,
+} from "@/components/ui/provenance-chip";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 
 const SWATCHES = [
   "bg",

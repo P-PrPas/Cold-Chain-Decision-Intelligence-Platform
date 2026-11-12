@@ -1,6 +1,6 @@
 "use client";
-import { useI18n } from "../i18n-provider";
-import type { DictKey } from "../i18n";
+import { useI18n } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
 import type { StepId, StepInfo, StepState } from "./stepper";
 
 const NAME: Record<StepId, DictKey> = {
