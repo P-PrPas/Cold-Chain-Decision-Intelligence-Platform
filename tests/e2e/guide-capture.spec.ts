@@ -297,6 +297,79 @@ for (const lang of LANGS) {
       await context.close();
     });
 
+    test("cost breakdown and the delay and cost chart", async ({ browser }) => {
+      const t = D(lang);
+      const context = await browser.newContext({
+        viewport: { width: 1440, height: 1000 },
+      });
+      const page = await context.newPage();
+      await prefs(page, lang);
+      await openStudio(page);
+      await page.keyboard.press("2");
+      await expect(page.locator(".hud-tl")).toHaveAttribute(
+        "data-phase",
+        "arrived",
+        { timeout: 20000 },
+      );
+      // Spread the 2,800.00 THB total over four categories so the bar has segments.
+      await page
+        .getByRole("button", { name: t.fcTabCost, exact: true })
+        .click();
+      const component = page.locator(".factor-controls select").first();
+      for (const [index, amount] of [
+        [0, "900.00"],
+        [1, "450.00"],
+        [2, "350.00"],
+        [5, "1100.00"],
+      ] as const) {
+        await component.selectOption({ index });
+        await page.locator('.factor-controls input[type="text"]').fill(amount);
+      }
+      await page
+        .getByRole("button", { name: t.fcTabDelay, exact: true })
+        .click();
+      await page.waitForTimeout(1800);
+      await page.locator(".cost-breakdown-card").scrollIntoViewIfNeeded();
+      await shoot(page, lang, "studio-chart", {
+        "1": [page.locator(".compare-chart svg"), "tr"],
+        "2": [page.locator(".cc-toggle"), "tr"],
+        "3": [page.locator(".cb-bar[role='img']"), "tr"],
+        "4": [page.locator(".cb-legend")],
+      });
+      await context.close();
+    });
+
+    test("edit readings", async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: 1440, height: 1000 },
+      });
+      const page = await context.newPage();
+      await prefs(page, lang);
+      await openStudio(page);
+      await page.locator(".tl-edit-toggle").click();
+      const point = (i: number) => page.getByTestId(`edit-point-${i}`);
+      await point(5).focus();
+      for (let i = 0; i < 12; i++) await page.keyboard.press("ArrowDown");
+      await point(7).focus();
+      await page.keyboard.press("Delete");
+      await point(4).focus();
+      await page.waitForTimeout(1000);
+      await shoot(
+        page,
+        lang,
+        "studio-edit",
+        {
+          "1": [page.locator(".tl-edit-toggle"), "l"],
+          "2": [point(4), "tr"],
+          "3": [page.locator(".tl-edit-actions button").first(), "tl"],
+          "4": [page.locator(".tl-edit-actions button").nth(1), "tl"],
+          "5": [page.locator(".timeline .edited-pill"), "tr"],
+        },
+        { clip: page.locator(".timeline") },
+      );
+      await context.close();
+    });
+
     test("data gap on DEMO-003", async ({ browser }) => {
       const context = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
@@ -335,8 +408,8 @@ for (const lang of LANGS) {
       await page.waitForTimeout(600);
       await shoot(page, lang, "studio-mobile-sheet", {
         "1": [page.locator(".sheet-handle"), "tr"],
-        "2": [page.locator(".result-card")],
-        "3": [page.locator(".factor-controls")],
+        "2": [page.locator(".result-card"), "tl"],
+        "3": [page.locator(".factor-controls"), "tl"],
       });
       await context.close();
     });
