@@ -628,8 +628,11 @@
             "type": "string"
           },
           "language": {
-            "const": "en",
             "default": "en",
+            "enum": [
+              "en",
+              "th"
+            ],
             "title": "Language",
             "type": "string"
           }
