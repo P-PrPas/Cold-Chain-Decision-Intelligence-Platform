@@ -32,12 +32,12 @@
 
 <table>
   <tr>
-    <td width="50%"><img src="apps/web/public/guide/en/studio-first.webp" alt="The Studio on first load: a 3D diorama of the route with the temperature ribbon and a recommended action" /></td>
+    <td width="50%"><img src="apps/web/public/guide/en/studio-first.webp" alt="The Studio on first load: a 3D diorama of the route with the temperature ribbon and the four response scenarios" /></td>
     <td width="50%"><img src="apps/web/public/guide/en/studio-compare.webp" alt="Compare mode in the Studio: four scenarios side by side with delay and cost" /></td>
   </tr>
   <tr>
     <td align="center"><sub><b>Studio sandbox.</b> A 3D diorama of the trip with a thermal ribbon that shows gaps as gaps.</sub></td>
-    <td align="center"><sub><b>Compare mode.</b> Four response scenarios side by side, eligibility first, cost and delay second.</sub></td>
+    <td align="center"><sub><b>Compare mode.</b> Four response scenarios on one time axis, each with its own delay and cost.</sub></td>
   </tr>
   <tr>
     <td><img src="apps/web/public/guide/en/ws-policy.webp" alt="Workspace: a versioned quality policy awaiting QA approval" /></td>
@@ -106,10 +106,10 @@ It is aimed at logistics operators, quality assurance reviewers and the engineer
 - **3D diorama and 2D schematic** of the route, with a playable timeline you can scrub, pause and edit.
 - **Thermal ribbon with honest gaps.** Missing intervals are drawn as unknown, not filled in.
 - **Four response scenarios:** continue delivery, hold for inspection, conditional reroute, and reject / quarantine / dispose.
-- **Compare mode** shows scenarios side by side. Eligibility is computed before any cost or delay ranking.
+- **Compare mode** runs all four scenarios on one shared time axis. The sandbox never ranks options or claims eligibility: it shows *Not evaluated*, because eligibility comes only from the engine.
 - **Delay-driven timing.** Changing the delay changes when things happen in the scene.
 - **Cost breakdown** by category and a **delay-versus-cost chart**.
-- **Editable readings.** Add, move or delete temperature points and watch the verdict change.
+- **Editable readings.** Drag a temperature point, or mark it as *No reading*, and watch the 3D scene, ribbon and gaps update. Edits are synthetic and never saved.
 - **Provenance everywhere.** Each figure is labelled observed, entered, calculated or estimated.
 
 ### Workspace
@@ -347,7 +347,7 @@ Use the header to switch between English and Thai and between light and dark the
 | `C` | Turn compare mode on or off |
 | `R` | Reset |
 | `1` to `4` | Select continue, hold, reroute or quarantine |
-| `↑` / `↓`, `Delete` | While a temperature point is focused: nudge it, or delete it |
+| `↑` / `↓`, `Delete` | While editing readings with a point focused: nudge it by 0.1 °C (`Shift`: 1 °C), or toggle it to *No reading* |
 | `Esc` | Dismiss the coach mark, or close the assumptions sheet on a phone |
 
 ### Regenerating the guide screenshots
