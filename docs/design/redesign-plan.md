@@ -70,6 +70,7 @@ Mobile (390): canvas sticky at the top (about 45vh), timeline under it, factors 
 |---|---|---|
 | `/` | Landing | 3 |
 | `/studio` (was `/demo`; `/demo` redirects) | Synthetic sim sandbox | 2 |
+| `/guide` | Illustrated user guide (EN/TH) built from real screenshots; regenerate with `tests/e2e/guide-capture.spec.ts` and `scripts/optimize_guide_images.py` | after 5 |
 | `/workspace` | Shipment list: status table with icons, search and filter, empty state that invites the first CSV upload | 4 |
 | `/workspace/shipments/[id]` | Real work. Uses the same Studio shell as the sandbox, plus a stepper: Evidence → Policy → Simulate → Propose → QA → Report | 4 |
 

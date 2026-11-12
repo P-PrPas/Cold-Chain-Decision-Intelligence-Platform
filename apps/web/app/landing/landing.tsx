@@ -239,6 +239,9 @@ function Hero() {
               <a className="btn btn--secondary" href="#scenarios">
                 {t("lpSeeOptions")}
               </a>
+              <Link className="btn btn--secondary" href="/guide">
+                {t("gdHowTo")}
+              </Link>
             </div>
           </div>
           <HeroStudio />
