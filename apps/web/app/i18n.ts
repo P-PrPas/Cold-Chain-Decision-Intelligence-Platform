@@ -1,3 +1,4 @@
+import { guideEn, guideTh } from "./i18n-guide";
 import { landingEn, landingTh } from "./i18n-landing";
 import { studioEn, studioTh } from "./i18n-studio";
 import { wsEn, wsTh } from "./i18n-workspace";
@@ -66,6 +67,7 @@ const en = {
   provCalculated: "Calculated",
   provEstimated: "Estimated",
   ...studioEn,
+  ...guideEn,
   ...landingEn,
   ...wsEn,
 } as const;
@@ -132,6 +134,7 @@ const th: Dict = {
   provCalculated: "คำนวณแล้ว",
   provEstimated: "ประมาณการ",
   ...studioTh,
+  ...guideTh,
   ...landingTh,
   ...wsTh,
 };
