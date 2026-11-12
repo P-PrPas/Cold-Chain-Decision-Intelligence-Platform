@@ -76,17 +76,28 @@ test("replay can be paused and the loop uses one WebGL canvas", async ({
 test("nothing on the landing is labelled safe, certified or approved", async ({
   page,
 }) => {
+  // Checked in both languages: the Thai page must not leak English claim words
+  // either. Thai disclaimers legitimately negate "รับรอง", so only English
+  // claim words are matched.
   for (const lang of ["en", "th"]) {
-    await page.addInitScript((l) => localStorage.setItem("cc-lang", l), lang);
     await page.goto(`${web}/`);
+    await page.evaluate((l) => localStorage.setItem("cc-lang", l), lang);
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", lang);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const text = await page.locator("body").innerText();
-    expect(text).not.toMatch(/\b(safe|certified|approved|guaranteed)\b/i);
+    expect(text).not.toMatch(/(safe|certified|approved|guaranteed)/i);
   }
-  // The shared footer carries the disclaimer once.
+});
+
+test("the shared footer carries the disclaimer once, in English", async ({
+  page,
+}) => {
   await page.goto(`${web}/`);
-  const n = await page
-    .getByText("Does not certify food safety", { exact: false })
-    .count();
-  expect(n).toBe(1);
+  await page.evaluate(() => localStorage.setItem("cc-lang", "en"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(
+    page.getByText("Does not certify food safety", { exact: false }),
+  ).toHaveCount(1);
 });

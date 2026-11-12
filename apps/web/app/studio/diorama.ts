@@ -9,7 +9,7 @@ import {
   type NodeKey,
   type Reading,
 } from "./sim-clock";
-import type { Acceptance } from "./scenarios";
+import { acceptanceTag, type Acceptance } from "./scenarios";
 
 export type CameraMode = "overview" | "follow";
 
@@ -33,6 +33,8 @@ export type DioramaConfig = {
     quarantine: string;
     gap: string;
     blocked: string;
+    /** Receiver acceptance in words, shown next to the glyph. */
+    acc: Record<Acceptance, string>;
   };
   camera: CameraMode;
   compare: boolean;
@@ -581,12 +583,18 @@ export function mountDiorama(host: HTMLElement): Diorama {
       inspection: cfg.labels.inspection,
       quarantine: cfg.labels.quarantine,
     };
-    const sym = (a: Acceptance | undefined) =>
-      a === "ACCEPTED" ? "✓ " : a === "REJECTED" ? "× " : "? ";
     const accOf = (type: string) => cfg!.acceptance[type] ?? "UNKNOWN";
     // Receiver acceptance is an assumption: show it on the receiving nodes.
-    text.receiver = sym(accOf("CONTINUE_DELIVERY")) + text.receiver;
-    text.alt = sym(accOf("CONDITIONAL_REROUTE")) + text.alt;
+    text.receiver = acceptanceTag(
+      accOf("CONTINUE_DELIVERY"),
+      text.receiver,
+      cfg.labels.acc,
+    );
+    text.alt = acceptanceTag(
+      accOf("CONDITIONAL_REROUTE"),
+      text.alt,
+      cfg.labels.acc,
+    );
     for (const [key, m] of Object.entries(markers)) {
       if (key in text) {
         m.el.textContent = text[key];
@@ -936,7 +944,20 @@ export function mountDiorama(host: HTMLElement): Diorama {
     placeCamera(size.w, size.h);
     renderer.render(scene, camera);
 
-    // HTML markers follow their 3D anchors, clamped inside the canvas.
+    // HTML markers follow their 3D anchors, clamped inside the canvas and kept
+    // clear of the HUD cards and controls (anything marked data-keepout).
+    const hostBox = host.getBoundingClientRect();
+    const keep = Array.from(
+      host.parentElement?.querySelectorAll<HTMLElement>("[data-keepout]") ?? [],
+    )
+      .map((k) => k.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0)
+      .map((r) => ({
+        l: r.left - hostBox.left,
+        r: r.right - hostBox.left,
+        t: r.top - hostBox.top,
+        b: r.bottom - hostBox.top,
+      }));
     for (const m of Object.values(markers)) {
       proj.copy(m.point).project(camera);
       const hw = m.el.offsetWidth / 2 + 4;
@@ -945,10 +966,20 @@ export function mountDiorama(host: HTMLElement): Diorama {
         size.w - hw,
         Math.max(hw, (proj.x * 0.5 + 0.5) * size.w),
       );
-      const y = Math.min(
+      let y = Math.min(
         size.h - hh,
         Math.max(hh, (-proj.y * 0.5 + 0.5) * size.h),
       );
+      for (const k of keep) {
+        if (x + hw <= k.l || x - hw >= k.r || y + hh <= k.t || y - hh >= k.b)
+          continue;
+        const down = k.b + hh + 2;
+        const up = k.t - hh - 2;
+        const canDown = down <= size.h - hh;
+        const canUp = up >= hh;
+        if (canDown && (!canUp || down - y <= y - up)) y = down;
+        else if (canUp) y = up;
+      }
       m.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) translate(-50%, -50%)`;
     }
     host.dataset.drawCalls = String(renderer.info.render.calls);
@@ -965,8 +996,13 @@ export function mountDiorama(host: HTMLElement): Diorama {
     raf = requestAnimationFrame(draw);
   }
 
+  // Test hooks: the render loop is paused while offscreen or in a hidden tab.
+  const syncState = () => {
+    host.dataset.paused = String(!onScreen || document.hidden);
+  };
   const io = new IntersectionObserver((entries) => {
     onScreen = entries.some((e) => e.isIntersecting);
+    syncState();
     if (onScreen) requestFrame();
     else if (raf) {
       cancelAnimationFrame(raf);
@@ -977,6 +1013,7 @@ export function mountDiorama(host: HTMLElement): Diorama {
   const ro = new ResizeObserver(() => requestFrame());
   ro.observe(host);
   const onVisibility = () => {
+    syncState();
     if (document.hidden) {
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
@@ -985,6 +1022,8 @@ export function mountDiorama(host: HTMLElement): Diorama {
   document.addEventListener("visibilitychange", onVisibility);
 
   buildWorld();
+  host.dataset.dpr = String(renderer.getPixelRatio());
+  syncState();
   host.dataset.initMs = String(Math.round(performance.now() - startedAt));
 
   return {

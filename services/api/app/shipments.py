@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 
 from app.access import DB, Current, audit, owned, permit, remember, replay
 from app.contracts import (
@@ -18,7 +18,8 @@ from app.contracts import (
     etag,
     require_match,
 )
-from app.models import Analysis, Decision, Product, Shipment, Simulation
+from app.db import now
+from app.models import Analysis, Dataset, Decision, Product, Report, Shipment, Simulation
 
 router = APIRouter(prefix="/api/v1")
 
@@ -125,6 +126,127 @@ def page(
         "next_cursor": next_cursor,
         "total_count": None,
     }
+
+
+def utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def iso(value: datetime) -> str:
+    return utc(value).isoformat().replace("+00:00", "Z")
+
+
+def evidence_summary(analysis: Analysis) -> dict[str, Any]:
+    """Echo stored analysis output only; nothing here is recomputed or inferred."""
+    result = analysis.result or {}
+    summary = result.get("summary") or {}
+    return {
+        "analysis_id": analysis.id,
+        "classification": result.get("classification"),
+        "unknown_seconds": summary.get("unknown_seconds"),
+        "excursion_count": summary.get("excursion_count"),
+        "coverage_window_known": summary.get("coverage_window_known"),
+        "coverage_window": result.get("coverage_window"),
+    }
+
+
+def with_evidence(db: DB, current: Current, listing: dict[str, Any]) -> dict[str, Any]:
+    """Add last_activity_at and evidence to a shipment page using constant-count batch queries."""
+    items = listing["items"]
+    ids = [item["id"] for item in items]
+    if not ids:
+        return listing
+    org = current.organization_id
+    latest: dict[str, list[datetime]] = {i: [] for i in ids}
+
+    def collect(rows: Any) -> None:
+        for shipment_id, *stamps in rows:
+            latest[shipment_id].extend(stamp for stamp in stamps if stamp is not None)
+
+    collect(
+        db.execute(
+            select(Dataset.shipment_id, func.max(Dataset.created_at))
+            .where(Dataset.organization_id == org, Dataset.shipment_id.in_(ids))
+            .group_by(Dataset.shipment_id)
+        )
+    )
+    collect(
+        db.execute(
+            select(Analysis.shipment_id, func.max(Analysis.created_at))
+            .where(Analysis.organization_id == org, Analysis.shipment_id.in_(ids))
+            .group_by(Analysis.shipment_id)
+        )
+    )
+    collect(
+        db.execute(
+            select(Simulation.shipment_id, func.max(Simulation.created_at))
+            .where(Simulation.organization_id == org, Simulation.shipment_id.in_(ids))
+            .group_by(Simulation.shipment_id)
+        )
+    )
+    collect(
+        db.execute(
+            select(
+                Simulation.shipment_id,
+                func.max(Decision.created_at),
+                func.max(Decision.submitted_at),
+                func.max(Decision.reviewed_at),
+            )
+            .join(Simulation, Simulation.id == Decision.simulation_run_id)
+            .where(
+                Decision.organization_id == org,
+                Simulation.organization_id == org,
+                Simulation.shipment_id.in_(ids),
+            )
+            .group_by(Simulation.shipment_id)
+        )
+    )
+    collect(
+        db.execute(
+            select(Simulation.shipment_id, func.max(Report.created_at))
+            .join(Decision, Decision.id == Report.decision_id)
+            .join(Simulation, Simulation.id == Decision.simulation_run_id)
+            .where(
+                Report.organization_id == org,
+                Decision.organization_id == org,
+                Simulation.organization_id == org,
+                Simulation.shipment_id.in_(ids),
+            )
+            .group_by(Simulation.shipment_id)
+        )
+    )
+    rank = (
+        func.row_number()
+        .over(
+            partition_by=Analysis.shipment_id,
+            order_by=(Analysis.created_at.desc(), Analysis.id.desc()),
+        )
+        .label("rank")
+    )
+    newest = (
+        select(Analysis.id, rank)
+        .where(
+            Analysis.organization_id == org,
+            Analysis.status == "COMPLETED",
+            Analysis.shipment_id.in_(ids),
+        )
+        .subquery()
+    )
+    evidence = {
+        a.shipment_id: evidence_summary(a)
+        for a in db.scalars(
+            select(Analysis)
+            .join(newest, newest.c.id == Analysis.id)
+            .where(newest.c.rank == 1, Analysis.organization_id == org)
+        )
+    }
+    for item in items:
+        own = [datetime.fromisoformat(item["created_at"])]
+        if item.get("updated_at"):
+            own.append(datetime.fromisoformat(item["updated_at"]))
+        item["last_activity_at"] = iso(max([utc(v) for v in own + latest[item["id"]]]))
+        item["evidence"] = evidence.get(item["id"])
+    return listing
 
 
 @router.post("/products", status_code=201)
@@ -246,14 +368,18 @@ def shipments(
         )
     if product_id:
         filters.append(Shipment.product_id == str(product_id))
-    return page(
+    return with_evidence(
         db,
         current,
-        Shipment,
-        limit,
-        cursor,
-        f"shipments:{status}:{reference}:{product_id}:{from_at}:{to_at}:{sort}:{q}",
-        filters,
+        page(
+            db,
+            current,
+            Shipment,
+            limit,
+            cursor,
+            f"shipments:{status}:{reference}:{product_id}:{from_at}:{to_at}:{sort}:{q}",
+            filters,
+        ),
     )
 
 
@@ -299,6 +425,7 @@ def update_shipment(
             raise Problem(422, "VALIDATION_ERROR", "Field cannot be null")
         setattr(item, key, value)
     item.revision += 1
+    item.updated_at = now()
     body = {"shipment": serialized(item)}
     audit(db, current, request, "UPDATE", "shipment", item.id, body)
     response.headers["ETag"] = etag("shipment", item.revision)

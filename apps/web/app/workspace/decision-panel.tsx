@@ -29,7 +29,7 @@ export default function DecisionPanel({
   /** Newest-first decision list for this shipment; called after each successful load. */
   onDecisions?: (items: Item[]) => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const errText = useErrorText();
   const fmt = useFmt();
   const statusLabel = useStatusLabel();
@@ -508,7 +508,7 @@ export default function DecisionPanel({
                       const r = await api(
                         `/decisions/${detail.id}/reports`,
                         org,
-                        write("POST", { format: "PDF", language: "en" }),
+                        write("POST", { format: "PDF", language: lang }),
                       );
                       setReport(r.report);
                       setMessage(t("wsReportRequested"));

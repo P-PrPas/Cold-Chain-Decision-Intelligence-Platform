@@ -124,6 +124,8 @@ export default function Timeline({
         </div>
         <span className="tl-readout num" aria-hidden="true">
           {frame.timeLabel} UTC
+          {frame.branchElapsed !== null &&
+            ` + ${frame.branchElapsed} ${t("unitMin")} (${t("hudBranchTime")})`}
         </span>
         <ul className="tl-legend" aria-label={t("legendScale")}>
           <li>

@@ -68,6 +68,32 @@ export default function StudioPage() {
   );
 }
 
+/** The inspector is a modal-like bottom sheet only on small screens. */
+function isSheetLayout() {
+  return window.matchMedia("(max-width: 760px)").matches;
+}
+
+/** Keep Tab inside the open bottom sheet. */
+function trapTab(e: React.KeyboardEvent<HTMLElement>) {
+  if (e.key !== "Tab" || !isSheetLayout()) return;
+  const items = Array.from(
+    e.currentTarget.querySelectorAll<HTMLElement>(
+      'button, a[href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+  if (items.length === 0) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+  if (e.shiftKey && active === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
 function choose(i: number) {
   window.history.replaceState(
     null,
@@ -105,6 +131,7 @@ function StudioShipment({
   const coachSeen = useFlag(COACH);
   const ghostRef = useRef<{ text: string; timer: number } | null>(null);
   const ghostCount = useRef(0);
+  const sheetHandle = useRef<HTMLButtonElement>(null);
 
   function startFromBeginning() {
     player.pause();
@@ -220,8 +247,23 @@ function StudioShipment({
     replayBranch();
   }
 
+  function closeSheet() {
+    setSheet(false);
+    sheetHandle.current?.focus();
+  }
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "Escape") {
+      // Coach mark first, then the mobile bottom sheet.
+      if (coach && !coachSeen) {
+        e.preventDefault();
+        dismissCoach();
+      } else if (sheet && isSheetLayout()) {
+        e.preventDefault();
+        closeSheet();
+      }
+      return;
+    }
     const el = e.target as HTMLElement | null;
     const tag = el?.tagName ?? "";
     if (
@@ -387,6 +429,7 @@ function StudioShipment({
             onCompare={toggleCompare}
             currency={currency}
             ghost={ghost}
+            announce
           >
             {coach && !coachSeen && (
               <div className="coach" role="status">
@@ -404,8 +447,10 @@ function StudioShipment({
           className="inspector"
           data-open={sheet}
           aria-label={t("resultTitle")}
+          onKeyDown={sheet ? trapTab : undefined}
         >
           <button
+            ref={sheetHandle}
             type="button"
             className="sheet-handle"
             aria-expanded={sheet}
@@ -571,7 +616,9 @@ function StudioShipment({
             >
               {t("prepPreview")}
             </button>
-            <Link href="/workspace">{t("studioOpenWorkspace")}</Link>
+            <Link className="prepare-link" href="/workspace">
+              {t("studioOpenWorkspace")}
+            </Link>
           </div>
           {proposal && (
             <div role="status" className="prepare-result">

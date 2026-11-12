@@ -624,7 +624,7 @@ export default function SimulationPanel({
         <EvidenceView
           value={selectedResult || { status: t("wsCurrentUnavailable") }}
         />
-        <h4>{t("wsBaselineAssumptions")}</h4>
+        <h3 className="ws-h4">{t("wsBaselineAssumptions")}</h3>
         <EvidenceView value={baseline} />
       </details>
     </section>

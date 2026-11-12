@@ -460,10 +460,7 @@ li button {
     animation: none !important;
   }
 }
-/* Evidence-led operations layout. */
-body {
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
-}
+/* Evidence-led operations layout. The body keeps the Plex stack set above. */
 main:not(.landing) {
   max-width: 1320px;
   padding-top: 28px;
@@ -636,14 +633,14 @@ summary {
 }
 .factor-controls input[type="range"] {
   padding: 0;
-  height: 32px;
+  height: 44px;
   accent-color: var(--accent);
   border: 0;
   box-shadow: none;
 }
 .factor-controls input[type="number"] {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
 }
 .factor-controls small {
   font-size: 12px;
@@ -875,7 +872,7 @@ tr[data-selected="true"] td:first-child {
 }
 .network-explorer > details > summary {
   padding: 8px 0;
-  min-height: 36px;
+  min-height: 44px;
   font-size: 12px;
 }
 /* Header controls */
@@ -1199,4 +1196,23 @@ tr[data-selected="true"] td:first-child {
   .theme-label {
     display: none;
   }
+}
+
+/* Thai stacks tone marks above the line: it needs more leading and no negative tracking. */
+html:lang(th) :is(h1, h2, h3, h4) {
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+/* Stand-alone links are tap targets too: 44px tall, never inside running text. */
+.app-header nav a,
+.brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+.brand {
+  justify-content: flex-start;
 }
