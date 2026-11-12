@@ -1,3 +1,7 @@
+import { landingEn, landingTh } from "./i18n-landing";
+import { studioEn, studioTh } from "./i18n-studio";
+import { wsEn, wsTh } from "./i18n-workspace";
+
 export const LANGS = ["en", "th"] as const;
 export type Lang = (typeof LANGS)[number];
 export const LANG_KEY = "cc-lang";
@@ -8,7 +12,6 @@ const en = {
   siteName: "Cold Chain Simulation Studio",
   siteNameShort: "Cold Chain Studio",
   navPrimary: "Primary",
-  navDemo: "Demo",
   navWorkspace: "Workspace",
   environment: "Synthetic environment",
   language: "Language",
@@ -28,25 +31,25 @@ const en = {
     "One route stroke runs from cold blue to amber with a single break in the middle. The break stands for a data gap that the product never fills in.",
   brandOnLight: "On light",
   brandOnDark: "On dark",
-  brandMarkColour: "Colour mark",
+  brandMarkColour: "Color mark",
   brandMarkMono: "Monochrome mark",
   brandLockup: "Lockup",
   brandFavicon: "Favicon",
-  brandColour: "Colour tokens",
+  brandColour: "Color tokens",
   brandColourNote:
     "Contrast ratios are measured live from the active theme. Body text needs at least 4.5 : 1.",
   brandPair: "Pair",
   brandRatio: "Contrast",
   brandThermal: "Thermal scale",
   brandThermalNote:
-    "Saturated colour is reserved for temperature data. Cold on the left, hot on the right.",
+    "Saturated color is reserved for temperature data. Cold on the left, hot on the right.",
   brandUnknown: "Unknown data",
   brandUnknownNote:
     "Missing readings are never interpolated and never shown as compliant. They are hatched grey.",
   brandNoReadings: "No readings",
   brandStatus: "Status badges",
   brandStatusNote:
-    "Each status has a shape, a label and a colour. No status is shown as safe, certified or approved.",
+    "Each status has a shape, a label and a color. No status is shown as safe, certified or approved.",
   brandProvenance: "Provenance chips",
   brandProvenanceNote: "Shown beside a figure so its origin is clear.",
   brandType: "Type scale",
@@ -62,6 +65,9 @@ const en = {
   provEntered: "Entered",
   provCalculated: "Calculated",
   provEstimated: "Estimated",
+  ...studioEn,
+  ...landingEn,
+  ...wsEn,
 } as const;
 
 export type Dict = { [K in keyof typeof en]: string };
@@ -72,7 +78,6 @@ const th: Dict = {
   siteName: "Cold Chain Simulation Studio",
   siteNameShort: "Cold Chain Studio",
   navPrimary: "เมนูหลัก",
-  navDemo: "ทดลองใช้",
   navWorkspace: "พื้นที่ทำงาน",
   environment: "สภาพแวดล้อมจำลอง",
   language: "ภาษา",
@@ -126,6 +131,9 @@ const th: Dict = {
   provEntered: "ผู้ใช้กรอก",
   provCalculated: "คำนวณแล้ว",
   provEstimated: "ประมาณการ",
+  ...studioTh,
+  ...landingTh,
+  ...wsTh,
 };
 
 export const dictionaries: Record<Lang, Dict> = { en, th };

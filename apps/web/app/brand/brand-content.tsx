@@ -118,7 +118,7 @@ const SCALE: [string, string][] = [
 export function BrandContent() {
   const t = useT();
   return (
-    <main className="brand-page">
+    <main className="brand-page" id="content">
       <h1>{t("brandTitle")}</h1>
       <p>{t("brandIntro")}</p>
 
