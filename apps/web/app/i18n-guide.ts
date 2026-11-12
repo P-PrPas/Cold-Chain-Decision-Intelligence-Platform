@@ -67,7 +67,7 @@ export const guideEn = {
   gdSStudioOverview4:
     "Result card: additional delay, direct cost, the receiver acceptance assumption and eligibility.",
   gdSStudioOverview5:
-    "Adjust assumptions: tabs for Delay, Cost, Receiver and Advanced. The result updates as soon as you change a value.",
+    "Adjust assumptions: tabs for Delay, Cost and Receiver. The result updates as soon as you change a value.",
   gdSStudioOverview6:
     "Timeline scrubber: temperature over the journey, plus play, pause and speed controls.",
   gdTourNote:
@@ -88,7 +88,7 @@ export const guideEn = {
   gdSStudioTimeline4:
     "The track. Drag or click to scrub to any moment. With the track focused, the left and right arrows move 5 minutes, and Shift plus an arrow moves 30.",
   gdSStudioTimeline5:
-    "Decision marker. Playback stops here on its own. To the right is the scenario run, drawn after you choose an option.",
+    "Decision marker. Playback stops here on its own. To the right, each scenario run is a bar: the longer the delay, the longer the bar.",
   gdPlayNote:
     "Each reading holds until the next one arrives. The chart is a staircase, never a smooth line, because the Studio does not invent temperatures between readings.",
 
@@ -144,20 +144,20 @@ export const guideEn = {
   /* Scenarios */
   gdScenH: "Scenarios, what-ifs and cameras",
   gdScenLead:
-    "Choosing a scenario sends the truck down that branch. The delay clock and the cost ticker count up until they reach the exact total for the option.",
+    "Choosing a scenario sends the truck down that branch. The truck then waits for exactly the delay you entered: at the decision point before Continue delivery, at the facility for the other options. The delay clock counts the waiting, and the cost ticker counts up to the exact total for the option.",
   gdAltStudioScenario:
-    "Hold for inspection after its run has finished: the scenario is highlighted, the delay clock and cost ticker show their totals, and the result card has updated.",
+    "Hold for inspection after its run has finished: the scenario is highlighted, the delay clock and cost ticker show their totals, and the result card, with its cost breakdown, has updated.",
   gdSStudioScenario1:
     "The selected scenario is highlighted. Switch with a click or with keys 1 to 4.",
   gdSStudioScenario2:
-    "Delay clock and cost ticker for the chosen branch. They end on the exact total, to the cent.",
+    "Delay clock and cost ticker for the chosen branch. The clock counts the minutes the truck waits and ends on exactly the delay you entered. The cost ends on the exact total, to the cent.",
   gdSStudioScenario3:
-    "The result card follows the selection. Figures carry a provenance chip, and Eligibility stays Not evaluated in the demo.",
+    "The result card follows the selection. Figures carry a provenance chip, the cost is split into its six categories, and Eligibility stays Not evaluated in the demo.",
   gdSStudioScenario4:
-    "The time readout shows scenario time and says Unknown. After the last reading the Studio has no temperature model, so it shows no temperature.",
+    "The time readout adds the delay clock after the last reading. After the last reading the Studio has no temperature model, so it shows no temperature.",
   gdWhatIfH: "Change a factor and see the what-if",
   gdWhatIfLead:
-    "Open the Adjust assumptions panel to change the delay, the cost components or the receiver assumption. Use the preset chips for a one-click experiment. After a change, a ghost of the previous value stays on screen for about a second so you can see what moved.",
+    "Open the Adjust assumptions panel to change the delay, the cost components or the receiver assumption. Use the preset chips for a one-click experiment. A change shows up at once: the truck waits longer or shorter, the cost bar and the chart move. After a change, a ghost of the previous value stays on screen for about a second so you can see what moved.",
   gdAltStudioFactors:
     "After changing the delay to 240 minutes: preset chips above the scene, a Was chip showing the previous value, the factor tabs, the delay field and the result with its baseline line.",
   gdSStudioFactors1:
@@ -165,21 +165,21 @@ export const guideEn = {
   gdSStudioFactors2:
     "The ghost chip: what the delay and cost were before your change. It fades after about a second.",
   gdSStudioFactors3:
-    "Factor tabs: Delay, Cost, Receiver, Advanced. Advanced holds ranking weights, which affect ranking only, never evidence or eligibility.",
+    "Factor tabs: Delay, Cost and Receiver. The Studio has no ranking weight: options are ranked only after the engine has decided eligibility, and the Studio has no engine run.",
   gdSStudioFactors4:
     "Type a value or use the slider. Invalid input is flagged in place and is not used.",
   gdSStudioFactors5:
     "The result card keeps a baseline line, so you can read the difference. An edited figure switches from Estimated to Entered. Reset to baseline undoes your edits.",
   gdCompareH: "Compare mode",
   gdCompareLead:
-    "Press C or use the Compare button to run all four scenarios side by side on the same clock. Each truck carries its scenario number.",
+    "Press C or use the Compare button to run all four scenarios on one shared clock. Each truck carries a tag with its scenario number, its running total cost and its delay clock, so you can watch which option arrives later and which costs more.",
   gdAltStudioCompare:
-    "Compare mode: four trucks, numbered 1 to 4, on their own branches at the same time.",
+    "Compare mode: four trucks, each with a tag showing its number, running cost and delay clock, and four timeline bars of different lengths.",
   gdSStudioCompare1: "Compare button. Press it again, or press C, to leave.",
   gdSStudioCompare2:
-    "Four ghost trucks, each tagged with its scenario number, move on a shared time scale.",
+    "Four trucks on a shared time scale. The tags tick up together, and a truck with a longer delay waits longer.",
   gdSStudioCompare3:
-    "The timeline replays the scenario run. Scenario time is schematic and has no readings.",
+    "One bar per scenario on the timeline. Its length is that scenario's delay, and the darker part is the waiting time.",
   gdCameraH: "Camera modes and reset",
   gdCameraLead:
     "Overview is the default isometric view. Follow truck keeps the truck in frame. 2D is a flat top-down schematic that carries the same information, and it is also what you get automatically when the browser cannot draw 3D.",
@@ -192,6 +192,42 @@ export const guideEn = {
     "Reset (or R) returns the factors to their prepared values, leaves compare mode and replays the journey from the start.",
 
   /* Keys */
+  gdAxisNote:
+    "Delays can be as long as 525,600 minutes (a year). Up to 240 minutes the timeline is drawn to scale. Beyond that the axis is compressed so playback stays usable, and the timeline says so with a break mark and a note. Longer delays still look longer, and every number on screen is the value you entered.",
+  gdVisibleH: "Cost breakdown and the delay and cost chart",
+  gdVisibleLead:
+    "The result card splits the total cost into its six categories, each with its exact amount and a provenance chip. Under the scenario list, a small chart places every scenario by additional delay and total cost, and it updates while you drag a slider.",
+  gdAltStudioChart:
+    "The Studio with a cost breakdown bar and legend in the result card, and the delay and cost chart under the scenario list with four numbered points.",
+  gdSStudioChart1:
+    "The delay and cost chart. Each numbered point is one scenario, matching the scenario list. The selected scenario is filled. It shows position only. It does not rank or recommend an option.",
+  gdSStudioChart2: "Chart data as a table shows the same figures as a table.",
+  gdSStudioChart3:
+    "Cost breakdown: one segment for each category with an amount above zero. Segments are numbered, so colour is never the only clue.",
+  gdSStudioChart4:
+    "The legend lists all six categories with exact amounts, their share of the total and a provenance chip.",
+  gdVisibleNote:
+    "When you change a value, a faded ghost of the earlier bar and of the earlier chart position stays for about a second.",
+  gdEditH: "Try your own temperatures",
+  gdEditLead:
+    "Press Edit readings on the timeline to change the sample temperatures. Drag a point up or down, or focus it and press the up or down arrow (0.1 °C, or 1 °C with Shift). Values stay between -30 and 40 °C. The truck, the ribbon, the readout and the evidence strip follow your edits at once.",
+  gdAltStudioEdit:
+    "The timeline in edit mode: large draggable points, one reading switched to No reading and shown hatched, the Reset to demo data button and the label Edited data, synthetic, not saved.",
+  gdSStudioEdit1: "Edit readings turns edit mode on and off.",
+  gdSStudioEdit2:
+    "A reading point. Drag it up or down, or focus it and use the arrow keys.",
+  gdSStudioEdit3:
+    "Mark as no reading turns the selected point into a gap. It shows as unknown, in hatched grey, and is never filled in.",
+  gdSStudioEdit4: "Reset to demo data brings back the original readings.",
+  gdSStudioEdit5:
+    "This label stays while the data is edited. Nothing is saved or sent, and the data stays synthetic.",
+  gdEditNote:
+    "Editing does not change eligibility. The Studio still says Not evaluated, and the colour scale stays display only. It is not a limit.",
+  gdKeyPoint:
+    "On a focused reading point in edit mode: change it by 0.1 °C, or by 1 °C with Shift",
+  gdKeyDelete:
+    "On a focused reading point in edit mode: mark it as no reading, or restore it",
+
   gdKeysH: "Keyboard shortcuts",
   gdKeysLead:
     "Shortcuts work anywhere on the Studio page except inside a form field. Space is left alone while a button or link has focus, so it still activates that control.",
@@ -330,7 +366,7 @@ export const guideEn = {
   gdSWsSimulate5:
     "Prepare proposal takes the selected scenario to the Propose step. That step opens only for a scenario that is eligible or needs review.",
   gdWsSimNote:
-    "Changing delay, cost or receiver assumptions recalculates a preview. Saving makes a new run, and the earlier run is never overwritten. A Blocked scenario cannot be proposed, and an Insufficient data scenario needs more evidence first.",
+    "Changing delay, cost or receiver assumptions recalculates a preview. Saving makes a new run, and the earlier run is never overwritten. A Blocked scenario cannot be proposed, and an Insufficient data scenario needs more evidence first. The Advanced tab holds the ranking weight (cost against delay). It only orders options the engine has already allowed, and it never changes evidence or eligibility.",
   gdAltWsPropose:
     "The proposal form for Hold for inspection with its Review required status, the rule reasons, a justification box and a Save draft for review button.",
   gdSWsPropose1: "The scenario you chose, with its engine status and cost.",
@@ -473,7 +509,7 @@ export const guideTh: Record<keyof typeof guideEn, string> = {
   gdSStudioOverview4:
     "การ์ดผลลัพธ์ แสดงความล่าช้าเพิ่มเติม ค่าใช้จ่ายโดยตรง สมมติฐานการยอมรับของผู้รับ และความเข้าเกณฑ์",
   gdSStudioOverview5:
-    "ปรับสมมติฐาน มีแท็บความล่าช้า ค่าใช้จ่าย ผู้รับ และขั้นสูง ผลลัพธ์จะเปลี่ยนทันทีที่คุณแก้ค่า",
+    "ปรับสมมติฐาน มีแท็บความล่าช้า ต้นทุน และผู้รับ ผลลัพธ์จะเปลี่ยนทันทีที่คุณแก้ค่า",
   gdSStudioOverview6:
     "ไทม์ไลน์สำหรับเลื่อนดู แสดงอุณหภูมิตลอดการเดินทาง พร้อมปุ่มเล่น หยุด และความเร็ว",
   gdTourNote:
@@ -493,7 +529,7 @@ export const guideTh: Record<keyof typeof guideEn, string> = {
   gdSStudioTimeline4:
     "แถบแสดงเวลา ลากหรือคลิกเพื่อเลื่อนไปยังจุดใดก็ได้ เมื่อโฟกัสที่แถบ ลูกศรซ้ายและขวาจะเลื่อนครั้งละ 5 นาที และกด Shift ร่วมด้วยจะเลื่อนครั้งละ 30 นาที",
   gdSStudioTimeline5:
-    "เครื่องหมายจุดตัดสินใจ การเล่นจะหยุดเองที่นี่ ทางขวาคือช่วงการดำเนินตามสถานการณ์ ซึ่งจะถูกวาดหลังจากคุณเลือกทางเลือก",
+    "เครื่องหมายจุดตัดสินใจ การเล่นจะหยุดเองที่นี่ ทางขวา การดำเนินตามสถานการณ์แต่ละอันเป็นแถบหนึ่งแถบ ยิ่งล่าช้านาน แถบยิ่งยาว",
   gdPlayNote:
     "ค่าอ่านแต่ละค่าจะคงอยู่จนกว่าจะมีค่าถัดไป กราฟจึงเป็นแบบขั้นบันได ไม่ใช่เส้นโค้งเรียบ เพราะสตูดิโอไม่สร้างอุณหภูมิขึ้นเองระหว่างค่าอ่าน",
 
@@ -545,20 +581,20 @@ export const guideTh: Record<keyof typeof guideEn, string> = {
 
   gdScenH: "สถานการณ์ การลองสมมติ และมุมกล้อง",
   gdScenLead:
-    "เมื่อเลือกสถานการณ์ รถจะวิ่งไปตามเส้นทางนั้น นาฬิกาความล่าช้าและตัวนับค่าใช้จ่ายจะเดินขึ้นจนถึงยอดรวมที่ถูกต้องของทางเลือกนั้น",
+    "เมื่อเลือกสถานการณ์ รถจะวิ่งไปตามเส้นทางนั้นและรอตามความล่าช้าที่คุณกรอกพอดี โดยรอที่จุดตัดสินใจสำหรับส่งมอบต่อตามเดิม และรอที่สถานที่ปลายทางสำหรับทางเลือกอื่น นาฬิกาความล่าช้าจะนับเวลาที่รอ ส่วนตัวนับต้นทุนจะเพิ่มขึ้นจนถึงยอดรวมที่ถูกต้องของทางเลือกนั้น",
   gdAltStudioScenario:
-    "กักไว้เพื่อตรวจสอบหลังจบการเดินตามสถานการณ์ สถานการณ์ที่เลือกถูกเน้น นาฬิกาความล่าช้าและตัวนับค่าใช้จ่ายแสดงยอดรวม และการ์ดผลลัพธ์อัปเดตแล้ว",
+    "กักไว้เพื่อตรวจสอบหลังจบการเดินตามสถานการณ์ สถานการณ์ที่เลือกถูกเน้น นาฬิกาความล่าช้าและตัวนับต้นทุนแสดงยอดรวม และการ์ดผลลัพธ์พร้อมรายละเอียดต้นทุนอัปเดตแล้ว",
   gdSStudioScenario1:
     "สถานการณ์ที่เลือกจะถูกเน้น สลับได้ด้วยการคลิกหรือกดปุ่ม 1 ถึง 4",
   gdSStudioScenario2:
-    "นาฬิกาความล่าช้าและตัวนับค่าใช้จ่ายของเส้นทางที่เลือก จะหยุดที่ยอดรวมที่ถูกต้องเป๊ะ ถึงหลักสตางค์",
+    "นาฬิกาความล่าช้าและตัวนับต้นทุนของเส้นทางที่เลือก นาฬิกานับนาทีที่รถรอและหยุดที่ความล่าช้าที่คุณกรอกพอดี ส่วนต้นทุนหยุดที่ยอดรวมที่ถูกต้องเป๊ะ ถึงหลักสตางค์",
   gdSStudioScenario3:
-    "การ์ดผลลัพธ์ตามการเลือก ตัวเลขมีป้ายแหล่งที่มากำกับ และความเข้าเกณฑ์ยังเป็นยังไม่ได้ประเมินในการสาธิต",
+    "การ์ดผลลัพธ์ตามการเลือก ตัวเลขมีป้ายแหล่งที่มากำกับ ต้นทุนถูกแบ่งเป็นหกหมวด และความเข้าเกณฑ์ยังเป็นยังไม่ได้ประเมินในการสาธิต",
   gdSStudioScenario4:
-    "ป้ายเวลาแสดงเวลาในสถานการณ์และระบุว่าไม่ทราบ หลังค่าอ่านสุดท้ายสตูดิโอไม่มีแบบจำลองอุณหภูมิ จึงไม่แสดงอุณหภูมิ",
+    "ป้ายเวลาจะบวกนาฬิกาความล่าช้าต่อจากค่าอ่านสุดท้าย หลังค่าอ่านสุดท้ายสตูดิโอไม่มีแบบจำลองอุณหภูมิ จึงไม่แสดงอุณหภูมิ",
   gdWhatIfH: "เปลี่ยนปัจจัยแล้วดูผลสมมติ",
   gdWhatIfLead:
-    "เปิดแผงปรับสมมติฐานเพื่อเปลี่ยนความล่าช้า องค์ประกอบค่าใช้จ่าย หรือสมมติฐานของผู้รับ หรือกดป้ายตัวอย่างเพื่อลองแบบคลิกเดียว หลังเปลี่ยนค่า ภาพเงาของค่าก่อนหน้าจะค้างไว้ราวหนึ่งวินาที เพื่อให้เห็นว่าอะไรเปลี่ยนไป",
+    "เปิดแผงปรับสมมติฐานเพื่อเปลี่ยนความล่าช้า องค์ประกอบต้นทุน หรือสมมติฐานของผู้รับ หรือกดป้ายตัวอย่างเพื่อลองแบบคลิกเดียว การเปลี่ยนค่าเห็นผลทันที รถรอนานขึ้นหรือสั้นลง แถบต้นทุนและกราฟขยับตาม หลังเปลี่ยนค่า ภาพเงาของค่าก่อนหน้าจะค้างไว้ราวหนึ่งวินาที เพื่อให้เห็นว่าอะไรเปลี่ยนไป",
   gdAltStudioFactors:
     "หลังเปลี่ยนความล่าช้าเป็น 240 นาที มีป้ายตัวอย่างเหนือฉาก ป้ายก่อนหน้าที่แสดงค่าเดิม แท็บปัจจัย ช่องความล่าช้า และผลลัพธ์พร้อมบรรทัดค่าตั้งต้น",
   gdSStudioFactors1:
@@ -566,21 +602,21 @@ export const guideTh: Record<keyof typeof guideEn, string> = {
   gdSStudioFactors2:
     "ป้ายภาพเงา แสดงความล่าช้าและค่าใช้จ่ายก่อนที่คุณจะเปลี่ยน และจางหายไปหลังประมาณหนึ่งวินาที",
   gdSStudioFactors3:
-    "แท็บปัจจัย ความล่าช้า ค่าใช้จ่าย ผู้รับ ขั้นสูง แท็บขั้นสูงเก็บน้ำหนักการจัดอันดับ ซึ่งมีผลต่อการจัดอันดับเท่านั้น ไม่กระทบหลักฐานหรือความเข้าเกณฑ์",
+    "แท็บปัจจัย ความล่าช้า ต้นทุน และผู้รับ สตูดิโอไม่มีน้ำหนักการจัดอันดับ เพราะจะจัดอันดับทางเลือกได้ก็ต่อเมื่อเอนจินตัดสินความเข้าเกณฑ์แล้ว และสตูดิโอไม่มีผลรันจากเอนจิน",
   gdSStudioFactors4:
     "พิมพ์ค่าหรือเลื่อนแถบ ค่าที่ไม่ถูกต้องจะมีข้อความเตือนที่ช่องนั้นและจะไม่ถูกนำไปใช้",
   gdSStudioFactors5:
     "การ์ดผลลัพธ์มีบรรทัดค่าตั้งต้น ทำให้เห็นส่วนต่าง ตัวเลขที่ถูกแก้จะเปลี่ยนป้ายจากประมาณการเป็นผู้ใช้กรอก ปุ่มรีเซ็ตเป็นค่าตั้งต้นจะยกเลิกสิ่งที่แก้",
   gdCompareH: "โหมดเปรียบเทียบ",
   gdCompareLead:
-    "กด C หรือปุ่มเปรียบเทียบเพื่อรันทั้งสี่สถานการณ์เคียงกันบนนาฬิกาเดียวกัน รถแต่ละคันมีหมายเลขสถานการณ์กำกับ",
+    "กด C หรือปุ่มเปรียบเทียบเพื่อรันทั้งสี่สถานการณ์บนนาฬิกาเดียวกัน รถแต่ละคันมีป้ายบอกหมายเลขสถานการณ์ ต้นทุนรวมที่กำลังเดินขึ้น และนาฬิกาความล่าช้า จึงเห็นได้ว่าทางเลือกไหนไปถึงช้ากว่าและทางเลือกไหนแพงกว่า",
   gdAltStudioCompare:
-    "โหมดเปรียบเทียบ รถสี่คันหมายเลข 1 ถึง 4 วิ่งตามเส้นทางของตนพร้อมกัน",
+    "โหมดเปรียบเทียบ รถสี่คัน แต่ละคันมีป้ายแสดงหมายเลข ต้นทุนที่กำลังเดินขึ้น และนาฬิกาความล่าช้า พร้อมแถบบนไทม์ไลน์สี่แถบที่ยาวไม่เท่ากัน",
   gdSStudioCompare1: "ปุ่มเปรียบเทียบ กดซ้ำหรือกด C เพื่อออกจากโหมดนี้",
   gdSStudioCompare2:
-    "รถเงาสี่คน แต่ละคันมีหมายเลขสถานการณ์ วิ่งบนสเกลเวลาเดียวกัน",
+    "รถสี่คันบนสเกลเวลาเดียวกัน ตัวเลขในป้ายเดินขึ้นพร้อมกัน และรถที่ล่าช้านานกว่าจะรอนานกว่า",
   gdSStudioCompare3:
-    "ไทม์ไลน์เล่นช่วงการดำเนินตามสถานการณ์ซ้ำ เวลาในสถานการณ์เป็นแบบแผนผังและไม่มีค่าอ่าน",
+    "แถบหนึ่งแถบต่อหนึ่งสถานการณ์บนไทม์ไลน์ ความยาวของแถบคือความล่าช้าของสถานการณ์นั้น และส่วนที่เข้มกว่าคือช่วงเวลาที่รอ",
   gdCameraH: "มุมกล้องและการรีเซ็ต",
   gdCameraLead:
     "ภาพรวมเป็นมุมไอโซเมตริกตั้งต้น ตามรถจะให้รถอยู่ในกรอบเสมอ ส่วน 2D เป็นแผนผังมองจากด้านบนที่ให้ข้อมูลเท่ากัน และเป็นมุมมองที่ระบบสลับให้อัตโนมัติเมื่อเบราว์เซอร์แสดง 3 มิติไม่ได้",
@@ -591,6 +627,41 @@ export const guideTh: Record<keyof typeof guideEn, string> = {
     "มุมมอง 2D แสดงเส้นทาง ป้ายชื่อ และสถานะสถานการณ์เหมือนฉาก 3 มิติ",
   gdResetP:
     "ปุ่มรีเซ็ต (หรือ R) คืนปัจจัยเป็นค่าที่เตรียมไว้ ออกจากโหมดเปรียบเทียบ และเล่นเส้นทางใหม่ตั้งแต่ต้น",
+
+  gdAxisNote:
+    "ความล่าช้ายาวได้ถึง 525,600 นาที (หนึ่งปี) ไทม์ไลน์วาดตามสัดส่วนจริงจนถึง 240 นาที เกินจากนั้นแกนเวลาจะถูกย่อเพื่อให้เล่นดูได้สะดวก และไทม์ไลน์จะบอกไว้ด้วยเครื่องหมายหักและข้อความกำกับ ความล่าช้าที่นานกว่ายังดูยาวกว่า และตัวเลขทุกค่าบนหน้าจอคือค่าที่คุณกรอก",
+  gdVisibleH: "รายละเอียดต้นทุนและกราฟความล่าช้ากับต้นทุน",
+  gdVisibleLead:
+    "การ์ดผลลัพธ์แบ่งต้นทุนรวมเป็นหกหมวด แต่ละหมวดมีจำนวนเงินที่ถูกต้องและป้ายแหล่งที่มา ใต้รายการสถานการณ์มีกราฟเล็ก ๆ ที่วางทุกสถานการณ์ตามความล่าช้าเพิ่มเติมและต้นทุนรวม และขยับตามทันทีเมื่อคุณลากแถบเลื่อน",
+  gdAltStudioChart:
+    "สตูดิโอที่มีแถบรายละเอียดต้นทุนและคำอธิบายในการ์ดผลลัพธ์ และกราฟความล่าช้ากับต้นทุนใต้รายการสถานการณ์ที่มีสี่จุดพร้อมหมายเลข",
+  gdSStudioChart1:
+    "กราฟความล่าช้ากับต้นทุน แต่ละจุดที่มีหมายเลขคือหนึ่งสถานการณ์ ตรงกับรายการสถานการณ์ สถานการณ์ที่เลือกจะเป็นจุดทึบ กราฟแสดงเพียงตำแหน่ง ไม่ได้จัดอันดับหรือแนะนำตัวเลือกใด",
+  gdSStudioChart2: "ข้อมูลของกราฟในรูปแบบตารางแสดงตัวเลขเดียวกันเป็นตาราง",
+  gdSStudioChart3:
+    "รายละเอียดต้นทุน หนึ่งส่วนต่อหนึ่งหมวดที่มีจำนวนเงินมากกว่าศูนย์ แต่ละส่วนมีหมายเลขกำกับ จึงไม่ต้องพึ่งสีเพียงอย่างเดียว",
+  gdSStudioChart4:
+    "คำอธิบายแสดงครบทั้งหกหมวด พร้อมจำนวนเงินที่ถูกต้อง สัดส่วนของยอดรวม และป้ายแหล่งที่มา",
+  gdVisibleNote:
+    "เมื่อคุณเปลี่ยนค่า ภาพเงาจางของแถบเดิมและตำแหน่งเดิมบนกราฟจะค้างไว้ราวหนึ่งวินาที",
+  gdEditH: "ลองใช้อุณหภูมิของคุณเอง",
+  gdEditLead:
+    "กดแก้ไขค่าอ่านบนไทม์ไลน์เพื่อเปลี่ยนอุณหภูมิตัวอย่าง ลากจุดขึ้นหรือลง หรือโฟกัสที่จุดแล้วกดลูกศรขึ้นหรือลง (ครั้งละ 0.1 °C หรือ 1 °C เมื่อกด Shift) ค่าอยู่ระหว่าง -30 ถึง 40 °C รถ ริบบิ้น ป้ายอ่านค่า และแถบหลักฐานจะเปลี่ยนตามทันที",
+  gdAltStudioEdit:
+    "ไทม์ไลน์ในโหมดแก้ไข จุดใหญ่ที่ลากได้ ค่าอ่านหนึ่งค่าที่เปลี่ยนเป็นไม่มีค่าอ่านและแสดงเป็นลายขีด ปุ่มคืนค่าข้อมูลสาธิต และป้ายข้อมูลที่แก้ไข เป็นข้อมูลจำลอง ไม่ได้บันทึก",
+  gdSStudioEdit1: "แก้ไขค่าอ่าน เปิดหรือปิดโหมดแก้ไข",
+  gdSStudioEdit2: "จุดค่าอ่าน ลากขึ้นหรือลง หรือโฟกัสแล้วใช้ปุ่มลูกศร",
+  gdSStudioEdit3:
+    "ทำเครื่องหมายว่าไม่มีค่าอ่าน เปลี่ยนจุดที่เลือกให้เป็นช่องว่าง แสดงเป็นไม่ทราบ ในสีเทาลายขีด และจะไม่มีการเติมค่าให้",
+  gdSStudioEdit4: "คืนค่าข้อมูลสาธิต นำค่าอ่านเดิมกลับมา",
+  gdSStudioEdit5:
+    "ป้ายนี้จะแสดงตลอดที่ข้อมูลถูกแก้ไข ไม่มีการบันทึกหรือส่งข้อมูลใด ๆ และข้อมูลยังเป็นข้อมูลจำลอง",
+  gdEditNote:
+    "การแก้ไขไม่เปลี่ยนความเข้าเกณฑ์ สตูดิโอยังแสดงว่ายังไม่ได้ประเมิน และสเกลสียังใช้แสดงผลเท่านั้น ไม่ใช่เกณฑ์จำกัด",
+  gdKeyPoint:
+    "เมื่อโฟกัสจุดค่าอ่านในโหมดแก้ไข เปลี่ยนค่าครั้งละ 0.1 °C หรือ 1 °C เมื่อกด Shift",
+  gdKeyDelete:
+    "เมื่อโฟกัสจุดค่าอ่านในโหมดแก้ไข ทำเครื่องหมายว่าไม่มีค่าอ่าน หรือคืนค่าอ่าน",
 
   gdKeysH: "ปุ่มลัดบนคีย์บอร์ด",
   gdKeysLead:
@@ -724,7 +795,7 @@ export const guideTh: Record<keyof typeof guideEn, string> = {
   gdSWsSimulate5:
     "ปุ่มเตรียมข้อเสนอพาสถานการณ์ที่เลือกไปยังขั้นเสนอ ขั้นนั้นเปิดได้เฉพาะสถานการณ์ที่เข้าเกณฑ์หรือต้องทบทวน",
   gdWsSimNote:
-    "เมื่อเปลี่ยนความล่าช้า ต้นทุน หรือสมมติฐานของผู้รับ ระบบจะคำนวณตัวอย่างใหม่ การบันทึกจะสร้างผลรันใหม่ และผลรันเดิมจะไม่ถูกเขียนทับ สถานการณ์ที่ถูกบล็อกเสนอไม่ได้ ส่วนสถานการณ์ที่ข้อมูลไม่เพียงพอต้องเพิ่มหลักฐานก่อน",
+    "การเปลี่ยนสมมติฐานเรื่องความล่าช้า ต้นทุน หรือผู้รับ จะคำนวณตัวอย่างใหม่ การบันทึกจะสร้างการรันใหม่ และการรันก่อนหน้าจะไม่ถูกเขียนทับ สถานการณ์ที่ถูกบล็อกจะเสนอไม่ได้ และสถานการณ์ที่ข้อมูลไม่เพียงพอต้องมีหลักฐานเพิ่มก่อน แท็บขั้นสูงเก็บน้ำหนักการจัดอันดับ (ต้นทุนเทียบกับความล่าช้า) ซึ่งใช้เรียงลำดับเฉพาะทางเลือกที่เอนจินอนุญาตแล้ว และไม่เปลี่ยนหลักฐานหรือความเข้าเกณฑ์",
   gdAltWsPropose:
     "แบบฟอร์มข้อเสนอของการกักไว้เพื่อตรวจสอบที่มีสถานะต้องทบทวน เหตุผลจากกฎ ช่องเหตุผลประกอบ และปุ่มบันทึกร่างเพื่อทบทวน",
   gdSWsPropose1: "สถานการณ์ที่คุณเลือก พร้อมสถานะจากเอนจินและต้นทุน",
