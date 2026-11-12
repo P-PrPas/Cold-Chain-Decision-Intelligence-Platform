@@ -21,6 +21,19 @@ const shipment = {
   currency: "THB",
   cargo_value: "1000",
   created_at: "2026-01-01T00:00:00Z",
+  updated_at: null,
+  last_activity_at: "2026-01-02T03:04:00Z",
+  evidence: {
+    analysis_id: "a1",
+    classification: "INDETERMINATE",
+    unknown_seconds: 1800,
+    excursion_count: 0,
+    coverage_window_known: true,
+    coverage_window: {
+      start_at: "2026-01-01T00:00:00+00:00",
+      end_at: "2026-01-01T06:00:00+00:00",
+    },
+  },
   origin: { name: "Chiang Mai DC" },
   destination: { name: "Bangkok receiver" },
 };
@@ -77,9 +90,7 @@ async function mock(page: Page, cfg: Cfg = {}) {
       return json({
         shipment_counts: { IN_TRANSIT: 1 },
         pending_qa: 0,
-        recent_analyses: [
-          { id: "a1", classification: "INDETERMINATE", shipment_id: "ship" },
-        ],
+        recent_analyses: [],
       });
     if (path === "/shipments")
       return json({ items: cfg.shipments ?? [shipment], next_cursor: null });
@@ -130,6 +141,11 @@ async function mock(page: Page, cfg: Cfg = {}) {
       return json({ items: cfg.scenarios ?? [] });
     if (path === "/decisions")
       return json({ items: cfg.decisions ?? [], next_cursor: null });
+    if (path.endsWith("/reports"))
+      return route.fulfill({
+        status: 202,
+        json: { report: { id: "rep1", status: "QUEUED" }, job: { id: "j1" } },
+      });
     if (path.startsWith("/decisions/"))
       return json({
         decision: (cfg.decisions ?? []).find(

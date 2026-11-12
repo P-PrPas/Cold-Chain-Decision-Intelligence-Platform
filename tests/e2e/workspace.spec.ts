@@ -4,6 +4,7 @@ import {
   approvedPolicy,
   mock,
   readyDataset,
+  shipment,
   workflow,
 } from "./helpers/workspace-mock";
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
@@ -305,5 +306,98 @@ for (const width of [320, 390]) {
       await page.waitForTimeout(150);
       expect(await over(), `step ${id}`).toBeLessThanOrEqual(0);
     }
+  });
+}
+
+test("list shows last activity and stored evidence, unknown time is never compliant", async ({
+  page,
+}) => {
+  await mock(page);
+  await page.goto(`${web}/workspace`);
+  await page.getByLabel("Organization", { exact: true }).selectOption("org");
+  const row = page.getByRole("row", { name: /WS-TEST-001/ });
+  await expect(row).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Last activity" }),
+  ).toBeVisible();
+  await expect(row).toContainText("2 Jan 2026");
+  await expect(row).toContainText("Unknown time: 30 min");
+  await expect(row.locator('[data-analysis="INDETERMINATE"]')).toBeVisible();
+  await expect(row).not.toContainText(/compliant|safe|certified/i);
+  await page.getByRole("button", { name: "ไทย" }).click();
+  await expect(
+    page.getByRole("columnheader", { name: "กิจกรรมล่าสุด" }),
+  ).toBeVisible();
+  await expect(row).toContainText("เวลาที่ไม่ทราบ: 30 นาที");
+});
+
+test("a shipment without analysis shows no evidence instead of a guess", async ({
+  page,
+}) => {
+  await mock(page, {
+    shipments: [
+      { ...shipment, evidence: null, last_activity_at: shipment.created_at },
+    ],
+  });
+  await page.goto(`${web}/workspace`);
+  await page.getByLabel("Organization", { exact: true }).selectOption("org");
+  const row = page.getByRole("row", { name: /WS-TEST-001/ });
+  await expect(row).toBeVisible();
+  await expect(row).not.toContainText("Unknown time");
+  await expect(row.locator("[data-analysis]")).toHaveCount(0);
+});
+
+for (const lang of ["en", "th"]) {
+  test(`report request sends the interface language (${lang})`, async ({
+    page,
+  }) => {
+    const decision = {
+      id: "dec1",
+      simulation_run_id: "r1",
+      status: "PENDING_QA",
+      revision: 2,
+      created_at: "2026-01-01T02:00:00Z",
+      justification: "Hold for inspection",
+      submitted_by: "someone-else",
+      snapshot_sha256: "a".repeat(64),
+      snapshot: {
+        dataset: { version: 2, sha256: "b".repeat(64) },
+        policy: { policy_key: "DEMO-POLICY", version: 1 },
+        analysis: { engine_version: "1.3.0", input_sha256: "c".repeat(64) },
+        simulation: { engine_version: "1.0.0", template_version: "1.0.0" },
+        scenario: { type: "HOLD_INSPECTION", eligibility: "REVIEW_REQUIRED" },
+      },
+    };
+    await page.addInitScript((l) => localStorage.setItem("cc-lang", l), lang);
+    await mock(page, {
+      roles: ["ADMIN"],
+      datasets: [readyDataset],
+      policies: [approvedPolicy],
+      workflow: workflow(true, decision),
+      decisions: [decision],
+      scenarios: [],
+    });
+    await page.goto(`${web}/workspace/shipments/ship?org=org`);
+    await step(page, "report").getByRole("button").click();
+    await page
+      .getByRole("button", { name: /Pending QA|รอ QA/ })
+      .first()
+      .click();
+    const sent = page.waitForRequest(
+      (r) =>
+        r.url().endsWith("/decisions/dec1/reports") && r.method() === "POST",
+    );
+    await page
+      .getByRole("button", {
+        name: lang === "th" ? "สร้างรายงาน PDF" : "Generate PDF report",
+      })
+      .click();
+    expect((await sent).postDataJSON()).toEqual({
+      format: "PDF",
+      language: lang,
+    });
+    await expect(
+      page.getByText(/generated in English|สร้างเป็นภาษาอังกฤษ/),
+    ).toHaveCount(0);
   });
 }
