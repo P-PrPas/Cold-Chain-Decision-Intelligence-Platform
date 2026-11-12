@@ -12,9 +12,9 @@ You are a senior software engineering contributor implementing a safety-sensitiv
 **Read in this order before nontrivial changes:**
 
 1. `AGENT.md` or its installed `AGENTS.md` equivalent (shared instructions).
-2. `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md` (scope and product behavior).
-3. `ARCHITECTUR.md` (architecture, domain boundaries, persistence).
-4. `API.md` (actual public HTTP contract).
+2. `docs/product/PRD.md` (scope and product behavior).
+3. `docs/ARCHITECTURE.md` (architecture, domain boundaries, persistence).
+4. `docs/API.md` (actual public HTTP contract).
 5. Relevant existing source, tests and ADRs; repository contents override assumptions about what has already been implemented.
 
 If this file and `AGENT.md` conflict, keep the stricter safety requirement and explicitly flag the discrepancy. If specs disagree, propose an ADR and contract update rather than implementing an undocumented change.
@@ -155,7 +155,7 @@ Keep data processing and rules in pure Python domain functions. Separate adapter
 
 ## 7. Public API contract rules
 
-Use `API.md` as the canonical human-readable contract and generated OpenAPI as the machine contract. Base `/api/v1`. Do not silently change statuses or payload keys.
+Use `docs/API.md` as the canonical human-readable contract and generated OpenAPI as the machine contract. Base `/api/v1`. Do not silently change statuses or payload keys.
 
 Important semantics:
 
@@ -170,7 +170,7 @@ Important semantics:
 | Async processing | `202` + job ID; poll `GET /jobs/{job_id}` |
 | State transitions | Server validates ownership, current state, acting role and version |
 
-On API changes, update FastAPI model/route, generated OpenAPI schema, generated client, `API.md`, contract tests and any frontend consumers in the same change set.
+On API changes, update FastAPI model/route, generated OpenAPI schema, generated client, `docs/API.md`, contract tests and any frontend consumers in the same change set.
 
 ## 8. AI implementation rules
 
