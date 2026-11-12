@@ -19,6 +19,7 @@ import {
   type StepInput,
 } from "../../stepper";
 import { api, write, ApiError, type Item } from "../../api";
+import { money } from "../../../decision-summary";
 import { useI18n } from "../../../i18n-provider";
 import {
   Callout,
@@ -275,7 +276,11 @@ export default function ShipmentDetail({
               </span>
               <OpStatusBadge status={String(item.status)} />
               <span className="num">
-                {String(item.cargo_value)} {String(item.currency)}
+                {money(
+                  item.cargo_value,
+                  item.currency,
+                  String(item.cargo_value),
+                )}
               </span>
               <span className="ws-dim">
                 {t("wsRevision")} {String(item.revision)}
@@ -285,7 +290,15 @@ export default function ShipmentDetail({
         </div>
         {item && (
           <div className="studio-actions">
-            <details className="ws-menu">
+            <details
+              className="ws-menu"
+              onKeyDown={(e) => {
+                if (e.key !== "Escape" || !e.currentTarget.open) return;
+                e.preventDefault();
+                e.currentTarget.open = false;
+                e.currentTarget.querySelector("summary")?.focus();
+              }}
+            >
               <summary>{t("wsChangeStatus")}</summary>
               <div className="ws-menu-body">
                 <label>

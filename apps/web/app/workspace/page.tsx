@@ -50,6 +50,44 @@ type FieldErrors = Partial<
   >
 >;
 
+/** Stored output of the shipment's latest completed analysis; echoed by the API, never computed here. */
+type Evidence = {
+  classification: string | null;
+  unknown_seconds: number | null;
+  excursion_count: number | null;
+  coverage_window_known: boolean | null;
+} | null;
+
+function EvidenceCell({ evidence }: { evidence: Evidence | undefined }) {
+  const { t } = useI18n();
+  if (!evidence) return <AnalysisBadge value={undefined} />;
+  const unknown = evidence.unknown_seconds;
+  return (
+    <>
+      <AnalysisBadge value={evidence.classification} />
+      {evidence.coverage_window_known === false && (
+        <small className="ws-dim ws-ev-line">
+          <span className="ws-hatch" aria-hidden="true" />{" "}
+          {t("wsEvWindowUnknown")}
+        </small>
+      )}
+      {typeof unknown === "number" && (
+        <small
+          className={unknown > 0 ? "ws-ev-line ws-ev-unknown" : "ws-ev-line"}
+        >
+          {unknown > 0 && <span className="ws-hatch" aria-hidden="true" />}{" "}
+          {t("wsEvUnknown").replace("{n}", String(Math.ceil(unknown / 60)))}
+        </small>
+      )}
+      {typeof evidence.excursion_count === "number" && (
+        <small className="ws-dim ws-ev-line">
+          {t("wsEvExcursions").replace("{n}", String(evidence.excursion_count))}
+        </small>
+      )}
+    </>
+  );
+}
+
 export default function Workspace() {
   const { t } = useI18n();
   const errText = useErrorText();
@@ -223,13 +261,6 @@ export default function Workspace() {
   const denied = status === 403;
   const productName = (id: unknown) =>
     String(products.find((p) => p.id === id)?.name ?? "");
-  const classOf = (id: unknown) =>
-    (
-      (dashboard?.recent_analyses ?? []) as {
-        shipment_id: string;
-        classification: string | null;
-      }[]
-    ).find((a) => a.shipment_id === id)?.classification;
   const loading = !!org && dataKey !== scope && !error;
   const empty =
     !!org && !busy && dataKey === scope && !error && shipments.length === 0;
@@ -493,7 +524,12 @@ export default function Workspace() {
           )}
 
           {!loading && shipments.length > 0 && (
-            <div className="ws-table-wrap">
+            <div
+              className="ws-table-wrap"
+              role="region"
+              aria-label={t("wsListTitle")}
+              tabIndex={0}
+            >
               <table className="ws-table">
                 <caption className="sr-only">{t("wsListTitle")}</caption>
                 <thead>
@@ -506,7 +542,7 @@ export default function Workspace() {
                     <th scope="col" className="ws-right">
                       {t("wsColValue")}
                     </th>
-                    <th scope="col">{t("wsColCreated")}</th>
+                    <th scope="col">{t("wsColActivity")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -544,13 +580,15 @@ export default function Workspace() {
                         <OpStatusBadge status={String(s.status)} />
                       </td>
                       <td data-label={t("wsColEvidence")}>
-                        <AnalysisBadge value={classOf(s.id)} />
+                        <EvidenceCell evidence={s.evidence as Evidence} />
                       </td>
                       <td data-label={t("wsColValue")} className="ws-right num">
                         {money(s.cargo_value, s.currency, t("wsNotCalculated"))}
                       </td>
-                      <td data-label={t("wsColCreated")} className="ws-dim">
-                        {s.created_at ? fmt.date(s.created_at) : "—"}
+                      <td data-label={t("wsColActivity")} className="ws-dim">
+                        {s.last_activity_at
+                          ? fmt.dateTime(s.last_activity_at)
+                          : "—"}
                       </td>
                     </tr>
                   ))}

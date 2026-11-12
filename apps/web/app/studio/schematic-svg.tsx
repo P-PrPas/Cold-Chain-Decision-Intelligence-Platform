@@ -7,7 +7,7 @@ import {
   type NodeKey,
   type Reading,
 } from "./sim-clock";
-import { acceptanceSymbol, type Acceptance } from "./scenarios";
+import { acceptanceTag, type Acceptance } from "./scenarios";
 
 const SX = (x: number) => 340 + x * 34;
 const SY = (z: number) => 205 + z * 28;
@@ -22,6 +22,7 @@ export type SvgLabels = {
   gap: string;
   blocked: string;
   title: string;
+  acc: Record<Acceptance, string>;
 };
 
 const destKeys: NodeKey[] = ["receiver", "inspection", "alt", "quarantine"];
@@ -74,8 +75,12 @@ export default function SchematicSvg({
   const nodeLabel: Record<NodeKey, string> = {
     origin: labels.origin,
     decision: labels.decision,
-    receiver: `${acceptanceSymbol[acceptance.CONTINUE_DELIVERY ?? "UNKNOWN"]} ${labels.receiver}`,
-    alt: `${acceptanceSymbol[acceptance.CONDITIONAL_REROUTE ?? "UNKNOWN"]} ${labels.alt}`,
+    receiver: acceptanceTag(
+      acceptance.CONTINUE_DELIVERY,
+      labels.receiver,
+      labels.acc,
+    ),
+    alt: acceptanceTag(acceptance.CONDITIONAL_REROUTE, labels.alt, labels.acc),
     inspection: labels.inspection,
     quarantine: labels.quarantine,
   };

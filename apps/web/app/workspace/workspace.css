@@ -37,7 +37,7 @@ main.ws input,
 main.ws select,
 main.ws textarea {
   max-width: none;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 12px;
   background: var(--panel);
   border-color: var(--line-strong);
@@ -77,7 +77,7 @@ main.ws h4 {
   font-weight: 600;
 }
 main.ws details > summary {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 0;
   font-size: 14px;
 }
@@ -277,7 +277,7 @@ main.ws table.ws-table {
   overflow-wrap: anywhere;
 }
 .ws-table button {
-  min-height: 32px;
+  min-height: 44px;
   padding: 4px 10px;
   font-size: 13px;
 }
@@ -376,7 +376,7 @@ main.ws table.ws-table {
 main.ws .ws-menu > summary {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -518,7 +518,7 @@ main.ws .ws-saved-head h2 {
 }
 .ws-actions button,
 .ws-saved-head button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 14px;
   font-size: 13px;
 }
@@ -556,7 +556,7 @@ main.ws section.ws-card {
   margin-bottom: 10px;
 }
 .ws-card-head button {
-  min-height: 32px;
+  min-height: 44px;
   padding: 4px 12px;
   font-size: 13px;
 }
@@ -745,6 +745,15 @@ main.ws figure.ws-timeline {
 .ws-box {
   border: 2px solid var(--st-review-line);
 }
+.ws-ev-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.ws-ev-unknown {
+  color: var(--st-unknown-fg);
+}
 
 /* Simulate step: the Studio shell */
 main.ws .ws-sim {
@@ -813,7 +822,7 @@ main.ws .ws-sim {
   margin: 0;
 }
 .ws-compare td button {
-  min-height: 32px;
+  min-height: 44px;
   padding: 4px 10px;
 }
 .ws-sim .scene-missing {
@@ -979,7 +988,8 @@ main.ws .ws-menu > summary {
   right: auto;
   left: 0;
 }
-@media (min-width: 761px) {
+/* Below 1100px the actions wrap to the left edge, so the menu opens rightwards. */
+@media (min-width: 1100px) {
   .ws-menu-body {
     left: auto;
     right: 0;
@@ -987,4 +997,23 @@ main.ws .ws-menu > summary {
 }
 main.ws .ws-menu > summary {
   padding: 8px 14px;
+}
+
+/* The organization picker takes its own row so its name is readable. */
+@media (max-width: 520px) {
+  main.ws .ws-org {
+    flex-basis: 100%;
+  }
+}
+
+/* Stand-alone links in the workspace are 44px tap targets. */
+main.ws a.ws-ref,
+.ws-crumb a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.ws-h4 {
+  margin: 16px 0 6px;
+  font-size: 13px;
 }

@@ -111,9 +111,9 @@ test("first visit autoplays to the decision point and shows one dismissible coac
   await expect(phase(page)).toHaveAttribute("data-phase", "decision", {
     timeout: 20000,
   });
-  const coach = page.getByText("Choose how to proceed", { exact: true }).last();
+  const coach = page.getByText("Choose a scenario", { exact: true }).last();
   await expect(page.locator(".coach")).toBeVisible();
-  await expect(page.locator(".coach")).toContainText("Choose how to proceed");
+  await expect(page.locator(".coach")).toContainText("Choose a scenario");
   await expect(slider(page)).toHaveAttribute("aria-valuenow", "240");
   void coach;
   await page.getByRole("button", { name: "Got it" }).click();

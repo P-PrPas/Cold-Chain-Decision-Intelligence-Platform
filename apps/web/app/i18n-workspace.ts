@@ -7,7 +7,7 @@ export const wsEn = {
   // Shipment list
   wsListTitle: "Shipment queue",
   wsListLead:
-    "Open a shipment to inspect evidence and continue its review. Status here is operational, not a quality judgement.",
+    "Open a shipment to inspect evidence and continue its review. Status here is operational, not a quality judgment.",
   wsOrganization: "Organization",
   wsSelectOrganization: "Select organization",
   wsSignOut: "Sign out",
@@ -41,7 +41,10 @@ export const wsEn = {
   wsColStatus: "Status",
   wsColEvidence: "Latest analysis",
   wsColValue: "Cargo value",
-  wsColCreated: "Created",
+  wsColActivity: "Last activity",
+  wsEvUnknown: "Unknown time: {n} min",
+  wsEvWindowUnknown: "Coverage window not established",
+  wsEvExcursions: "Excursions: {n}",
   wsActionPrepare: "Prepare evidence",
   wsActionHistory: "View history",
   wsActionInspect: "Inspect shipment",
@@ -151,15 +154,15 @@ export const wsEn = {
   wsBlockNoDataset:
     "Upload a CSV and wait for a ready dataset first. Analysis needs observed readings.",
   wsBlockNoPolicy: "An approved policy is required first.",
-  wsBlockNoAnalysis: "Complete an analysis to unlock scenario comparison.",
+  wsBlockNoAnalysis: "Complete an analysis before comparing scenarios.",
   wsBlockNoRun:
     "Run and save a simulation first. Eligibility comes from the engine, not from a preview.",
   wsBlockScenarioBlocked:
-    "This option is blocked by the quality policy. Blocked options cannot be proposed, and cost weights, AI or QA review cannot override a HARD_BLOCK.",
+    "This scenario is blocked by the quality policy. Blocked scenarios cannot be proposed, and cost weights, AI or QA review cannot override a HARD_BLOCK.",
   wsBlockScenarioUnknown:
-    "There is not enough evidence to evaluate this option (INSUFFICIENT_DATA). Add the missing evidence and recalculate.",
+    "There is not enough evidence to evaluate this scenario (INSUFFICIENT_DATA). Add the missing evidence and recalculate.",
   wsBlockPickScenario:
-    "Select an option in Simulate with an eligible or review-required result to propose it.",
+    "Select a scenario in Simulate with an eligible or review-required result to propose it.",
   wsBlockNoSubmission: "A proposal must be submitted to QA first.",
   wsBlockNoSnapshot:
     "A report is built from a frozen snapshot, which exists after a proposal is submitted.",
@@ -235,7 +238,7 @@ export const wsEn = {
   wsDraftRules: "Draft rules (JSON)",
   wsSaveDraftChanges: "Save draft changes",
   wsSubmitReview: "Submit review",
-  wsQaApprove: "QA approve",
+  wsQaApprove: "Approve as QA",
   wsNeedsQaToApprove: "Waiting for a user with the QA role to approve.",
   wsRetire: "Retire",
   wsConfirm: "Confirm",
@@ -292,7 +295,7 @@ export const wsEn = {
 
   // Simulate step
   wsSimExplorer: "Simulation explorer",
-  wsSimTitle: "Explore operational alternatives",
+  wsSimTitle: "Explore scenarios",
   wsSimLoading: "Loading simulation assumptions...",
   wsSimNoSource: "No simulation source available.",
   wsSimBaselineRun: "Baseline run",
@@ -340,7 +343,7 @@ export const wsEn = {
   wsEligibilityEngineNote:
     "Only the engine decides eligibility. Delay does not model temperature deterioration; ranking weights never change evidence or eligibility.",
   wsCheckInput: "Check input",
-  wsCompare: "Compare calculated alternatives",
+  wsCompare: "Compare calculated scenarios",
   wsCompareHidden:
     "Results for the previous assumptions are hidden until the current calculation succeeds.",
   wsCompareSaved: "Saved scenario comparison",
@@ -360,7 +363,7 @@ export const wsEn = {
   // Propose, QA and report steps
   wsProposeTitle: "Proposal",
   wsProposeLead:
-    "Choose an eligible or review-required option, explain why, and save a draft. Submitting freezes the evidence for QA.",
+    "Choose an eligible or review-required scenario, explain why, and save a draft. Submitting freezes the evidence for QA.",
   wsQaTitle: "QA review",
   wsQaLead:
     "Review the frozen evidence and record an outcome. The decision is recorded with your role, notes and time.",
@@ -429,7 +432,7 @@ export const wsEn = {
   wsReviewerNotes: "Reviewer notes",
   wsFrozenReport: "Frozen report",
   wsReportFromSnapshot:
-    "The PDF is built from the frozen snapshot above and is generated in English.",
+    "The PDF is built from the frozen snapshot above. Its labels follow the interface language (English or Thai); the snapshot data is identical in both.",
   wsGeneratePdf: "Generate PDF report",
   wsReportRequested:
     "Report requested. Refresh its status to check completion.",
@@ -573,7 +576,7 @@ export const wsEn = {
   fcCostSlider: "Cost component slider",
   fcCostAmount: "Cost component amount",
   fcErrYen:
-    "Enter a non-negative whole-yen amount with at most 16 whole digits.",
+    "Enter a non-negative whole-baht amount with at most 16 whole digits.",
   fcErrAmount:
     "Enter a non-negative amount with at most 16 whole digits and two decimal places.",
   fcTotal: "Total",
@@ -635,7 +638,10 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsColStatus: "สถานะ",
   wsColEvidence: "การวิเคราะห์ล่าสุด",
   wsColValue: "มูลค่าสินค้า",
-  wsColCreated: "สร้างเมื่อ",
+  wsColActivity: "กิจกรรมล่าสุด",
+  wsEvUnknown: "เวลาที่ไม่ทราบ: {n} นาที",
+  wsEvWindowUnknown: "ยังไม่กำหนดช่วงเวลาที่ครอบคลุม",
+  wsEvExcursions: "การเบี่ยงเบน: {n}",
   wsActionPrepare: "เตรียมหลักฐาน",
   wsActionHistory: "ดูประวัติ",
   wsActionInspect: "ตรวจการจัดส่ง",
@@ -747,11 +753,11 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsBlockNoRun:
     "รันและบันทึกการจำลองก่อน ความเข้าเกณฑ์มาจากระบบคำนวณ ไม่ใช่จากตัวอย่างที่ยังไม่บันทึก",
   wsBlockScenarioBlocked:
-    "ทางเลือกนี้ถูกนโยบายคุณภาพบล็อก ทางเลือกที่ถูกบล็อกเสนอไม่ได้ และน้ำหนักต้นทุน AI หรือการทบทวนโดย QA ไม่สามารถยกเลิก HARD_BLOCK ได้",
+    "สถานการณ์นี้ถูกนโยบายคุณภาพบล็อก สถานการณ์ที่ถูกบล็อกเสนอไม่ได้ และน้ำหนักต้นทุน AI หรือการทบทวนโดย QA ไม่สามารถยกเลิก HARD_BLOCK ได้",
   wsBlockScenarioUnknown:
-    "หลักฐานไม่พอที่จะประเมินทางเลือกนี้ (INSUFFICIENT_DATA) เพิ่มหลักฐานที่ขาดแล้วคำนวณใหม่",
+    "หลักฐานไม่พอที่จะประเมินสถานการณ์นี้ (INSUFFICIENT_DATA) เพิ่มหลักฐานที่ขาดแล้วคำนวณใหม่",
   wsBlockPickScenario:
-    "เลือกทางเลือกในขั้นจำลองที่ผลเป็นเข้าเกณฑ์หรือต้องทบทวน จึงจะเสนอได้",
+    "เลือกสถานการณ์ในขั้นจำลองที่ผลเป็นเข้าเกณฑ์หรือต้องทบทวน จึงจะเสนอได้",
   wsBlockNoSubmission: "ต้องส่งข้อเสนอให้ QA ก่อน",
   wsBlockNoSnapshot:
     "รายงานสร้างจากสแนปช็อตที่ล็อกไว้ ซึ่งจะมีหลังจากส่งข้อเสนอแล้ว",
@@ -881,7 +887,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
     "ส่วนนี้รวมค่าที่วัดได้จริงว่าเกินเกณฑ์ ไม่ใช่เฉพาะข้อมูลที่ขาด หลักฐานที่อยู่นอกหรือคาบเกี่ยวกับช่วงเวลาของการจัดส่งต้องกระทบยอดเวลาเดินทางและวิเคราะห์ใหม่ก่อนปล่อยสินค้า ระยะเวลารวมนับเฉพาะช่วงเวลาของการจัดส่งที่ตรึงไว้",
 
   wsSimExplorer: "ตัวสำรวจการจำลอง",
-  wsSimTitle: "สำรวจทางเลือกในการดำเนินงาน",
+  wsSimTitle: "สำรวจสถานการณ์",
   wsSimLoading: "กำลังโหลดสมมติฐานของการจำลอง...",
   wsSimNoSource: "ไม่มีแหล่งข้อมูลสำหรับการจำลอง",
   wsSimBaselineRun: "รันฐานเปรียบเทียบ",
@@ -929,7 +935,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsEligibilityEngineNote:
     "มีเพียงระบบคำนวณเท่านั้นที่ตัดสินความเข้าเกณฑ์ ความล่าช้าไม่ได้จำลองการเสื่อมของอุณหภูมิ และน้ำหนักการจัดอันดับไม่เปลี่ยนหลักฐานหรือความเข้าเกณฑ์",
   wsCheckInput: "ตรวจค่าที่กรอก",
-  wsCompare: "เปรียบเทียบทางเลือกที่คำนวณแล้ว",
+  wsCompare: "เปรียบเทียบสถานการณ์ที่คำนวณแล้ว",
   wsCompareHidden:
     "ผลของสมมติฐานก่อนหน้าจะถูกซ่อนไว้จนกว่าการคำนวณปัจจุบันจะสำเร็จ",
   wsCompareSaved: "การเปรียบเทียบสถานการณ์ที่บันทึกแล้ว",
@@ -948,7 +954,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
 
   wsProposeTitle: "ข้อเสนอ",
   wsProposeLead:
-    "เลือกทางเลือกที่เข้าเกณฑ์หรือต้องทบทวน อธิบายเหตุผล แล้วบันทึกฉบับร่าง การส่งข้อเสนอจะล็อกหลักฐานไว้ให้ QA",
+    "เลือกสถานการณ์ที่เข้าเกณฑ์หรือต้องทบทวน อธิบายเหตุผล แล้วบันทึกฉบับร่าง การส่งข้อเสนอจะล็อกหลักฐานไว้ให้ QA",
   wsQaTitle: "การทบทวนโดย QA",
   wsQaLead:
     "ตรวจหลักฐานที่ล็อกไว้และบันทึกผลการทบทวน ระบบจะบันทึกบทบาท หมายเหตุ และเวลาของคุณ",
@@ -1012,7 +1018,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsReviewerNotes: "หมายเหตุของผู้ทบทวน",
   wsFrozenReport: "รายงานที่ล็อกไว้",
   wsReportFromSnapshot:
-    "ไฟล์ PDF สร้างจากสแนปช็อตที่ล็อกไว้ด้านบน และสร้างเป็นภาษาอังกฤษ",
+    "ไฟล์ PDF สร้างจากสแนปช็อตที่ล็อกไว้ด้านบน ป้ายกำกับเป็นไปตามภาษาของหน้าจอ (อังกฤษหรือไทย) ส่วนข้อมูลสแนปช็อตเหมือนกันทั้งสองภาษา",
   wsGeneratePdf: "สร้างรายงาน PDF",
   wsReportRequested:
     "ส่งคำขอสร้างรายงานแล้ว รีเฟรชสถานะเพื่อตรวจว่าเสร็จหรือยัง",
@@ -1150,7 +1156,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   fcCostSlider: "แถบเลื่อนองค์ประกอบต้นทุน",
   fcCostAmount: "จำนวนเงินขององค์ประกอบต้นทุน",
   fcErrYen:
-    "กรอกจำนวนเงินเยนเต็มหน่วยที่ไม่ติดลบ และมีส่วนจำนวนเต็มไม่เกิน 16 หลัก",
+    "กรอกจำนวนเงินบาทเต็มหน่วยที่ไม่ติดลบ และมีส่วนจำนวนเต็มไม่เกิน 16 หลัก",
   fcErrAmount:
     "กรอกจำนวนเงินที่ไม่ติดลบ มีส่วนจำนวนเต็มไม่เกิน 16 หลัก และทศนิยมสองตำแหน่ง",
   fcTotal: "รวม",

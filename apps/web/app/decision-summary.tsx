@@ -8,15 +8,27 @@ import { AnalysisBadge, RuleList } from "./workspace/ui";
 
 const KNOWN = ["ELIGIBLE", "REVIEW_REQUIRED", "BLOCKED", "INSUFFICIENT_DATA"];
 
+/**
+ * Group a Decimal string for display without float math. Keeps every digit the
+ * API sent (at least two decimals), so nothing is rounded.
+ */
+export function formatDecimal(value: unknown): string | null {
+  const text = typeof value === "number" ? String(value) : value;
+  if (typeof text !== "string" || !/^-?\d+(\.\d+)?$/.test(text)) return null;
+  const negative = text.startsWith("-");
+  const [whole, fraction = ""] = text.replace("-", "").split(".");
+  const grouped = BigInt(whole).toLocaleString("en-US");
+  return `${negative ? "-" : ""}${grouped}.${fraction.padEnd(2, "0")}`;
+}
 export function money(
   value: unknown,
   currency: unknown,
   missing = "Not calculated",
 ): string {
-  const number = Number(value);
-  return value != null && Number.isFinite(number)
-    ? `${number.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${String(currency || "")}`
-    : missing;
+  const formatted = formatDecimal(value);
+  return formatted === null
+    ? missing
+    : `${formatted} ${String(currency || "")}`.trim();
 }
 export default function DecisionEvidenceSummary({
   evidence,
