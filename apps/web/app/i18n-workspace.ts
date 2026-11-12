@@ -41,7 +41,10 @@ export const wsEn = {
   wsColStatus: "Status",
   wsColEvidence: "Latest analysis",
   wsColValue: "Cargo value",
-  wsColCreated: "Created",
+  wsColActivity: "Last activity",
+  wsEvUnknown: "Unknown time: {n} min",
+  wsEvWindowUnknown: "Coverage window not established",
+  wsEvExcursions: "Excursions: {n}",
   wsActionPrepare: "Prepare evidence",
   wsActionHistory: "View history",
   wsActionInspect: "Inspect shipment",
@@ -429,7 +432,7 @@ export const wsEn = {
   wsReviewerNotes: "Reviewer notes",
   wsFrozenReport: "Frozen report",
   wsReportFromSnapshot:
-    "The PDF is built from the frozen snapshot above and is generated in English.",
+    "The PDF is built from the frozen snapshot above. Its labels follow the interface language (English or Thai); the snapshot data is identical in both.",
   wsGeneratePdf: "Generate PDF report",
   wsReportRequested:
     "Report requested. Refresh its status to check completion.",
@@ -635,7 +638,10 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsColStatus: "สถานะ",
   wsColEvidence: "การวิเคราะห์ล่าสุด",
   wsColValue: "มูลค่าสินค้า",
-  wsColCreated: "สร้างเมื่อ",
+  wsColActivity: "กิจกรรมล่าสุด",
+  wsEvUnknown: "เวลาที่ไม่ทราบ: {n} นาที",
+  wsEvWindowUnknown: "ยังไม่กำหนดช่วงเวลาที่ครอบคลุม",
+  wsEvExcursions: "การเบี่ยงเบน: {n}",
   wsActionPrepare: "เตรียมหลักฐาน",
   wsActionHistory: "ดูประวัติ",
   wsActionInspect: "ตรวจการจัดส่ง",
@@ -1012,7 +1018,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsReviewerNotes: "หมายเหตุของผู้ทบทวน",
   wsFrozenReport: "รายงานที่ล็อกไว้",
   wsReportFromSnapshot:
-    "ไฟล์ PDF สร้างจากสแนปช็อตที่ล็อกไว้ด้านบน และสร้างเป็นภาษาอังกฤษ",
+    "ไฟล์ PDF สร้างจากสแนปช็อตที่ล็อกไว้ด้านบน ป้ายกำกับเป็นไปตามภาษาของหน้าจอ (อังกฤษหรือไทย) ส่วนข้อมูลสแนปช็อตเหมือนกันทั้งสองภาษา",
   wsGeneratePdf: "สร้างรายงาน PDF",
   wsReportRequested:
     "ส่งคำขอสร้างรายงานแล้ว รีเฟรชสถานะเพื่อตรวจว่าเสร็จหรือยัง",
