@@ -66,6 +66,25 @@ export const FIGURES = {
       "gdSStudioFactors5",
     ],
   },
+  "studio-chart": {
+    alt: "gdAltStudioChart",
+    steps: [
+      "gdSStudioChart1",
+      "gdSStudioChart2",
+      "gdSStudioChart3",
+      "gdSStudioChart4",
+    ],
+  },
+  "studio-edit": {
+    alt: "gdAltStudioEdit",
+    steps: [
+      "gdSStudioEdit1",
+      "gdSStudioEdit2",
+      "gdSStudioEdit3",
+      "gdSStudioEdit4",
+      "gdSStudioEdit5",
+    ],
+  },
   "studio-compare": {
     alt: "gdAltStudioCompare",
     steps: ["gdSStudioCompare1", "gdSStudioCompare2", "gdSStudioCompare3"],

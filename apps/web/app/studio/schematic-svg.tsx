@@ -8,6 +8,7 @@ import {
   type Reading,
 } from "./sim-clock";
 import { acceptanceTag, type Acceptance } from "./scenarios";
+import { formatAmount } from "../simulation-assumptions";
 
 const SX = (x: number) => 340 + x * 34;
 const SY = (z: number) => 205 + z * 28;
@@ -21,6 +22,8 @@ export type SvgLabels = {
   quarantine: string;
   gap: string;
   blocked: string;
+  unit: string;
+  currency: string;
   title: string;
   acc: Record<Acceptance, string>;
 };
@@ -245,6 +248,13 @@ export default function SchematicSvg({
               rx="2"
               className="svg-cab"
             />
+            {f.dwelling && (
+              <circle
+                r="22"
+                className="svg-dwell"
+                transform={`rotate(${-(f.truck.heading * 180) / Math.PI})`}
+              />
+            )}
             {b === "unknown" && (
               <rect
                 x="-14"
@@ -259,17 +269,42 @@ export default function SchematicSvg({
         );
       })}
       {showAll &&
-        frames.map((f, i) => (
-          <text
-            key={i}
-            x={SX(f.truck.x)}
-            y={SY(f.truck.z) - 14}
-            textAnchor="middle"
-            className={"svg-label strong" + (i === selected ? "" : " dim")}
-          >
-            {f.blockedAtBarrier ? `${i + 1} × ${labels.blocked}` : i + 1}
-          </text>
-        ))}
+        frames.map((f, i) => {
+          // Trucks that share a spot stack their tags instead of overprinting.
+          let stack = 0;
+          for (let j = 0; j < i; j++)
+            if (
+              Math.hypot(
+                SX(frames[j].truck.x) - SX(f.truck.x),
+                SY(frames[j].truck.z) - SY(f.truck.z),
+              ) < 40
+            )
+              stack += 1;
+          const text = f.blockedAtBarrier
+            ? `${i + 1} × ${labels.blocked}`
+            : [
+                String(i + 1),
+                f.costTicker === null
+                  ? "–"
+                  : `${formatAmount(f.costTicker)} ${labels.currency}`,
+                f.delayMinutes === null
+                  ? "–"
+                  : `${f.delayMinutes} ${labels.unit}`,
+              ].join(" · ");
+          return (
+            <text
+              key={i}
+              x={SX(f.truck.x)}
+              y={SY(f.truck.z) - 16 - stack * 15}
+              textAnchor="middle"
+              className={
+                "svg-label svg-tag strong" + (i === selected ? "" : " dim")
+              }
+            >
+              {text}
+            </text>
+          );
+        })}
     </svg>
   );
 }

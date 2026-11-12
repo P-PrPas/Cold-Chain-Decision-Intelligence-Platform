@@ -52,6 +52,15 @@ export class Player {
     this.playListeners.forEach((l) => l());
   }
 
+  /** The axis grows or shrinks when delays change or compare mode toggles. */
+  setAxis(journeyEnd: number, total: number) {
+    if (journeyEnd === this.journeyEnd && total === this.total) return;
+    this.journeyEnd = journeyEnd;
+    this.total = total;
+    if (this.time > total) this.time = total;
+    this.emitTime();
+  }
+
   seek(t: number) {
     this.time = Math.min(this.total, Math.max(0, t));
     this.decided = isPastDecision(this.time, this.journeyEnd);

@@ -10,6 +10,7 @@ import {
   type Reading,
 } from "./sim-clock";
 import { acceptanceTag, type Acceptance } from "./scenarios";
+import { formatAmount } from "../simulation-assumptions";
 
 export type CameraMode = "overview" | "follow";
 
@@ -33,6 +34,9 @@ export type DioramaConfig = {
     quarantine: string;
     gap: string;
     blocked: string;
+    /** Unit and currency for the per-route tags in compare mode. */
+    unit: string;
+    currency: string;
     /** Receiver acceptance in words, shown next to the glyph. */
     acc: Record<Acceptance, string>;
   };
@@ -171,6 +175,8 @@ function strip(
 
 type Truck = {
   group: THREE.Group;
+  /** Flat ring on the road while the truck waits out its delay. */
+  ring: THREE.Mesh;
   reefer: THREE.Mesh;
   reeferMat: THREE.MeshLambertMaterial;
   bodyMat: THREE.MeshLambertMaterial;
@@ -202,9 +208,22 @@ function makeTruck(p: Palette): Truck {
   );
   reefer.position.set(-0.3, 0.82, 0);
   reefer.castShadow = true;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.95, 1.08, 40),
+    new THREE.MeshBasicMaterial({
+      color: p.text,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(0, 0.09, 0);
+  ring.visible = false;
   const group = new THREE.Group();
-  group.add(bodyMesh, reefer);
-  return { group, reefer, reeferMat, bodyMat };
+  group.add(bodyMesh, reefer, ring);
+  return { group, ring, reefer, reeferMat, bodyMat };
 }
 
 type Marker = { el: HTMLSpanElement; point: THREE.Vector3 };
@@ -807,6 +826,7 @@ export function mountDiorama(host: HTMLElement): Diorama {
       const op = i === selIdx ? 1 : 0.55;
       t.reeferMat.opacity = op;
       t.bodyMat.opacity = op;
+      t.ring.visible = f.dwelling;
     });
 
     // Branch overlays emphasise the four ways out from the decision point.
@@ -864,12 +884,27 @@ export function mountDiorama(host: HTMLElement): Diorama {
       if (!mk || !f) continue;
       const on = showAll;
       mk.el.dataset.on = on ? "1" : "0";
-      mk.point.set(f.truck.x, 1.9, f.truck.z);
+      // Trucks that share a spot (all four at the decision point) stack their tags.
+      let stack = 0;
+      for (let j = 0; j < i; j++) {
+        const o = fr.all[j];
+        if (o && Math.hypot(o.truck.x - f.truck.x, o.truck.z - f.truck.z) < 1.6)
+          stack += 1;
+      }
+      mk.point.set(f.truck.x, 3.1 + stack * 0.62, f.truck.z);
       mk.el.className =
         "network-marker truck-tag" + (i === selIdx ? " is-selected" : "");
+      // Each route shows its own delay clock and running total.
+      const parts = [
+        String(i + 1),
+        f.costTicker === null
+          ? "–"
+          : `${formatAmount(f.costTicker)} ${cfg.labels.currency}`,
+        f.delayMinutes === null ? "–" : `${f.delayMinutes} ${cfg.labels.unit}`,
+      ];
       mk.el.textContent = f.blockedAtBarrier
         ? `${i + 1} × ${cfg.labels.blocked}`
-        : String(i + 1);
+        : parts.join(" · ");
     }
   }
 

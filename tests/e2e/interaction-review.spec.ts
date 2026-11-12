@@ -69,15 +69,14 @@ for (const width of [375, 320]) {
     await expect(
       page.locator(".network-name").filter({ hasText: "Alternative" }),
     ).toContainText("×");
-    await page.getByRole("button", { name: "Advanced", exact: true }).click();
+    // The ranking weight is not offered in the sandbox (ranking follows engine eligibility).
     await expect(
-      page.getByText("Preference only in this demo.", { exact: false }),
-    ).toBeVisible();
-    await page.getByRole("slider", { name: "Cost weight slider" }).focus();
+      page.getByRole("button", { name: "Advanced", exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Cost", exact: true }).click();
+    await cost.focus();
     await page.keyboard.press("ArrowRight");
-    const focus = await page
-      .getByRole("slider", { name: "Cost weight slider" })
-      .boundingBox();
+    const focus = await cost.boundingBox();
     const sceneBounds = await page.locator(".studio-stage").boundingBox();
     expect(focus!.y).toBeGreaterThanOrEqual(
       sceneBounds!.y + sceneBounds!.height,

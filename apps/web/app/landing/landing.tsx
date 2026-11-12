@@ -82,7 +82,7 @@ function HeroStudio() {
   const frame = useRef<HTMLDivElement>(null);
   const readings = HERO.readings;
   const journeyEnd = journeyMinutes(readings, DEMO_STEP_MINUTES);
-  const total = totalMinutes(readings, DEMO_STEP_MINUTES);
+  const total = totalMinutes(readings, DEMO_STEP_MINUTES, views, CHOSEN);
   const [player] = useState(() => new Player(journeyEnd, total));
   const playing = usePlaying(player);
   // The visitor can stop the loop; the loop then stays stopped.
@@ -255,9 +255,10 @@ function Hero() {
 
 function Evidence() {
   const t = useT();
+  const views = useViews();
   const readings = GAP_DEMO.readings;
   const journeyEnd = journeyMinutes(readings, DEMO_STEP_MINUTES);
-  const total = totalMinutes(readings, DEMO_STEP_MINUTES);
+  const total = totalMinutes(readings, DEMO_STEP_MINUTES, views, CHOSEN);
   const [player] = useState(() => {
     const p = new Player(journeyEnd, total);
     p.seek(165); // inside the gap, so the readout says "no readings"
@@ -373,7 +374,7 @@ function Scenarios() {
   const views = useViews();
   const readings = HERO.readings;
   const journeyEnd = journeyMinutes(readings, DEMO_STEP_MINUTES);
-  const total = totalMinutes(readings, DEMO_STEP_MINUTES);
+  const total = totalMinutes(readings, DEMO_STEP_MINUTES, views);
   const gaps = useMemo(
     () => findGaps(readings, DEMO_START_MINUTE, DEMO_STEP_MINUTES),
     [readings],
@@ -467,6 +468,8 @@ function Scenarios() {
                   quarantine: t("nodeQuarantineShort"),
                   gap: t("gapNoReadings"),
                   blocked: t("barrierBlocked"),
+                  unit: t("unitMin"),
+                  currency: "THB",
                   title: t("svgTitle"),
                   acc: {
                     ACCEPTED: t("accAccepted"),

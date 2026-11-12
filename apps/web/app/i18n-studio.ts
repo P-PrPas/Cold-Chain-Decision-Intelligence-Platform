@@ -52,7 +52,7 @@ export const studioEn = {
   hudUnknown: "Unknown",
   hudNoReading: "No reading",
   hudBeyond: "No temperature model after the last reading",
-  hudBranchTime: "scenario time, schematic (no readings)",
+  hudBranchTime: "delay clock, schematic (no readings)",
   gapNoReadings: "No readings",
   hudDelay: "Delay clock",
   hudCost: "Cost",
@@ -161,6 +161,46 @@ export const studioEn = {
     "A stable illustrative temperature trace. Stable readings alone do not establish product safety.",
   demoNote3:
     "Sensor readings are absent from 09:30 to 10:30. The gap stays visible; no temperature is inferred.",
+  axisCompressedNote:
+    "Time axis compressed after {n} min of delay (not to scale). Every number shown is the entered value.",
+  axisBreakMark: "axis break",
+  tlSpanAria: "{name}: delay {d} min",
+  tlSpanUnknown: "{name}: delay unknown, the run does not complete",
+  tlSpansLabel: "Scenario runs on the shared time axis",
+  delayUnknownShort: "delay unknown",
+  hudCompressed: "axis compressed",
+
+  cbTitle: "Cost breakdown",
+  cbAria: "Cost breakdown by category, total {total} {cur}",
+  cbUnavailable: "Breakdown unavailable. Check the amounts.",
+  cbWasLabel: "Previous breakdown, fading",
+  cbShare: "{p}% of total",
+
+  chartTitle: "Delay and cost, all scenarios",
+  chartDesc:
+    "Each point is one scenario, placed by additional delay and total cost. This shows position only. It does not rank or recommend an option.",
+  chartAxisX: "Additional delay (min)",
+  chartAxisY: "Total cost ({cur})",
+  chartNotPlotted: "Not plotted: delay or cost is invalid.",
+  chartTable: "Chart data as a table",
+  chartTableShort: "Table",
+  chartColScenario: "Scenario",
+  chartColDelay: "Delay (min)",
+  chartColCost: "Total cost",
+  chartPrevious: "previous position",
+
+  editReadings: "Edit readings",
+  editDone: "Done editing",
+  editReset: "Reset to demo data",
+  editedNote: "Edited data — synthetic, not saved",
+  editHint:
+    "Drag a point up or down, or focus it and press Up or Down (0.1 °C, Shift for 1 °C). Range -30 to 40 °C.",
+  editPoint: "Reading at {time} UTC",
+  editNone: "No reading",
+  editMarkNone: "Mark as no reading",
+  editRestore: "Restore a reading",
+  editSelected: "Selected: {time} UTC",
+  editNoneNote: "Shown as unknown. It is never filled in.",
 } as const;
 
 export const studioTh = {
@@ -214,7 +254,7 @@ export const studioTh = {
   hudUnknown: "ไม่ทราบ",
   hudNoReading: "ไม่มีค่าอ่าน",
   hudBeyond: "ไม่มีแบบจำลองอุณหภูมิหลังค่าอ่านสุดท้าย",
-  hudBranchTime: "เวลาในสถานการณ์ (แผนผัง ไม่มีค่าอ่าน)",
+  hudBranchTime: "นาฬิกาความล่าช้า (แผนผัง ไม่มีค่าอ่าน)",
   gapNoReadings: "ไม่มีค่าอ่าน",
   hudDelay: "นาฬิกาความล่าช้า",
   hudCost: "ค่าใช้จ่าย",
@@ -322,4 +362,44 @@ export const studioTh = {
     "กราฟอุณหภูมิที่คงที่เพื่อใช้อธิบาย ค่าอ่านที่คงที่เพียงอย่างเดียวไม่ได้ยืนยันความปลอดภัยของสินค้า",
   demoNote3:
     "ไม่มีค่าอ่านจากเซนเซอร์ระหว่าง 09:30 ถึง 10:30 ช่องว่างยังคงปรากฏ และไม่มีการสันนิษฐานอุณหภูมิ",
+  axisCompressedNote:
+    "แกนเวลาถูกย่อหลังความล่าช้า {n} นาที (ไม่ตรงสัดส่วน) ตัวเลขทุกค่าที่แสดงคือค่าที่ผู้ใช้กรอก",
+  axisBreakMark: "จุดย่อแกนเวลา",
+  tlSpanAria: "{name}: ล่าช้า {d} นาที",
+  tlSpanUnknown: "{name}: ไม่ทราบความล่าช้า การดำเนินการจึงไม่เสร็จสิ้น",
+  tlSpansLabel: "การดำเนินตามสถานการณ์บนแกนเวลาร่วม",
+  delayUnknownShort: "ไม่ทราบความล่าช้า",
+  hudCompressed: "แกนเวลาถูกย่อ",
+
+  cbTitle: "รายละเอียดต้นทุน",
+  cbAria: "รายละเอียดต้นทุนตามหมวด รวม {total} {cur}",
+  cbUnavailable: "แสดงรายละเอียดไม่ได้ โปรดตรวจสอบจำนวนเงิน",
+  cbWasLabel: "รายละเอียดก่อนหน้า (กำลังจางหาย)",
+  cbShare: "{p}% ของยอดรวม",
+
+  chartTitle: "ความล่าช้าและต้นทุน ทุกสถานการณ์",
+  chartDesc:
+    "แต่ละจุดคือหนึ่งสถานการณ์ วางตามความล่าช้าเพิ่มเติมและต้นทุนรวม แสดงเพียงตำแหน่งเท่านั้น ไม่ได้จัดอันดับหรือแนะนำตัวเลือกใด",
+  chartAxisX: "ความล่าช้าเพิ่มเติม (นาที)",
+  chartAxisY: "ต้นทุนรวม ({cur})",
+  chartNotPlotted: "ไม่แสดงบนกราฟ: ความล่าช้าหรือต้นทุนไม่ถูกต้อง",
+  chartTable: "ข้อมูลของกราฟในรูปแบบตาราง",
+  chartTableShort: "ตาราง",
+  chartColScenario: "สถานการณ์",
+  chartColDelay: "ความล่าช้า (นาที)",
+  chartColCost: "ต้นทุนรวม",
+  chartPrevious: "ตำแหน่งก่อนหน้า",
+
+  editReadings: "แก้ไขค่าอ่าน",
+  editDone: "แก้ไขเสร็จแล้ว",
+  editReset: "คืนค่าข้อมูลสาธิต",
+  editedNote: "ข้อมูลที่แก้ไข เป็นข้อมูลจำลอง ไม่ได้บันทึก",
+  editHint:
+    "ลากจุดขึ้นหรือลง หรือโฟกัสที่จุดแล้วกดลูกศรขึ้นหรือลง (ครั้งละ 0.1 °C กด Shift เพื่อปรับครั้งละ 1 °C) ช่วง -30 ถึง 40 °C",
+  editPoint: "ค่าอ่านเวลา {time} UTC",
+  editNone: "ไม่มีค่าอ่าน",
+  editMarkNone: "ทำเครื่องหมายว่าไม่มีค่าอ่าน",
+  editRestore: "คืนค่าอ่าน",
+  editSelected: "เลือกอยู่: {time} UTC",
+  editNoneNote: "แสดงเป็นไม่ทราบ และจะไม่มีการเติมค่าให้",
 } as const;
