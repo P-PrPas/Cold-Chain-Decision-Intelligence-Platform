@@ -7,7 +7,7 @@ export const wsEn = {
   // Shipment list
   wsListTitle: "Shipment queue",
   wsListLead:
-    "Open a shipment to inspect evidence and continue its review. Status here is operational, not a quality judgement.",
+    "Open a shipment to inspect evidence and continue its review. Status here is operational, not a quality judgment.",
   wsOrganization: "Organization",
   wsSelectOrganization: "Select organization",
   wsSignOut: "Sign out",
@@ -151,15 +151,15 @@ export const wsEn = {
   wsBlockNoDataset:
     "Upload a CSV and wait for a ready dataset first. Analysis needs observed readings.",
   wsBlockNoPolicy: "An approved policy is required first.",
-  wsBlockNoAnalysis: "Complete an analysis to unlock scenario comparison.",
+  wsBlockNoAnalysis: "Complete an analysis before comparing scenarios.",
   wsBlockNoRun:
     "Run and save a simulation first. Eligibility comes from the engine, not from a preview.",
   wsBlockScenarioBlocked:
-    "This option is blocked by the quality policy. Blocked options cannot be proposed, and cost weights, AI or QA review cannot override a HARD_BLOCK.",
+    "This scenario is blocked by the quality policy. Blocked scenarios cannot be proposed, and cost weights, AI or QA review cannot override a HARD_BLOCK.",
   wsBlockScenarioUnknown:
-    "There is not enough evidence to evaluate this option (INSUFFICIENT_DATA). Add the missing evidence and recalculate.",
+    "There is not enough evidence to evaluate this scenario (INSUFFICIENT_DATA). Add the missing evidence and recalculate.",
   wsBlockPickScenario:
-    "Select an option in Simulate with an eligible or review-required result to propose it.",
+    "Select a scenario in Simulate with an eligible or review-required result to propose it.",
   wsBlockNoSubmission: "A proposal must be submitted to QA first.",
   wsBlockNoSnapshot:
     "A report is built from a frozen snapshot, which exists after a proposal is submitted.",
@@ -235,7 +235,7 @@ export const wsEn = {
   wsDraftRules: "Draft rules (JSON)",
   wsSaveDraftChanges: "Save draft changes",
   wsSubmitReview: "Submit review",
-  wsQaApprove: "QA approve",
+  wsQaApprove: "Approve as QA",
   wsNeedsQaToApprove: "Waiting for a user with the QA role to approve.",
   wsRetire: "Retire",
   wsConfirm: "Confirm",
@@ -292,7 +292,7 @@ export const wsEn = {
 
   // Simulate step
   wsSimExplorer: "Simulation explorer",
-  wsSimTitle: "Explore operational alternatives",
+  wsSimTitle: "Explore scenarios",
   wsSimLoading: "Loading simulation assumptions...",
   wsSimNoSource: "No simulation source available.",
   wsSimBaselineRun: "Baseline run",
@@ -340,7 +340,7 @@ export const wsEn = {
   wsEligibilityEngineNote:
     "Only the engine decides eligibility. Delay does not model temperature deterioration; ranking weights never change evidence or eligibility.",
   wsCheckInput: "Check input",
-  wsCompare: "Compare calculated alternatives",
+  wsCompare: "Compare calculated scenarios",
   wsCompareHidden:
     "Results for the previous assumptions are hidden until the current calculation succeeds.",
   wsCompareSaved: "Saved scenario comparison",
@@ -360,7 +360,7 @@ export const wsEn = {
   // Propose, QA and report steps
   wsProposeTitle: "Proposal",
   wsProposeLead:
-    "Choose an eligible or review-required option, explain why, and save a draft. Submitting freezes the evidence for QA.",
+    "Choose an eligible or review-required scenario, explain why, and save a draft. Submitting freezes the evidence for QA.",
   wsQaTitle: "QA review",
   wsQaLead:
     "Review the frozen evidence and record an outcome. The decision is recorded with your role, notes and time.",
@@ -573,7 +573,7 @@ export const wsEn = {
   fcCostSlider: "Cost component slider",
   fcCostAmount: "Cost component amount",
   fcErrYen:
-    "Enter a non-negative whole-yen amount with at most 16 whole digits.",
+    "Enter a non-negative whole-baht amount with at most 16 whole digits.",
   fcErrAmount:
     "Enter a non-negative amount with at most 16 whole digits and two decimal places.",
   fcTotal: "Total",
@@ -611,8 +611,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
     "การจัดส่งเป็นข้อมูลส่วนตัวขององค์กรคุณ เข้าสู่ระบบด้วยผู้ให้บริการยืนยันตัวตนเพื่อดำเนินการต่อ",
   wsOpenSample: "เปิด Studio ตัวอย่างแทน",
   wsPickOrgTitle: "เลือกองค์กร",
-  wsPickOrgBody:
-    "บัญชีของคุณอยู่ในมากกว่าหนึ่งองค์กร เลือกหนึ่งองค์กรเพื่อดูการจัดส่ง",
+  wsPickOrgBody: "บัญชีของคุณอยู่ในมากกว่าหนึ่งองค์กร เลือกหนึ่งองค์กรเพื่อดูการจัดส่ง",
   wsCreateShipment: "สร้างการจัดส่ง",
   wsCloseCreate: "ปิดแบบฟอร์มการจัดส่งใหม่",
   wsCreateTitle: "สร้างการจัดส่ง",
@@ -705,17 +704,14 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsStatusUpdated: "อัปเดตสถานะการดำเนินงานแล้ว",
   wsReloadForRevision: "โหลดหน้าใหม่เพื่อรับฉบับแก้ไขล่าสุด",
   wsReload: "โหลดใหม่",
-  wsDetailSignIn:
-    "เซสชันของคุณสิ้นสุดแล้ว เข้าสู่ระบบอีกครั้งเพื่อเปิดการจัดส่งนี้",
+  wsDetailSignIn: "เซสชันของคุณสิ้นสุดแล้ว เข้าสู่ระบบอีกครั้งเพื่อเปิดการจัดส่งนี้",
   wsDetailNotFound: "ไม่พบการจัดส่งนี้ในองค์กรที่เลือก",
   wsLoading: "กำลังโหลด...",
-  wsHistoryRefreshFailed:
-    "รีเฟรชประวัติที่บันทึกไว้ไม่สำเร็จ ลองรีเฟรชประวัติอีกครั้ง",
+  wsHistoryRefreshFailed: "รีเฟรชประวัติที่บันทึกไว้ไม่สำเร็จ ลองรีเฟรชประวัติอีกครั้ง",
   wsSavedWorkflow: "ขั้นตอนที่บันทึกไว้",
   wsRefreshHistory: "รีเฟรชประวัติที่บันทึกไว้",
   wsNewCycle: "เริ่มรอบการวิเคราะห์ใหม่",
-  wsCannotLoadHistory:
-    "โหลดประวัติที่บันทึกไว้ไม่ได้ โหลดหน้านี้ใหม่เพื่อลองอีกครั้ง",
+  wsCannotLoadHistory: "โหลดประวัติที่บันทึกไว้ไม่ได้ โหลดหน้านี้ใหม่เพื่อลองอีกครั้ง",
   wsLoadingWorkflow: "กำลังโหลดขั้นตอนที่บันทึกไว้...",
   wsLatestDecision: "การตัดสินใจล่าสุด",
   wsNoneRecorded: "ยังไม่มีการบันทึก",
@@ -742,23 +738,20 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsBlockNoDataset:
     "อัปโหลดไฟล์ CSV และรอให้ชุดข้อมูลพร้อมใช้งานก่อน การวิเคราะห์ต้องมีค่าอ่านที่วัดได้จริง",
   wsBlockNoPolicy: "ต้องมีนโยบายที่ได้รับอนุมัติก่อน",
-  wsBlockNoAnalysis:
-    "ทำการวิเคราะห์ให้เสร็จก่อน จึงจะเปรียบเทียบสถานการณ์จำลองได้",
+  wsBlockNoAnalysis: "ทำการวิเคราะห์ให้เสร็จก่อน จึงจะเปรียบเทียบสถานการณ์จำลองได้",
   wsBlockNoRun:
     "รันและบันทึกการจำลองก่อน ความเข้าเกณฑ์มาจากระบบคำนวณ ไม่ใช่จากตัวอย่างที่ยังไม่บันทึก",
   wsBlockScenarioBlocked:
-    "ทางเลือกนี้ถูกนโยบายคุณภาพบล็อก ทางเลือกที่ถูกบล็อกเสนอไม่ได้ และน้ำหนักต้นทุน AI หรือการทบทวนโดย QA ไม่สามารถยกเลิก HARD_BLOCK ได้",
+    "สถานการณ์นี้ถูกนโยบายคุณภาพบล็อก สถานการณ์ที่ถูกบล็อกเสนอไม่ได้ และน้ำหนักต้นทุน AI หรือการทบทวนโดย QA ไม่สามารถยกเลิก HARD_BLOCK ได้",
   wsBlockScenarioUnknown:
-    "หลักฐานไม่พอที่จะประเมินทางเลือกนี้ (INSUFFICIENT_DATA) เพิ่มหลักฐานที่ขาดแล้วคำนวณใหม่",
+    "หลักฐานไม่พอที่จะประเมินสถานการณ์นี้ (INSUFFICIENT_DATA) เพิ่มหลักฐานที่ขาดแล้วคำนวณใหม่",
   wsBlockPickScenario:
-    "เลือกทางเลือกในขั้นจำลองที่ผลเป็นเข้าเกณฑ์หรือต้องทบทวน จึงจะเสนอได้",
+    "เลือกสถานการณ์ในขั้นจำลองที่ผลเป็นเข้าเกณฑ์หรือต้องทบทวน จึงจะเสนอได้",
   wsBlockNoSubmission: "ต้องส่งข้อเสนอให้ QA ก่อน",
-  wsBlockNoSnapshot:
-    "รายงานสร้างจากสแนปช็อตที่ล็อกไว้ ซึ่งจะมีหลังจากส่งข้อเสนอแล้ว",
+  wsBlockNoSnapshot: "รายงานสร้างจากสแนปช็อตที่ล็อกไว้ ซึ่งจะมีหลังจากส่งข้อเสนอแล้ว",
   wsStepNoteGaps:
     "ค่าอ่านมีช่วงที่ขาดหาย การวิเคราะห์รายงานช่วง UNKNOWN และไม่ถือว่าเป็นไปตามเกณฑ์",
-  wsStepNoteNeedsDataset:
-    "มีนโยบายที่อนุมัติแล้ว แต่การวิเคราะห์ต้องมีชุดข้อมูลที่พร้อมใช้งาน",
+  wsStepNoteNeedsDataset: "มีนโยบายที่อนุมัติแล้ว แต่การวิเคราะห์ต้องมีชุดข้อมูลที่พร้อมใช้งาน",
 
   wsEvidenceLead:
     "อัปโหลด CSV ตรวจผลการตรวจสอบข้อมูล และดูค่าอ่านที่วัดได้จริง ค่าอ่านที่ขาดจะยังเป็นไม่ทราบ",
@@ -800,8 +793,7 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsTlUnknown: "ช่วงที่ไม่ทราบ (ไม่มีค่าอ่าน)",
   wsTlExcursion: "ช่วงเกินเกณฑ์ที่การวิเคราะห์พบ",
   wsTlEmptyTitle: "ยังไม่มีค่าอ่านให้แสดง",
-  wsTlEmpty:
-    "เลือกชุดข้อมูลที่พร้อมใช้งานเพื่อดูค่าอ่าน ช่วงเวลาที่ไม่มีค่าอ่านจะไม่ถูกวาด",
+  wsTlEmpty: "เลือกชุดข้อมูลที่พร้อมใช้งานเพื่อดูค่าอ่าน ช่วงเวลาที่ไม่มีค่าอ่านจะไม่ถูกวาด",
   wsTlNote:
     "แสดงเฉพาะค่าที่วัดได้จริง ช่วงลายเส้นเฉียงคือไม่ทราบ และไม่ถูกนับว่าอยู่ในช่วงที่กำหนด ผลตามนโยบายต้องมีการวิเคราะห์",
 
@@ -845,13 +837,10 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsSelectPrevious: "เลือกผลก่อนหน้า",
   wsRecentResult: "ผลล่าสุดที่",
   wsClassUnavailable: "ไม่มีผลการจัดประเภท",
-  wsServerChecksCurrent:
-    "เซิร์ฟเวอร์จะตรวจว่าผลนี้ยังเป็นปัจจุบันหรือไม่เมื่อรันการจำลอง",
-  wsAnalysisNotComplete:
-    "การวิเคราะห์นี้ยังไม่เสร็จ ให้รันการวิเคราะห์ใหม่ด้านล่าง",
+  wsServerChecksCurrent: "เซิร์ฟเวอร์จะตรวจว่าผลนี้ยังเป็นปัจจุบันหรือไม่เมื่อรันการจำลอง",
+  wsAnalysisNotComplete: "การวิเคราะห์นี้ยังไม่เสร็จ ให้รันการวิเคราะห์ใหม่ด้านล่าง",
   wsOlderAnalyses: "โหลดการวิเคราะห์ที่เก่ากว่า",
-  wsNeedDatasetForAnalysis:
-    "เพิ่มชุดข้อมูลอุณหภูมิที่พร้อมใช้งานในขั้นหลักฐานก่อนวิเคราะห์",
+  wsNeedDatasetForAnalysis: "เพิ่มชุดข้อมูลอุณหภูมิที่พร้อมใช้งานในขั้นหลักฐานก่อนวิเคราะห์",
   wsReadyDataset: "ชุดข้อมูลที่พร้อมใช้งาน",
   wsSelect: "เลือก",
   wsDataset: "ชุดข้อมูล",
@@ -881,12 +870,11 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
     "ส่วนนี้รวมค่าที่วัดได้จริงว่าเกินเกณฑ์ ไม่ใช่เฉพาะข้อมูลที่ขาด หลักฐานที่อยู่นอกหรือคาบเกี่ยวกับช่วงเวลาของการจัดส่งต้องกระทบยอดเวลาเดินทางและวิเคราะห์ใหม่ก่อนปล่อยสินค้า ระยะเวลารวมนับเฉพาะช่วงเวลาของการจัดส่งที่ตรึงไว้",
 
   wsSimExplorer: "ตัวสำรวจการจำลอง",
-  wsSimTitle: "สำรวจทางเลือกในการดำเนินงาน",
+  wsSimTitle: "สำรวจสถานการณ์",
   wsSimLoading: "กำลังโหลดสมมติฐานของการจำลอง...",
   wsSimNoSource: "ไม่มีแหล่งข้อมูลสำหรับการจำลอง",
   wsSimBaselineRun: "รันฐานเปรียบเทียบ",
-  wsSimNewBaseline:
-    "ฐานเปรียบเทียบใหม่: ประมาณการเป็นศูนย์ และไม่ทราบการยอมรับ",
+  wsSimNewBaseline: "ฐานเปรียบเทียบใหม่: ประมาณการเป็นศูนย์ และไม่ทราบการยอมรับ",
   wsSimUnchanged: "ฐานเปรียบเทียบไม่เปลี่ยน",
   wsSimModified: "สมมติฐานถูกแก้ไขแล้ว",
   wsSimSaving: "กำลังบันทึกการคำนวณ",
@@ -895,15 +883,13 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsSimDraftNotCurrent: "ฉบับร่าง / ผลไม่เป็นปัจจุบัน",
   wsSimRun: "รัน",
   wsSimDraftPreview: "ตัวอย่างฉบับร่าง (ยังไม่บันทึก)",
-  wsSimWrongAnalysis:
-    "รันที่บันทึกไว้เป็นของการวิเคราะห์อื่น เลือกการวิเคราะห์ต้นทางอีกครั้ง",
+  wsSimWrongAnalysis: "รันที่บันทึกไว้เป็นของการวิเคราะห์อื่น เลือกการวิเคราะห์ต้นทางอีกครั้ง",
   wsSimNoAssumptions:
     "ไม่มีสมมติฐานหรือผลของรันที่บันทึกไว้ โหลดใหม่หรือเริ่มรอบการวิเคราะห์ใหม่ ระบบไม่ได้ใช้ค่าเริ่มต้นแทน",
   wsSimMismatch: "สถานการณ์ที่บันทึกไว้ไม่ตรงกับสมมติฐาน",
   wsSimPreviewShape: "ผลตัวอย่างที่ได้รับไม่มีผลลัพธ์สำหรับการวิเคราะห์นี้",
   wsSimCalculating: "กำลังคำนวณตัวอย่าง...",
-  wsSimPreviewUnavailable:
-    "ยังแสดงตัวอย่างไม่ได้ สมมติฐานของคุณยังอยู่ ลองคำนวณอีกครั้ง",
+  wsSimPreviewUnavailable: "ยังแสดงตัวอย่างไม่ได้ สมมติฐานของคุณยังอยู่ ลองคำนวณอีกครั้ง",
   wsSimWaiting: "ฉบับร่างเปลี่ยนแล้ว รอคำนวณตัวอย่าง...",
   wsSimFailed: "การจำลองล้มเหลว ตรวจหลักฐานต้นทางแล้วลองอีกครั้ง",
   wsSimSlow:
@@ -929,9 +915,8 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsEligibilityEngineNote:
     "มีเพียงระบบคำนวณเท่านั้นที่ตัดสินความเข้าเกณฑ์ ความล่าช้าไม่ได้จำลองการเสื่อมของอุณหภูมิ และน้ำหนักการจัดอันดับไม่เปลี่ยนหลักฐานหรือความเข้าเกณฑ์",
   wsCheckInput: "ตรวจค่าที่กรอก",
-  wsCompare: "เปรียบเทียบทางเลือกที่คำนวณแล้ว",
-  wsCompareHidden:
-    "ผลของสมมติฐานก่อนหน้าจะถูกซ่อนไว้จนกว่าการคำนวณปัจจุบันจะสำเร็จ",
+  wsCompare: "เปรียบเทียบสถานการณ์ที่คำนวณแล้ว",
+  wsCompareHidden: "ผลของสมมติฐานก่อนหน้าจะถูกซ่อนไว้จนกว่าการคำนวณปัจจุบันจะสำเร็จ",
   wsCompareSaved: "การเปรียบเทียบสถานการณ์ที่บันทึกแล้ว",
   wsComparePreview: "การเปรียบเทียบสถานการณ์จากตัวอย่างที่ยังไม่บันทึก",
   wsScenario: "สถานการณ์",
@@ -948,31 +933,27 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
 
   wsProposeTitle: "ข้อเสนอ",
   wsProposeLead:
-    "เลือกทางเลือกที่เข้าเกณฑ์หรือต้องทบทวน อธิบายเหตุผล แล้วบันทึกฉบับร่าง การส่งข้อเสนอจะล็อกหลักฐานไว้ให้ QA",
+    "เลือกสถานการณ์ที่เข้าเกณฑ์หรือต้องทบทวน อธิบายเหตุผล แล้วบันทึกฉบับร่าง การส่งข้อเสนอจะล็อกหลักฐานไว้ให้ QA",
   wsQaTitle: "การทบทวนโดย QA",
   wsQaLead:
     "ตรวจหลักฐานที่ล็อกไว้และบันทึกผลการทบทวน ระบบจะบันทึกบทบาท หมายเหตุ และเวลาของคุณ",
   wsReportTitle: "รายงาน",
-  wsReportLead:
-    "รายงานสร้างจากสแนปช็อตที่ล็อกไว้เท่านั้น ไม่ใช้นโยบายหรือชุดข้อมูลล่าสุด",
+  wsReportLead: "รายงานสร้างจากสแนปช็อตที่ล็อกไว้เท่านั้น ไม่ใช้นโยบายหรือชุดข้อมูลล่าสุด",
   wsQaRuleTitle: "การอนุมัติของ QA ต้องทำอย่างชัดเจนและแยกสิทธิ์",
   wsQaRule:
     "เฉพาะผู้ใช้ที่มีบทบาท QA เท่านั้นที่อนุมัติ ไม่รับ หรือขอให้แก้ไขได้ สิทธิ์ Admin อย่างเดียวอนุมัติไม่ได้ เซิร์ฟเวอร์บังคับกฎนี้รวมถึงข้อจำกัดการอนุมัติด้วยตนเอง การอนุมัติบันทึกเฉพาะขั้นตอนภายในองค์กร ไม่ได้ปล่อยสินค้าและไม่ได้รับรองความปลอดภัยของอาหาร",
-  wsInputsRetained:
-    "ข้อมูลที่คุณกรอกยังอยู่ รีเฟรชหลักฐานหากฉบับแก้ไขเปลี่ยนไป",
+  wsInputsRetained: "ข้อมูลที่คุณกรอกยังอยู่ รีเฟรชหลักฐานหากฉบับแก้ไขเปลี่ยนไป",
   wsDraftSaved: "บันทึกฉบับร่างแล้ว ตรวจหลักฐานด้านล่างก่อนส่งให้ QA",
   wsDecisionUpdated: "อัปเดตการตัดสินใจแล้ว",
   wsDecisionBusy: "กำลังบันทึกหรือดึงหลักฐาน...",
   wsSelectedProposal: "ข้อเสนอที่เลือก",
   wsWhyAppropriate: "เหตุใดจึงเป็นการดำเนินการที่เหมาะสม",
   wsSaveDraftForReview: "บันทึกฉบับร่างเพื่อทบทวน",
-  wsSelectPermissible:
-    "เลือกสถานการณ์ที่ทำได้จากการจำลองที่เสร็จแล้วเพื่อเตรียมข้อเสนอ",
+  wsSelectPermissible: "เลือกสถานการณ์ที่ทำได้จากการจำลองที่เสร็จแล้วเพื่อเตรียมข้อเสนอ",
   wsShipmentDecisions: "การตัดสินใจของการจัดส่งนี้",
   wsRefreshDecisions: "รีเฟรชการตัดสินใจ",
   wsLoadingDecisions: "กำลังโหลดการตัดสินใจของการจัดส่ง...",
-  wsDecisionsFailed:
-    "โหลดการตัดสินใจไม่ได้ กดรีเฟรชการตัดสินใจเพื่อลองอีกครั้ง",
+  wsDecisionsFailed: "โหลดการตัดสินใจไม่ได้ กดรีเฟรชการตัดสินใจเพื่อลองอีกครั้ง",
   wsNoDecisions: "การจัดส่งนี้ยังไม่มีการตัดสินใจ",
   wsOlderDecisions: "โหลดการตัดสินใจที่เก่ากว่า",
   wsDecisionWord: "การตัดสินใจ",
@@ -1011,11 +992,9 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   wsReviewedAt: "เวลาที่ทบทวน",
   wsReviewerNotes: "หมายเหตุของผู้ทบทวน",
   wsFrozenReport: "รายงานที่ล็อกไว้",
-  wsReportFromSnapshot:
-    "ไฟล์ PDF สร้างจากสแนปช็อตที่ล็อกไว้ด้านบน และสร้างเป็นภาษาอังกฤษ",
+  wsReportFromSnapshot: "ไฟล์ PDF สร้างจากสแนปช็อตที่ล็อกไว้ด้านบน และสร้างเป็นภาษาอังกฤษ",
   wsGeneratePdf: "สร้างรายงาน PDF",
-  wsReportRequested:
-    "ส่งคำขอสร้างรายงานแล้ว รีเฟรชสถานะเพื่อตรวจว่าเสร็จหรือยัง",
+  wsReportRequested: "ส่งคำขอสร้างรายงานแล้ว รีเฟรชสถานะเพื่อตรวจว่าเสร็จหรือยัง",
   wsReport: "รายงาน",
   wsRefreshReport: "รีเฟรชสถานะรายงาน",
   wsDownloadPdf: "ดาวน์โหลด PDF",
@@ -1149,10 +1128,8 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   fcComponentEstimate: "ประมาณการขององค์ประกอบ",
   fcCostSlider: "แถบเลื่อนองค์ประกอบต้นทุน",
   fcCostAmount: "จำนวนเงินขององค์ประกอบต้นทุน",
-  fcErrYen:
-    "กรอกจำนวนเงินเยนเต็มหน่วยที่ไม่ติดลบ และมีส่วนจำนวนเต็มไม่เกิน 16 หลัก",
-  fcErrAmount:
-    "กรอกจำนวนเงินที่ไม่ติดลบ มีส่วนจำนวนเต็มไม่เกิน 16 หลัก และทศนิยมสองตำแหน่ง",
+  fcErrYen: "กรอกจำนวนเงินบาทเต็มหน่วยที่ไม่ติดลบ และมีส่วนจำนวนเต็มไม่เกิน 16 หลัก",
+  fcErrAmount: "กรอกจำนวนเงินที่ไม่ติดลบ มีส่วนจำนวนเต็มไม่เกิน 16 หลัก และทศนิยมสองตำแหน่ง",
   fcTotal: "รวม",
   fcReceiverLabel: "สมมติฐานการยอมรับของผู้รับ",
   fcRecvUnknown: "ไม่ทราบ",
@@ -1163,11 +1140,9 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
     "เป็นเพียงความชอบในเดโมนี้ น้ำหนักไม่ได้คำนวณการจัดอันดับที่นี่ ใช้พื้นที่ทำงานที่เชื่อมต่อเพื่อเปรียบเทียบด้วยระบบคำนวณ",
   fcWeight: "น้ำหนักต้นทุน (0–1)",
   fcWeightSlider: "แถบเลื่อนน้ำหนักต้นทุน",
-  fcErrWeights:
-    "กรอกน้ำหนักต้นทุนตั้งแต่ 0 ถึง 1 ส่วนที่เหลือเป็นน้ำหนักความล่าช้า",
+  fcErrWeights: "กรอกน้ำหนักต้นทุนตั้งแต่ 0 ถึง 1 ส่วนที่เหลือเป็นน้ำหนักความล่าช้า",
   fcDelayWeight: "น้ำหนักความล่าช้า",
-  fcWeightNote:
-    "น้ำหนักมีผลกับการจัดอันดับเท่านั้น ไม่เปลี่ยนหลักฐานหรือความเข้าเกณฑ์",
+  fcWeightNote: "น้ำหนักมีผลกับการจัดอันดับเท่านั้น ไม่เปลี่ยนหลักฐานหรือความเข้าเกณฑ์",
   fcReset: "รีเซ็ตเป็นฐานเปรียบเทียบ",
   fcDetails: "รายละเอียดและขีดจำกัดของประมาณการ",
   fcEditedNote: "ค่าที่แก้ไขเป็นประมาณการของผู้ใช้",
