@@ -745,6 +745,15 @@ main.ws figure.ws-timeline {
 .ws-box {
   border: 2px solid var(--st-review-line);
 }
+.ws-ev-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.ws-ev-unknown {
+  color: var(--st-unknown-fg);
+}
 
 /* Simulate step: the Studio shell */
 main.ws .ws-sim {

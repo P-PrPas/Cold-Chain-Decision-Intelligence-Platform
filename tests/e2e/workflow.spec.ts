@@ -301,6 +301,26 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   );
   expect(pdf.ok()).toBeTruthy();
   expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  // A Thai report for the same decision is a distinct frozen artifact with the same snapshot.
+  const thai = await call(
+    operator.context,
+    org,
+    `/decisions/${decision.id}/reports`,
+    "POST",
+    { format: "PDF", language: "th" },
+  );
+  expect(thai.report.id).not.toBe(report.report.id);
+  await job(operator.context, org, thai.job.id);
+  const thaiPdf = await operator.context.request.get(
+    api + `/reports/${thai.report.id}/download`,
+    { headers: { "X-Organization-Id": org } },
+  );
+  expect(thaiPdf.ok()).toBeTruthy();
+  const thaiBytes = (await thaiPdf.body()).toString("latin1");
+  expect(thaiBytes.startsWith("%PDF-")).toBe(true);
+  expect(thaiBytes).toContain("NotoSansThai");
+  expect(thaiBytes).toContain(approved.decision.snapshot_sha256);
+  expect(thaiBytes).toContain("Not food-safety certification");
   await operator.page.goto(
     `http://localhost:3000/workspace/shipments/${shipment.id}?org=${org}`,
   );
