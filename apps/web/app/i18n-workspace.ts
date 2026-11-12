@@ -585,8 +585,6 @@ export const wsEn = {
   fcRecvAccepted: "Assume accepted",
   fcRecvRejected: "Assume rejected",
   fcRecvNote: "This is an assumption, not confirmation from the receiver.",
-  fcDemoNote:
-    "Preference only in this demo. Weights do not calculate a ranking here. Use the connected workspace for engine comparison.",
   fcWeight: "Cost weight (0–1)",
   fcWeightSlider: "Cost weight slider",
   fcErrWeights: "Enter a cost weight from 0 to 1; the remainder is delay.",
@@ -1165,8 +1163,6 @@ export const wsTh: Record<keyof typeof wsEn, string> = {
   fcRecvAccepted: "สมมติว่ายอมรับ",
   fcRecvRejected: "สมมติว่าไม่ยอมรับ",
   fcRecvNote: "นี่เป็นสมมติฐาน ไม่ใช่การยืนยันจากผู้รับ",
-  fcDemoNote:
-    "เป็นเพียงความชอบในเดโมนี้ น้ำหนักไม่ได้คำนวณการจัดอันดับที่นี่ ใช้พื้นที่ทำงานที่เชื่อมต่อเพื่อเปรียบเทียบด้วยระบบคำนวณ",
   fcWeight: "น้ำหนักต้นทุน (0–1)",
   fcWeightSlider: "แถบเลื่อนน้ำหนักต้นทุน",
   fcErrWeights:

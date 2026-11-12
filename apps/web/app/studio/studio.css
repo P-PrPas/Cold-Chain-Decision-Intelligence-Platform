@@ -95,10 +95,12 @@ main.studio h1 {
   grid-template-columns: 232px minmax(0, 1fr) 352px;
   grid-template-areas:
     "rail stage inspector"
+    "chart stage inspector"
     "timeline timeline timeline"
     "hint hint hint"
     "evidence evidence evidence"
     "prepare prepare prepare";
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 12px 16px;
   align-items: start;
 }
@@ -156,8 +158,8 @@ main.studio h1 {
   align-items: center;
   gap: 2px 12px;
   width: 100%;
-  min-height: 72px;
-  padding: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
   text-align: left;
   background: var(--panel);
   color: var(--text);
@@ -957,6 +959,7 @@ main.studio .prepare h2 {
     grid-template-columns: 208px minmax(0, 1fr);
     grid-template-areas:
       "rail stage"
+      "chart stage"
       "inspector inspector"
       "timeline timeline"
       "hint hint"
@@ -1204,6 +1207,28 @@ main.studio .prepare h2 {
     display: grid;
     grid-template-columns: 1fr;
   }
+  /* On a phone the delay and cost summary and the factor controls stay close
+     together; the breakdown and the chart follow them. */
+  .sheet-body > .result-card {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet-body > .factor-controls {
+    order: 2;
+  }
+  .sheet-body > .compare-chart {
+    order: 3;
+  }
+  .result-card .result-rows {
+    order: 1;
+  }
+  .result-card .result-note {
+    order: 2;
+  }
+  .result-card .cost-breakdown-card {
+    order: 3;
+  }
   .inspector .factor-controls {
     padding: 12px;
   }
@@ -1256,4 +1281,451 @@ main.studio .prepare h2 {
   .hud-br {
     display: none;
   }
+}
+
+/* ---- Visible factors: delay lanes, cost breakdown, compare chart, edit mode ---- */
+
+/* Scenario runs on the shared axis, drawn after the decision point. */
+.tl-wrap {
+  position: relative;
+  margin-top: 8px;
+}
+.tl-wrap .tl-track {
+  margin-top: 0;
+}
+.tl-lane {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 9%, var(--panel));
+  font-size: 10px;
+  line-height: 1;
+  overflow: hidden;
+}
+.tl-lane[data-selected="true"] {
+  border-color: var(--text);
+  background: color-mix(in srgb, var(--text) 15%, var(--panel));
+}
+.tl-lane[data-unknown="true"] {
+  background: var(--unknown-hatch);
+  border-style: dashed;
+  border-color: var(--st-unknown-line);
+}
+.tl-lane > span {
+  position: relative;
+  min-width: 0;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text);
+}
+/* The waiting part of a run is darker than the driving part. */
+.tl-wait {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--text) 24%, transparent);
+}
+/* A zig-zag break where the delay axis is compressed. */
+.tl-break {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 6px;
+  margin-left: -3px;
+  background: var(--panel);
+  border-inline: 1px solid var(--text);
+  transform: skewX(-24deg);
+}
+.tl-compress {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  padding-left: 8px;
+  font-size: 10px;
+  line-height: 1.15;
+  color: var(--muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.tl-edit-toggle {
+  min-height: 44px;
+}
+.edited-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px dashed var(--st-review-line);
+  border-radius: var(--radius);
+  background: var(--st-review-bg);
+  color: var(--st-review-fg);
+  font-size: 12px;
+  font-weight: 600;
+}
+.evidence-strip p.edited-pill {
+  margin: 8px 0 0;
+}
+
+/* Edit readings */
+.tl-edit {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-size: 12px;
+}
+.tl-edit p {
+  margin: 0;
+}
+.tl-edit-actions {
+  display: flex;
+  min-height: 44px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  color: var(--muted);
+}
+.tl-edit-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tl-dot-edit {
+  position: absolute;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  margin: -16px 0 0 -16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: auto;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.tl-dot-edit:hover {
+  background: transparent;
+}
+.tl-dot-edit::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: var(--band);
+  border: 2px solid var(--text);
+}
+.tl-dot-edit[data-null="true"]::before {
+  background: var(--unknown-hatch);
+  border: 2px dashed var(--st-unknown-line);
+}
+.tl-dot-edit[data-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+}
+.tl-dot-edit:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Delay clock flags on the HUD */
+.hud-flag {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.dwell-ring {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-left: 6px;
+  border: 2px solid var(--text);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: dwell-spin 1.2s linear infinite;
+}
+@keyframes dwell-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.svg-dwell {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+.svg-label.svg-tag {
+  font-size: 12px;
+  font-family: var(--font-mono-stack);
+}
+
+/* Cost breakdown */
+.cost-breakdown-card {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+main.studio .cost-breakdown-card h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cb-bars {
+  display: grid;
+  gap: 3px;
+}
+.cb-bar {
+  display: flex;
+  height: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+}
+.cb-ghost {
+  height: 6px;
+  opacity: 0.5;
+  border-style: dashed;
+  animation: ghost-fade 1.2s ease-out forwards;
+}
+.cb-seg {
+  display: grid;
+  place-items: center;
+  min-width: 2px;
+  flex-basis: 0;
+  background: var(--cb);
+  color: var(--cb-ink);
+  font-family: var(--font-mono-stack);
+  font-size: 11px;
+  font-weight: 700;
+}
+.cb-seg + .cb-seg {
+  border-left: 2px solid var(--panel);
+}
+.cb-seg[data-cat="1"],
+.cb-sw[data-cat="1"] {
+  --cb: color-mix(in srgb, var(--text) 88%, var(--panel));
+  --cb-ink: var(--panel);
+}
+.cb-seg[data-cat="2"],
+.cb-sw[data-cat="2"] {
+  --cb: color-mix(in srgb, var(--text) 72%, var(--panel));
+  --cb-ink: var(--panel);
+}
+.cb-seg[data-cat="3"],
+.cb-sw[data-cat="3"] {
+  --cb: color-mix(in srgb, var(--text) 56%, var(--panel));
+  --cb-ink: var(--panel);
+}
+.cb-seg[data-cat="4"],
+.cb-sw[data-cat="4"] {
+  --cb: color-mix(in srgb, var(--text) 42%, var(--panel));
+  --cb-ink: var(--panel);
+}
+.cb-seg[data-cat="5"],
+.cb-sw[data-cat="5"] {
+  --cb: color-mix(in srgb, var(--text) 28%, var(--panel));
+  --cb-ink: var(--text);
+}
+.cb-seg[data-cat="6"],
+.cb-sw[data-cat="6"] {
+  --cb: color-mix(in srgb, var(--text) 16%, var(--panel));
+  --cb-ink: var(--text);
+}
+.cb-legend {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cb-legend li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+}
+.cb-legend li[data-zero="true"] {
+  color: var(--muted);
+}
+.cb-sw {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--cb);
+  color: var(--cb-ink);
+  font-family: var(--font-mono-stack);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+.cb-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cb-amt {
+  text-align: right;
+}
+.cb-pct {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.cb-legend .prov-chip {
+  margin: 0 0 0 6px;
+  vertical-align: 1px;
+}
+
+/* Compare chart: delay against cost, position only */
+.rail-chart {
+  grid-area: chart;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+/* The chart takes the height the stage leaves under the scenario list, never more. */
+.rail-chart .compare-chart {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+}
+.rail-chart .cc-svg {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.compare-chart {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.cc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+main.studio .compare-chart h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cc-toggle {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.cc-toggle[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.cc-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 2px;
+}
+.cc-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.cc-axis {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.cc-tick,
+.cc-unit {
+  fill: var(--muted);
+  font-size: 9.5px;
+}
+.cc-unit {
+  font-size: 9px;
+}
+.cc-mark {
+  fill: var(--panel);
+  stroke: var(--text);
+  stroke-width: 1.4;
+}
+.cc-point[data-selected="true"] .cc-mark {
+  fill: var(--text);
+  stroke-width: 2;
+}
+.cc-n {
+  fill: var(--text);
+  font-family: var(--font-mono-stack);
+  font-size: 10px;
+  font-weight: 700;
+}
+.cc-point[data-selected="true"] .cc-n {
+  fill: var(--bg);
+}
+.cc-point {
+  transition: transform 120ms ease-out;
+}
+.cc-ghost {
+  opacity: 0.45;
+  animation: ghost-fade 1.2s ease-out forwards;
+}
+.cc-ghost .cc-mark {
+  stroke-dasharray: 2 2;
+  fill: none;
+}
+.cc-trail {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.cc-table {
+  width: 100%;
+  margin: 6px 0 0;
+  font-size: 11px;
+}
+.cc-table th,
+.cc-table td {
+  padding: 3px 4px;
+  text-align: left;
+}
+.cc-table td {
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-ghost,
+  .cb-ghost,
+  .dwell-ring {
+    animation: none;
+  }
+  .cc-point {
+    transition: none;
+  }
+}
+.sheet-body .compare-chart {
+  padding: 12px;
 }

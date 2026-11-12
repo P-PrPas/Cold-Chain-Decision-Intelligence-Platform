@@ -112,6 +112,8 @@ export default function StudioScene({
     quarantine: t("nodeQuarantineShort"),
     gap: t("gapNoReadings"),
     blocked: t("barrierBlocked"),
+    unit: t("unitMin"),
+    currency,
     acc: {
       ACCEPTED: t("accAccepted"),
       REJECTED: t("accRejected"),
@@ -386,13 +388,29 @@ export default function StudioScene({
         {t("schematicNote")}
       </p>
 
-      <div className="hud hud-br" aria-hidden="true" data-keepout>
+      <div
+        className="hud hud-br"
+        aria-hidden="true"
+        data-keepout
+        data-dwelling={main.dwelling}
+      >
         <span>
           {t("hudDelay")}{" "}
-          <b className="num">
+          <b className="num" data-testid="hud-delay">
             {main.delayMinutes === null ? "–" : main.delayMinutes}{" "}
             {t("unitMin")}
           </b>
+          {main.dwelling && <i className="dwell-ring" />}
+          {main.phase !== "journey" && main.phase !== "decision" && (
+            <>
+              {main.delayMinutes === null && (
+                <small className="hud-flag">{t("delayUnknownShort")}</small>
+              )}
+              {main.axisCompressed && (
+                <small className="hud-flag">{t("hudCompressed")}</small>
+              )}
+            </>
+          )}
         </span>
         <span>
           {t("hudCost")}{" "}
