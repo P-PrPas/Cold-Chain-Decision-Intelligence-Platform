@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 64" width="360" height="64" role="img" aria-label="Cold Chain Simulation Studio">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="6" y1="0" x2="58" y2="0">
+      <stop offset="0" stop-color="#4a8fe0"/>
+      <stop offset="0.45" stop-color="#5db4e0"/>
+      <stop offset="1" stop-color="#d98a14"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 46 C20 46 20 20 32 20 C44 20 44 46 58 46" pathLength="100" fill="none" stroke="url(#g)" stroke-width="5" stroke-linecap="round" stroke-dasharray="44 12 44"/>
+  <text x="76" y="30" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="22" font-weight="600" fill="#e6edf3" letter-spacing="-0.3">Cold Chain</text>
+  <text x="76" y="52" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="16" font-weight="400" fill="#9198a1" letter-spacing="0.4">Simulation Studio</text>
+</svg>

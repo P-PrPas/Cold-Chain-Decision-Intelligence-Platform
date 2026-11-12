@@ -1,6 +1,10 @@
 <div align="center">
 
-<img src="apps/web/public/brand/lockup.svg" alt="Cold Chain Simulation Studio" height="72" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="apps/web/public/brand/lockup-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="apps/web/public/brand/lockup.svg" />
+  <img src="apps/web/public/brand/lockup.svg" alt="Cold Chain Simulation Studio" height="72" />
+</picture>
 
 # Cold Chain Simulation Studio
 
