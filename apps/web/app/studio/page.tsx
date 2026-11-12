@@ -328,6 +328,9 @@ function StudioShipment({
           </p>
         </div>
         <div className="studio-actions">
+          <Link className="studio-help" href="/guide">
+            {t("gdHowTo")}
+          </Link>
           <label className="studio-picker">
             <span className="sr-only">{t("studioShipment")}</span>
             <select
