@@ -1664,10 +1664,7 @@ main.studio .compare-chart h3 {
 .cc-tick,
 .cc-unit {
   fill: var(--muted);
-  font-size: 9.5px;
-}
-.cc-unit {
-  font-size: 9px;
+  font-size: 11px;
 }
 .cc-mark {
   fill: var(--panel);

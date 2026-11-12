@@ -6,8 +6,8 @@ import { placePoints, ticks, type ChartPoint } from "./chart-scale";
 import { scenarioKey, scenarioShortKey } from "./scenarios";
 
 const W = 216;
-const H = 120;
-const M = { l: 44, r: 14, t: 14, b: 26 };
+const H = 136;
+const M = { l: 44, r: 14, t: 24, b: 32 };
 const PW = W - M.l - M.r;
 const PH = H - M.t - M.b;
 const SHAPE = ["circle", "square", "triangle", "diamond"] as const;
@@ -172,10 +172,10 @@ export default function CompareChart({
                 {fmt(Math.round(xMax * v))}
               </text>
             ))}
-            <text x={M.l + PW} y={H - 1} textAnchor="end" className="cc-unit">
+            <text x={M.l + PW} y={H - 4} textAnchor="end" className="cc-unit">
               {t("chartAxisX")}
             </text>
-            <text x={2} y={9} className="cc-unit">
+            <text x={2} y={11} className="cc-unit">
               {t("chartAxisY").replace("{cur}", currency)}
             </text>
             {previous &&
