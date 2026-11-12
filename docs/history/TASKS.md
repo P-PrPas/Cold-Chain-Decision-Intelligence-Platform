@@ -3,7 +3,7 @@
 **Product:** Cold Chain Decision Intelligence Platform / Transport Simulation  
 **Target:** MVP v1.0 · **Version:** 1.0.0 · **Status:** Proposed engineering backlog  
 **Date:** 2026-11-11 · **Planning baseline:** 7 sprints including Sprint 0  
-**References:** `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`, `ARCHITECTUR.md`, `API.md`, `DATABASE.md`, `AGENT.md`, `claude.md`
+**References:** `docs/product/PRD.md`, `ARCHITECTURE.md`, `API.md`, `DATABASE.md`, `AGENT.md`, `claude.md`
 
 > Execution-ready backlog for a small full-stack team or coding-agent workflow. Scope excludes business planning and commercial rollout. Estimates are relative (S/M/L), **not commitments**. Every task must conform to safety, provenance, tenancy, authorization and immutable-evidence invariants. Do not implement unapproved temperature thresholds as if they were real food-safety rules.
 
@@ -308,7 +308,7 @@ PR link, CI run, screenshots where useful, migration ID.
 
 ## 13. AI coding-agent execution protocol
 
-1. Read `AGENT.md`/`AGENTS.md`, `CLAUDE.md` (if on Claude), the PRD, `ARCHITECTUR.md`, `API.md`, `DATABASE.md`, then this backlog.
+1. Read `AGENT.md`/`AGENTS.md`, `CLAUDE.md` (if on Claude), the PRD, `ARCHITECTURE.md`, `API.md`, `DATABASE.md`, then this backlog.
 2. Pick one **READY** issue with dependencies DONE; clarify ADR scope **in repository ticket**, not by inventing behavior.
 3. Produce implementation plan and list affected contracts, migration, tests and known risk.
 4. Implement smallest vertical slice; protect P0 invariants; do not alter business/safety rules to make a failing test pass.

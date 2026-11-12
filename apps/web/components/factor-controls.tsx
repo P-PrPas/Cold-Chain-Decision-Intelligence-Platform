@@ -1,8 +1,8 @@
 "use client";
 import { useId, useState } from "react";
-import { useI18n } from "./i18n-provider";
-import type { DictKey } from "./i18n";
-import { ProvenanceChip } from "./ui/provenance-chip";
+import { useI18n } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
 import {
   type Assumptions,
   type CostCategory,
@@ -10,7 +10,7 @@ import {
   totalCost,
   draftErrors,
   formatAmount,
-} from "./simulation-assumptions";
+} from "@/lib/simulation-assumptions";
 
 const COST_KEYS: Record<CostCategory, DictKey> = {
   additional_transport: "fcCostTransport",

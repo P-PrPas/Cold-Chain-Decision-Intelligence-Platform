@@ -8,7 +8,7 @@ import {
   type Reading,
 } from "./sim-clock";
 import { acceptanceTag, type Acceptance } from "./scenarios";
-import { formatAmount } from "../simulation-assumptions";
+import { formatAmount } from "@/lib/simulation-assumptions";
 
 const SX = (x: number) => 340 + x * 34;
 const SY = (z: number) => 205 + z * 28;

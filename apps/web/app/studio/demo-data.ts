@@ -1,5 +1,8 @@
-import type { DictKey } from "../i18n";
-import { freshAssumptions, type Assumptions } from "../simulation-assumptions";
+import type { DictKey } from "@/i18n";
+import {
+  freshAssumptions,
+  type Assumptions,
+} from "@/lib/simulation-assumptions";
 import type { Reading } from "./sim-clock";
 
 /** Synthetic values only. Never real safety limits (CLAUDE.md section 2). */

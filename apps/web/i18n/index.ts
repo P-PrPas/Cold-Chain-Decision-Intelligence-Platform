@@ -1,7 +1,7 @@
-import { guideEn, guideTh } from "./i18n-guide";
-import { landingEn, landingTh } from "./i18n-landing";
-import { studioEn, studioTh } from "./i18n-studio";
-import { wsEn, wsTh } from "./i18n-workspace";
+import { guideEn, guideTh } from "./guide";
+import { landingEn, landingTh } from "./landing";
+import { studioEn, studioTh } from "./studio";
+import { wsEn, wsTh } from "./workspace";
 
 export const LANGS = ["en", "th"] as const;
 export type Lang = (typeof LANGS)[number];

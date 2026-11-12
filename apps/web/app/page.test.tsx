@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import Home from "./page";
-import { I18nProvider } from "./i18n-provider";
-import { SiteFooter } from "./site-chrome";
+import { I18nProvider } from "@/i18n/provider";
+import { SiteFooter } from "@/components/site-chrome";
 
 const render = () =>
   renderToStaticMarkup(

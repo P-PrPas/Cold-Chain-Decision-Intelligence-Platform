@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { TemperatureEvidence } from "./analysis-panel";
-import { I18nProvider } from "../i18n-provider";
+import { I18nProvider } from "@/i18n/provider";
 
 const render = (observations: Record<string, unknown>[]) =>
   renderToStaticMarkup(

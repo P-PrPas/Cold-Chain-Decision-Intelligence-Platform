@@ -1,7 +1,7 @@
 "use client";
 import { useId } from "react";
-import { useI18n } from "../i18n-provider";
-import { ProvenanceChip } from "../ui/provenance-chip";
+import { useI18n } from "@/i18n/provider";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
 import type { Item } from "./api";
 
 type Span = { start: number; end: number; sensor: string };

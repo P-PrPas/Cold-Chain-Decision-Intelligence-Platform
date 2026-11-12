@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { freshAssumptions, totalCost } from "../simulation-assumptions";
+import { freshAssumptions, totalCost } from "@/lib/simulation-assumptions";
 import { breakdownOf, percentText } from "./cost-breakdown";
 import { niceCeil, placePoints } from "./chart-scale";
 

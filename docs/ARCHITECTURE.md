@@ -1,9 +1,9 @@
-# ARCHITECTUR.md — System Architecture & Technical Design
+# ARCHITECTURE.md — System Architecture & Technical Design
 
 **Product:** Cold Chain Decision Intelligence Platform (Transport Simulation)  
 **Scope:** MVP v1.0 | **Document version:** 1.0.0 | **Status:** Proposed / Sprint-0 review  
-**Date:** 2026-11-11 | **Source of truth:** `Cold_Chain_Decision_Intelligence_PRD_MVP_v1.0.md`  
-**Companion:** `API.md`
+**Date:** 2026-11-11 | **Source of truth:** `docs/product/PRD.md`  
+**Companion:** `docs/API.md`
 
 > This document defines the proposed implementable architecture. It is not a food-safety certification, and no numeric example herein is an approved product-specific threshold. The PRD controls product scope; this document describes technical realization. Record deviations in ADRs before implementation.
 
@@ -99,12 +99,12 @@ repo/
       jobs/                      # RQ entry points and idempotent handlers
     tests/{unit,integration,contract,e2e}/
   packages/contracts/            # generated OpenAPI spec/client/models
-  docs/{PRD.md,ARCHITECTUR.md,API.md,adr/}
+  docs/{product/PRD.md,ARCHITECTURE.md,API.md,adr/}
   infrastructure/{compose,nginx,monitoring}/
   fixtures/{csv,policies,expected_outputs}/
 ```
 
-Every module has `domain.py` (pure logic), `schemas.py`, `service.py`, `repository.py`, and optional `jobs.py`. Keep tests next to or under module tests. OpenAPI is generated from FastAPI and snapshot-diffed in CI; `API.md` is the human contract and changes must be reflected both ways.
+Every module has `domain.py` (pure logic), `schemas.py`, `service.py`, `repository.py`, and optional `jobs.py`. Keep tests next to or under module tests. OpenAPI is generated from FastAPI and snapshot-diffed in CI; `docs/API.md` is the human contract and changes must be reflected both ways.
 
 ## 5. Persistence and relational design
 
@@ -399,4 +399,4 @@ Recommended Sprint 0 artifacts: approved ADRs, DB migrations v1, OpenAPI skeleto
 - [ ] No AI dependency in core evaluation path
 - [ ] Observability, restore and rollback documented
 
-**Change control:** API behavior changes update `API.md`, OpenAPI spec, contract tests and migration plan. Domain-rule changes require a new policy version or documented engine revision; never rewrite prior signed decisions.
+**Change control:** API behavior changes update `docs/API.md`, OpenAPI spec, contract tests and migration plan. Domain-rule changes require a new policy version or documented engine revision; never rewrite prior signed decisions.

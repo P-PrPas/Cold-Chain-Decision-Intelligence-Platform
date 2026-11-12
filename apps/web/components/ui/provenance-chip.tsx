@@ -1,6 +1,6 @@
 "use client";
-import { useT } from "../i18n-provider";
-import type { DictKey } from "../i18n";
+import { useT } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
 
 export type Provenance = "observed" | "entered" | "calculated" | "estimated";
 

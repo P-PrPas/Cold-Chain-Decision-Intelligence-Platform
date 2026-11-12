@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { freshAssumptions } from "../../apps/web/app/simulation-assumptions";
+import { freshAssumptions } from "../../apps/web/lib/simulation-assumptions";
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
 test("saved single-scenario assumptions round-trip; latest preview wins; saved summary refreshes", async ({
   page,

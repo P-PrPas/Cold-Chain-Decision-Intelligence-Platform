@@ -1,9 +1,12 @@
 "use client";
 import type { ReactNode } from "react";
-import { useI18n } from "../i18n-provider";
-import type { DictKey } from "../i18n";
+import { useI18n } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
 import { ApiError } from "./api";
-import { ProvenanceChip, type Provenance } from "../ui/provenance-chip";
+import {
+  ProvenanceChip,
+  type Provenance,
+} from "@/components/ui/provenance-chip";
 
 /** Stable API error codes with a translated sentence. Unmapped errors keep the server text. */
 const ERROR_KEYS: Record<string, DictKey> = {

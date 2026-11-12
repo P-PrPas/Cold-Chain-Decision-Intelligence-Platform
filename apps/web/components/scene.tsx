@@ -1,14 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useI18n } from "./i18n-provider";
-import StudioScene from "./studio/studio-scene";
-import { Player } from "./studio/player";
-import { normAcceptance, scenarioKey } from "./studio/scenarios";
+import { useI18n } from "@/i18n/provider";
+import StudioScene from "@/app/studio/studio-scene";
+import { Player } from "@/app/studio/player";
+import { normAcceptance, scenarioKey } from "@/app/studio/scenarios";
 import {
   DEFAULT_JOURNEY_MINUTES,
   SCENARIO_ORDER,
   totalMinutes,
-} from "./studio/sim-clock";
+} from "@/app/studio/sim-clock";
 
 /**
  * Stage used by the connected workspace: the same canvas as the Studio, fed
