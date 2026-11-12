@@ -1,6 +1,16 @@
 export type Item = Record<string, unknown>;
 export const base =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+/** Same message as before ("401: detail"); adds the status and stable code for UI mapping. */
+export class ApiError extends Error {
+  status: number;
+  code: string;
+  constructor(status: number, code: string, detail: string) {
+    super(`${status}: ${detail}`);
+    this.status = status;
+    this.code = code;
+  }
+}
 export async function api(path: string, org = "", options: RequestInit = {}) {
   const csrf =
     document.cookie
@@ -20,8 +30,12 @@ export async function api(path: string, org = "", options: RequestInit = {}) {
     },
   });
   if (!response.ok) {
-    const body = await response.json();
-    throw new Error(`${response.status}: ${body.detail || "Request failed"}`);
+    const body = await response.json().catch(() => ({}));
+    throw new ApiError(
+      response.status,
+      String(body.code || ""),
+      body.detail || "Request failed",
+    );
   }
   if (response.status === 204) return {};
   return response.json();

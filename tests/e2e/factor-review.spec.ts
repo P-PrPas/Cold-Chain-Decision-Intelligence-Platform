@@ -109,6 +109,9 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
     await route.fulfill({ json });
   });
   await page.goto(`${web}/workspace/shipments/ship?org=org`);
+  // The journey may open on Propose once the saved run reports an executable
+  // scenario, so open Simulate explicitly instead of relying on load order.
+  await page.locator('li[data-step="simulate"] button').click();
   const scene = page.getByRole("region", { name: "Simulation explorer" });
   await expect(
     scene.getByRole("heading", { name: "Hold for inspection" }),
@@ -147,7 +150,7 @@ test("saved single-scenario assumptions round-trip; latest preview wins; saved s
   await delayControl.fill("31");
   await expect.poll(() => previewCalls).toBe(1);
   await delayControl.fill("40");
-  await expect(scene).toContainText("BLOCKED");
+  await expect(scene).toContainText("Blocked");
   await expect(
     page.getByRole("button", { name: "Prepare proposal" }),
   ).not.toBeVisible();

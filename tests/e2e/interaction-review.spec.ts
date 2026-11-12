@@ -1,13 +1,21 @@
 ﻿import { test, expect } from "@playwright/test";
 const web = process.env.CC_TEST_WEB || "http://localhost:3000";
+const returning = (page: import("@playwright/test").Page) =>
+  page.addInitScript(() => {
+    localStorage.setItem("cc-studio-visited", "1");
+    localStorage.setItem("cc-studio-coach", "1");
+  });
 for (const width of [375, 320]) {
   test(`mobile ${width}: pointer drag keeps scene and feedback visible; receiver needs no hover`, async ({
     page,
   }) => {
+    await returning(page);
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`${web}/demo`);
+    await page.goto(`${web}/studio`);
     const scene = page.locator(".network-canvas");
     await expect(scene).toHaveAttribute("data-init-ms", /\d+/);
+    // Factors live in a bottom sheet on small screens.
+    await page.getByRole("button", { name: "Adjust assumptions" }).click();
     const slider = page.getByRole("slider", {
       name: "Additional delay slider",
     });
@@ -48,8 +56,9 @@ for (const width of [375, 320]) {
       .getAttribute("width");
     expect(Number(currentWidth)).toBe(Number(baselineWidth) * 2);
     await page
-      .getByLabel("Scenario", { exact: true })
-      .selectOption("CONDITIONAL_REROUTE");
+      .getByRole("group", { name: "Select scenario" })
+      .getByRole("button", { name: "Conditional reroute", exact: true })
+      .click();
     await page.getByRole("button", { name: "Receiver", exact: true }).click();
     await page
       .getByLabel("Receiver acceptance assumption")
@@ -69,7 +78,7 @@ for (const width of [375, 320]) {
     const focus = await page
       .getByRole("slider", { name: "Cost weight slider" })
       .boundingBox();
-    const sceneBounds = await page.locator(".studio-scene").boundingBox();
+    const sceneBounds = await page.locator(".studio-stage").boundingBox();
     expect(focus!.y).toBeGreaterThanOrEqual(
       sceneBounds!.y + sceneBounds!.height,
     );
@@ -84,7 +93,9 @@ test("touch drag updates delay without scrolling away from the scene", async ({
     isMobile: true,
   });
   const page = await context.newPage();
-  await page.goto(`${web}/demo`);
+  await returning(page);
+  await page.goto(`${web}/studio`);
+  await page.getByRole("button", { name: "Adjust assumptions" }).click();
   const slider = page.getByRole("slider", { name: "Additional delay slider" });
   await slider.scrollIntoViewIfNeeded();
   const box = (await slider.boundingBox())!;

@@ -1,83 +1,28 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import Landing from "./landing/landing";
+
+export const metadata: Metadata = {
+  title:
+    "Cold Chain Simulation Studio: excursion simulator for QA and logistics teams",
+  description:
+    "Replay a delayed shipment, keep missing readings unknown and compare four options by cost and delay. Decision support only. Does not certify food safety.",
+  other: { "page-type": "software", "site-kind": "software" },
+};
+
+// Sets the hero's entrance flag before first paint (the design kit's motion layer).
+const ENTER_SCRIPT = `document.documentElement.classList.add("m-enter");setTimeout(function(){document.documentElement.classList.add("m-enter-done")},700)`;
 
 export default function Home() {
   return (
-    <main className="landing">
-      <div className="hero-copy">
-        <span className="eyebrow">COLD CHAIN / DECISION INTELLIGENCE</span>
-        <h1>
-          Cold-chain decisions,
-          <br />
-          <em>grounded in evidence.</em>
-        </h1>
-        <p>
-          For logistics teams and independent QA reviewers. Turn temperature
-          evidence into explainable scenarios, compare your options, and bring a
-          clear proposal to QA.
-        </p>
-        <div className="hero-actions">
-          <Link className="button" href="/demo">
-            Try interactive demo <span aria-hidden="true">&rarr;</span>
-          </Link>
-          <a href="#workflow">Explore the workflow</a>
-        </div>
-        <span className="badge">Synthetic release candidate</span>
-      </div>
-      <section className="product-preview">
-        <span className="badge">Illustrative product preview</span>
-        <h2>Evidence at a glance</h2>
-        <dl className="evidence-grid">
-          <div>
-            <dt>Shipment</dt>
-            <dd>DEMO-003 / Fresh produce</dd>
-          </div>
-          <div>
-            <dt>Data completeness</dt>
-            <dd>6 of 9 readings available</dd>
-          </div>
-          <div>
-            <dt>Missing interval</dt>
-            <dd>09:30 - 10:30 UTC</dd>
-          </div>
-          <div>
-            <dt>Policy evaluation</dt>
-            <dd>Not performed</dd>
-          </div>
-        </dl>
-        <p className="notice">
-          Next action: reconcile missing readings before making a proposal.
-        </p>
-        <Link href="/demo?shipment=DEMO-003">Inspect this example</Link>
-      </section>
-      <section id="workflow" className="workflow-cards">
-        {[
-          [
-            "01",
-            "Understand the journey",
-            "Import temperature evidence and inspect the quality of your data.",
-          ],
-          [
-            "02",
-            "Explore the alternatives",
-            "Compare delivery, inspection, rerouting and isolation scenarios.",
-          ],
-          [
-            "03",
-            "Decide with evidence",
-            "Submit a reproducible proposal for independent QA review.",
-          ],
-        ].map(([n, t, d]) => (
-          <article key={n}>
-            <span className="eyebrow">{n} / WORKFLOW</span>
-            <h2>{t}</h2>
-            <p>{d}</p>
-          </article>
-        ))}
-      </section>
-      <p className="notice">
-        Domain QA policy approval remains open. This system does not certify
-        food safety or automatically release goods.
-      </p>
-    </main>
+    <>
+      {/* eslint-disable-next-line @next/next/no-css-tags */}
+      <link
+        rel="stylesheet"
+        href="/assets/motion/motion.css"
+        precedence="default"
+      />
+      <script dangerouslySetInnerHTML={{ __html: ENTER_SCRIPT }} />
+      <Landing />
+    </>
   );
 }

@@ -301,21 +301,50 @@ test("OIDC -> shipment -> CSV -> policy -> analysis -> simulation -> independent
   );
   expect(pdf.ok()).toBeTruthy();
   expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  // A Thai report for the same decision is a distinct frozen artifact with the same snapshot.
+  const thai = await call(
+    operator.context,
+    org,
+    `/decisions/${decision.id}/reports`,
+    "POST",
+    { format: "PDF", language: "th" },
+  );
+  expect(thai.report.id).not.toBe(report.report.id);
+  await job(operator.context, org, thai.job.id);
+  const thaiPdf = await operator.context.request.get(
+    api + `/reports/${thai.report.id}/download`,
+    { headers: { "X-Organization-Id": org } },
+  );
+  expect(thaiPdf.ok()).toBeTruthy();
+  const thaiBytes = (await thaiPdf.body()).toString("latin1");
+  expect(thaiBytes.startsWith("%PDF-")).toBe(true);
+  expect(thaiBytes).toContain("NotoSansThai");
+  expect(thaiBytes).toContain(approved.decision.snapshot_sha256);
+  expect(thaiBytes).toContain("Not food-safety certification");
   await operator.page.goto(
     `http://localhost:3000/workspace/shipments/${shipment.id}?org=${org}`,
   );
-  await operator.page
-    .getByText("Temperature evidence / Ready dataset available", {
-      exact: true,
-    })
-    .click();
+  const journey = operator.page.getByRole("navigation", {
+    name: "Shipment journey",
+  });
+  await expect(journey).toBeVisible();
+  const open = async (step: string) =>
+    operator.page.locator(`li[data-step="${step}"] button`).click();
+  await open("evidence");
   await expect(
     operator.page.getByRole("heading", { name: "Temperature evidence" }),
   ).toBeVisible();
+  await open("propose");
   await expect(
-    operator.page.getByRole("heading", {
-      name: "Proposal and QA review",
-    }),
+    operator.page.getByRole("heading", { name: "Proposal", exact: true }),
+  ).toBeVisible();
+  await open("qa");
+  await expect(
+    operator.page.getByRole("heading", { name: "QA review", exact: true }),
+  ).toBeVisible();
+  await open("report");
+  await expect(
+    operator.page.getByRole("heading", { name: "Report", exact: true }),
   ).toBeVisible();
   await operator.context.close();
   await reviewer.context.close();
