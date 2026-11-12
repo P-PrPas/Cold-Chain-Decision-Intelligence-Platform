@@ -493,7 +493,12 @@ export default function Workspace() {
           )}
 
           {!loading && shipments.length > 0 && (
-            <div className="ws-table-wrap">
+            <div
+              className="ws-table-wrap"
+              role="region"
+              aria-label={t("wsListTitle")}
+              tabIndex={0}
+            >
               <table className="ws-table">
                 <caption className="sr-only">{t("wsListTitle")}</caption>
                 <thead>
