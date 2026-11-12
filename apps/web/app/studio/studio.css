@@ -67,6 +67,13 @@ main.studio h1 {
   align-items: center;
   gap: 8px;
 }
+.studio-help {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
 .studio-picker {
   margin: 0;
 }

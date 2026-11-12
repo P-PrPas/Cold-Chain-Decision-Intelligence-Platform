@@ -89,6 +89,7 @@ export function SiteHeader() {
         <nav aria-label={t("navPrimary")}>
           <Link href="/studio">{t("navStudio")}</Link>
           <Link href="/workspace">{t("navWorkspace")}</Link>
+          <Link href="/guide">{t("navGuide")}</Link>
           <span className="environment">{t("environment")}</span>
           <LangToggle />
           <ThemeToggle />
