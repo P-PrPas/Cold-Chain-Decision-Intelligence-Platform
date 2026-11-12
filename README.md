@@ -16,7 +16,7 @@
 ![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![i18n: EN | TH](https://img.shields.io/badge/i18n-EN%20%7C%20TH-1f6f5c)
-![License: not specified](https://img.shields.io/badge/license-not%20specified-lightgrey)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [Quick start](#quick-start-docker) ·
 [Features](#key-features) ·
@@ -493,7 +493,9 @@ Read [AGENT.md](AGENT.md) first. Open an issue or a draft pull request before la
 
 ## License
 
-No license has been specified yet. Until the owner chooses one, all rights are reserved and no permission to use, copy, modify or distribute this code is granted.
+Released under the [MIT License](LICENSE).
+
+The license covers the code. It does not make this software a food-safety authority: the synthetic fixtures, thresholds and costs are for demonstration only, and any real use needs QA-approved policies (see the safety notice above).
 
 ## Acknowledgements
 
