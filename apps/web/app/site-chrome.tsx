@@ -10,6 +10,7 @@ const LANG_LABEL: Record<Lang, string> = { en: "EN", th: "ไทย" };
 export function SkipLink() {
   const t = useT();
   return (
+    // Every page's <main> carries id="content".
     <a className="skip-link" href="#content">
       {t("skipToContent")}
     </a>
@@ -77,29 +78,40 @@ function ThemeToggle() {
 export function SiteHeader() {
   const t = useT();
   return (
-    <header className="app-header">
-      <Link className="brand" href="/" aria-label={t("siteName")}>
-        <BrandMark size={36} />
-        <span className="brand-word">Cold Chain</span>
-        <span className="brand-sub">Simulation Studio</span>
-      </Link>
-      <nav aria-label={t("navPrimary")}>
-        <Link href="/demo">{t("navDemo")}</Link>
-        <Link href="/workspace">{t("navWorkspace")}</Link>
-        <span className="environment">{t("environment")}</span>
-        <LangToggle />
-        <ThemeToggle />
-      </nav>
+    <header className="app-header nav">
+      <div className="app-header-bar wrap">
+        <SkipLink />
+        <Link className="brand" href="/" aria-label={t("siteName")}>
+          <BrandMark size={36} />
+          <span className="brand-word">Cold Chain</span>
+          <span className="brand-sub">Simulation Studio</span>
+        </Link>
+        <nav aria-label={t("navPrimary")}>
+          <Link href="/studio">{t("navStudio")}</Link>
+          <Link href="/workspace">{t("navWorkspace")}</Link>
+          <span className="environment">{t("environment")}</span>
+          <LangToggle />
+          <ThemeToggle />
+        </nav>
+      </div>
     </header>
   );
 }
 
+/** The landing page portals its closing block into #footer-close. */
+export const FOOTER_CLOSE_ID = "footer-close";
+
 export function SiteFooter() {
   const t = useT();
   return (
-    <footer className="app-footer">
-      <span>{t("footerDisclaimer")}</span>
-      <span>{t("footerEvidence")}</span>
+    <footer className="app-footer closing">
+      <div className="app-footer-inner wrap">
+        <div id={FOOTER_CLOSE_ID} />
+        <div className="app-footer-legal">
+          <span>{t("footerDisclaimer")}</span>
+          <span>{t("footerEvidence")}</span>
+        </div>
+      </div>
     </footer>
   );
 }

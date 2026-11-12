@@ -1,16 +1,41 @@
+"use client";
 import type { Item } from "./workspace/api";
 import { human } from "./evidence-view";
-export function money(value: unknown, currency: unknown): string {
-  const number = Number(value);
-  return value != null && Number.isFinite(number)
-    ? `${number.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${String(currency || "")}`
-    : "Not calculated";
+import { useI18n } from "./i18n-provider";
+import { ProvenanceChip } from "./ui/provenance-chip";
+import { StatusBadge, type Status } from "./ui/status-badge";
+import { AnalysisBadge, RuleList } from "./workspace/ui";
+
+const KNOWN = ["ELIGIBLE", "REVIEW_REQUIRED", "BLOCKED", "INSUFFICIENT_DATA"];
+
+/**
+ * Group a Decimal string for display without float math. Keeps every digit the
+ * API sent (at least two decimals), so nothing is rounded.
+ */
+export function formatDecimal(value: unknown): string | null {
+  const text = typeof value === "number" ? String(value) : value;
+  if (typeof text !== "string" || !/^-?\d+(\.\d+)?$/.test(text)) return null;
+  const negative = text.startsWith("-");
+  const [whole, fraction = ""] = text.replace("-", "").split(".");
+  const grouped = BigInt(whole).toLocaleString("en-US");
+  return `${negative ? "-" : ""}${grouped}.${fraction.padEnd(2, "0")}`;
+}
+export function money(
+  value: unknown,
+  currency: unknown,
+  missing = "Not calculated",
+): string {
+  const formatted = formatDecimal(value);
+  return formatted === null
+    ? missing
+    : `${formatted} ${String(currency || "")}`.trim();
 }
 export default function DecisionEvidenceSummary({
   evidence,
 }: {
   evidence: Item;
 }) {
+  const { t } = useI18n();
   const analysis = evidence.analysis as Item | undefined;
   const result = (analysis?.result || analysis || {}) as Item;
   const summary = (result.summary || {}) as Item;
@@ -21,79 +46,75 @@ export default function DecisionEvidenceSummary({
   const rules = (result.rule_results || scenario.rule_results || []) as Item[];
   return (
     <div className="decision-summary">
-      <h4>What the evidence says</h4>
-      <p>
-        <strong>
-          {human(
-            result.classification ||
-              scenario.risk_classification ||
-              "Not evaluated",
-          )}
-        </strong>{" "}
-        / {human(scenario.eligibility || "No scenario selected")}
+      <h4>{t("wsEvSays")}</h4>
+      <p className="ws-verdict">
+        {result.classification ? (
+          <AnalysisBadge value={result.classification} />
+        ) : (
+          <span className="ws-dim">{t("wsNotEvaluated")}</span>
+        )}{" "}
+        {KNOWN.includes(String(scenario.eligibility)) ? (
+          <StatusBadge status={String(scenario.eligibility) as Status} />
+        ) : (
+          <span className="ws-dim">
+            {human(scenario.eligibility || t("wsNoScenario"))}
+          </span>
+        )}
       </p>
       <dl className="evidence-grid">
         <div>
-          <dt>Temperature range</dt>
+          <dt>{t("wsTempRange")}</dt>
           <dd>
             {summary.min_c == null
-              ? "Unknown"
-              : `${summary.min_c} to ${summary.max_c} Celsius`}
+              ? t("hudUnknown")
+              : `${summary.min_c} – ${summary.max_c} °C`}{" "}
+            {summary.min_c != null && <ProvenanceChip kind="calculated" />}
           </dd>
         </div>
         <div>
-          <dt>Time without evidence</dt>
+          <dt>{t("wsTimeWithoutEvidence")}</dt>
           <dd>
             {summary.unknown_seconds == null
-              ? "Not reported"
-              : `${summary.unknown_seconds} seconds`}
+              ? t("wsNotReported")
+              : `${summary.unknown_seconds} s`}
           </dd>
         </div>
         <div>
-          <dt>Policy version</dt>
+          <dt>{t("wsSnapPolicy")}</dt>
           <dd>
-            {String(policy.policy_key || "Not available")} /{" "}
-            {String(policy.version ?? "Unknown version")}
+            {String(policy.policy_key || t("wsNotAvailable"))} /{" "}
+            {String(policy.version ?? t("wsUnknownVersion"))}
           </dd>
         </div>
         <div>
-          <dt>Dataset version</dt>
-          <dd>{String(dataset.version ?? "See pinned dataset reference")}</dd>
+          <dt>{t("wsSnapDataset")}</dt>
+          <dd>{String(dataset.version ?? t("wsSeePinnedDataset"))}</dd>
         </div>
         <div>
-          <dt>Scenario cost / delay</dt>
+          <dt>{t("wsScenarioCostDelay")}</dt>
           <dd>
-            {money(scenario.direct_incremental_cost, scenario.currency)} /{" "}
-            {String(scenario.additional_delay_minutes ?? "Unknown")} minutes
+            {money(
+              scenario.direct_incremental_cost,
+              scenario.currency,
+              t("wsNotCalculated"),
+            )}{" "}
+            / {String(scenario.additional_delay_minutes ?? "—")} {t("unitMin")}
           </dd>
         </div>
       </dl>
-      <h4>Reasons and limitations</h4>
+      <h4>{t("wsReasonsLimits")}</h4>
+      <RuleList rules={rules} />
       <ul>
-        {rules
-          .filter((r) => r.matched)
-          .map((r, i) => (
-            <li key={i}>
-              {human(r.rule_id || r.code || r.effect)}: {human(r.effect)}
-            </li>
-          ))}
-        {!rules.some((r) => r.matched) && (
-          <li>
-            No matched rule reason reported. This does not itself certify
-            safety.
-          </li>
-        )}
         {((scenario.missing_information || []) as string[]).map((v) => (
           <li key={v}>{human(v)}</li>
         ))}
       </ul>
       <p>
-        Reviewer must inspect the pinned evidence
+        {t("wsReviewerMust")}
         {sc.type === "HOLD_INSPECTION" || scenario.type === "HOLD_INSPECTION"
-          ? " and confirm the required hold in controlled storage"
+          ? ` ${t("wsAndConfirmHold")}`
           : ""}
-        . Approval requires supporting reference evidence and an independent
-        authorized reviewer where configured.
+        . {t("wsApprovalRequires")}
       </p>
     </div>
   );

@@ -102,6 +102,8 @@ class Shipment(TenantEntity, Base):
     notes: Mapped[str | None]
     status: Mapped[str] = mapped_column(default="DRAFT")
     revision: Mapped[int] = mapped_column(default=1)
+    # Set only when a shipment is edited; NULL means "never edited" (no backfill needed).
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
 
 class Idempotency(TenantEntity, Base):
@@ -386,8 +388,11 @@ class Report(TenantEntity, Base):
         ForeignKeyConstraint(
             ["organization_id", "decision_id"], ["decisions.organization_id", "decisions.id"]
         ),
+        CheckConstraint("language IN ('en','th')", name="report_language"),
     )
     decision_id: Mapped[str]
+    # Presentation language of the PDF labels only; frozen_payload is language-independent.
+    language: Mapped[str] = mapped_column(String(2), default="en", server_default="en")
     decision_snapshot_sha256: Mapped[str]
     frozen_payload: Mapped[dict[str, Any]] = mapped_column(JSONType)
     status: Mapped[str] = mapped_column(default="QUEUED")

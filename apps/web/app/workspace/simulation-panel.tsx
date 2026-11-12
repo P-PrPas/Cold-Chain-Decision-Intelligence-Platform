@@ -1,17 +1,37 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EvidenceView } from "../evidence-view";
 import { api, write, type Item } from "./api";
-import Scene, { scenarioNames } from "../scene";
+import Scene from "../scene";
 import FactorControls from "../factor-controls";
+import { ImpactBand } from "../impact-band";
+import { useI18n } from "../i18n-provider";
+import {
+  acceptanceKey,
+  acceptanceSymbol,
+  normAcceptance,
+  scenarioKey,
+  scenarioShortKey,
+} from "../studio/scenarios";
+import { ProvenanceChip } from "../ui/provenance-chip";
+import { StatusBadge, type Status } from "../ui/status-badge";
 import {
   type Assumptions,
+  costCategories,
+  formatAmount,
   freshAssumptions,
   totalCost,
   sameAssumptions,
   draftErrors,
 } from "../simulation-assumptions";
+import { Callout, RuleList, sourceProvenance, useErrorText } from "./ui";
 
+export type SimStatus = {
+  /** Id of the saved run the assumptions started from or last saved, "" if none. */
+  run: string;
+  /** Engine eligibility of the selected scenario when a saved result matches the assumptions. */
+  eligibility: string | null;
+};
 type Result = {
   key: string;
   items: Item[];
@@ -28,6 +48,8 @@ export default function SimulationPanel({
   destination,
   onPropose,
   onSaved,
+  onStatus,
+  timeline,
 }: {
   shipmentId: string;
   org: string;
@@ -38,7 +60,14 @@ export default function SimulationPanel({
   destination?: string;
   onPropose: (source: { run: string; scenario: Item } | null) => void;
   onSaved?: () => void;
+  /** Reports the saved run and the engine eligibility of the selected scenario. */
+  onStatus?: (status: SimStatus) => void;
+  /** Evidence timeline shown under the stage, in the Studio timeline slot. */
+  timeline?: ReactNode;
 }) {
+  const { t } = useI18n();
+  const errText = useErrorText();
+  const [sheet, setSheet] = useState(false);
   const savedResult = useRef<Result | null>(null);
   const [draft, setDraft] = useState<Assumptions | null>(null);
   const [baseline, setBaseline] = useState<Assumptions | null>(null);
@@ -69,23 +98,18 @@ export default function SimulationPanel({
           ]);
           if (!active) return;
           if (r.simulation.analysis_id !== completedAnalysis)
-            throw new Error(
-              "Saved run belongs to another analysis. Select the source analysis again.",
-            );
+            throw new Error(t("wsSimWrongAnalysis"));
           const parameters = r.simulation.parameters as Assumptions;
           if (
             !parameters?.scenarios?.length ||
             !parameters.ranking_weights ||
             !s.items.length
           )
-            throw new Error(
-              "Saved run assumptions or results are unavailable. Reload or start a new analysis cycle; no defaults have been substituted.",
-            );
+            throw new Error(t("wsSimNoAssumptions"));
           const first = s.items.find((item: Item) =>
             parameters.scenarios.some((v) => v.type === item.type),
           );
-          if (!first)
-            throw new Error("Saved scenarios do not match their assumptions.");
+          if (!first) throw new Error(t("wsSimMismatch"));
           setDraft(structuredClone(parameters));
           setBaseline(structuredClone(parameters));
           setBaselineRun(initialRun);
@@ -115,7 +139,7 @@ export default function SimulationPanel({
           setSelected(parameters.scenario_types[0]);
         }
       } catch (e) {
-        if (active) setError(String(e));
+        if (active) setError(errText(e));
       } finally {
         if (active) setLoading(false);
       }
@@ -125,6 +149,7 @@ export default function SimulationPanel({
       active = false;
       operationEpoch.current++;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialRun, completedAnalysis, shipmentId, org]);
   useEffect(() => {
     if (!valid || !key || savedResult.current?.key === key || saving) return;
@@ -132,7 +157,7 @@ export default function SimulationPanel({
     let active = true;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setPreviewStatus("Calculating preview...");
+      setPreviewStatus(t("wsSimCalculating"));
       try {
         const data = await api(
           `/shipments/${shipmentId}/simulation-preview`,
@@ -145,17 +170,13 @@ export default function SimulationPanel({
           !data.items.length ||
           data.analysis_id !== payload.analysis_id
         ) {
-          throw new Error(
-            "The preview response did not contain results for this analysis.",
-          );
+          throw new Error(t("wsSimPreviewShape"));
         }
         setResult({ key, items: data.items, kind: "preview", run: "" });
         setPreviewStatus("");
       } catch (e) {
         if (active)
-          setPreviewStatus(
-            `Preview unavailable. Your assumptions are retained. Retry calculation. ${String(e)}`,
-          );
+          setPreviewStatus(`${t("wsSimPreviewUnavailable")} ${errText(e)}`);
       }
     }, 400);
     return () => {
@@ -163,12 +184,21 @@ export default function SimulationPanel({
       clearTimeout(timer);
       controller.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, retry, org, shipmentId, saving, valid]);
+  const reportedRun = baselineRun;
+  const reportedEligibility =
+    current?.kind === "saved" && selectedResult
+      ? String(selectedResult.eligibility)
+      : null;
+  useEffect(() => {
+    onStatus?.({ run: reportedRun, eligibility: reportedEligibility });
+  }, [reportedRun, reportedEligibility, onStatus]);
   function change(value: Assumptions) {
     setDraft(value);
     if (savedResult.current?.key === JSON.stringify(value))
       setResult(savedResult.current);
-    setPreviewStatus("Draft changed; waiting to calculate preview...");
+    setPreviewStatus(t("wsSimWaiting"));
     setError("");
     onPropose(null);
   }
@@ -198,10 +228,7 @@ export default function SimulationPanel({
         await new Promise((resolve) => setTimeout(resolve, 1500));
         if (version !== epoch.current) return;
         const j = await api(`/jobs/${r.job.id}`, org);
-        if (j.job.status === "FAILED")
-          throw new Error(
-            "Simulation failed. Check source evidence and retry.",
-          );
+        if (j.job.status === "FAILED") throw new Error(t("wsSimFailed"));
         if (j.job.status === "COMPLETED") {
           const s = await api(`/simulations/${r.simulation.id}/scenarios`, org);
           if (version !== epoch.current) return;
@@ -224,11 +251,9 @@ export default function SimulationPanel({
           return;
         }
       }
-      throw new Error(
-        "Calculation is taking longer than expected. Reload saved workflow to check its status before starting another run.",
-      );
+      throw new Error(t("wsSimSlow"));
     } catch (e) {
-      if (version === epoch.current) setError(String(e));
+      if (version === epoch.current) setError(errText(e));
     } finally {
       if (version === epoch.current) {
         locked.current = false;
@@ -236,190 +261,370 @@ export default function SimulationPanel({
       }
     }
   }
-  if (loading) return <p role="status">Loading simulation assumptions...</p>;
-  if (!draft || !baseline)
-    return <p role="alert">{error || "No simulation source available."}</p>;
-  return (
-    <section className="simulation-workbench">
-      <div className="section-heading">
-        <h2>Explore operational alternatives</h2>
-        <span className="badge">
-          {saving
-            ? "Saving calculation"
-            : current?.kind === "saved"
-              ? "Saved engine result"
-              : current
-                ? "Calculated preview / not saved"
-                : "Draft / result not current"}
-        </span>
-      </div>
-      <p className="context-label">
-        {shipmentLabel || shipmentId} /{" "}
-        {baselineRun
-          ? `Baseline run ${baselineRun.slice(0, 8)}`
-          : "New scenario baseline: zero estimates, unknown acceptance"}
-        .{" "}
-        {sameAssumptions(draft, baseline)
-          ? "Baseline unchanged."
-          : "Assumptions modified."}
+  if (loading)
+    return (
+      <p role="status" className="ws-busy">
+        {t("wsSimLoading")}
       </p>
-      {error && <p role="alert">{error}</p>}
-      <div className="scenario-strip" role="group" aria-label="Select scenario">
-        {draft.scenarios.map((s) => (
-          <button
-            key={s.type}
-            type="button"
-            aria-pressed={s.type === selected}
-            onClick={() => chooseScenario(s.type)}
-          >
-            {scenarioNames[s.type]}
-          </button>
-        ))}
-      </div>
-      <div className="studio-grid">
-        <Scene
-          scenario={selected}
-          origin={origin}
-          destination={destination}
-          context={
-            current?.kind === "saved" && selectedResult
-              ? `${shipmentLabel || shipmentId} / Run ${current.run.slice(0, 8)}`
-              : `${shipmentLabel || shipmentId} / Draft preview (not saved)`
-          }
-          baselineCost={totalCost(
-            baseline.scenarios.find((s) => s.type === selected),
-          )}
-          baselineDelay={String(
-            baseline.scenarios.find((s) => s.type === selected)
-              ?.estimated_delay_minutes ?? 0,
-          )}
-          cost={totalCost(selectedDraft, draft.currency)}
-          delay={String(selectedDraft?.estimated_delay_minutes ?? 0)}
-          currency={draft.currency}
-          acceptance={selectedDraft?.receiver_acceptance}
-          eligibility={String(
-            selectedResult?.eligibility || "Awaiting calculation",
-          )}
-          missing={(
-            selectedResult?.missing_information as string[] | undefined
-          )?.join(", ")}
-          compact
-        />
-        <div className="studio-inspector">
-          <FactorControls
-            value={draft}
-            baseline={baseline}
-            selected={selected}
-            onChange={change}
-            disabled={saving}
-            baselineLabel={
-              baselineRun
-                ? `saved run ${baselineRun.slice(0, 8)}`
-                : "new scenario defaults"
-            }
-          />
-          <p role="status">
-            {!valid
-              ? "Fix the highlighted assumptions before calculating or saving."
-              : saving
-                ? "Simulation processing..."
-                : current
-                  ? current.kind === "saved"
-                    ? "Saved result matches these assumptions."
-                    : "Engine preview matches these assumptions. Save a run before preparing a proposal."
-                  : previewStatus || "Waiting to calculate preview..."}
+    );
+  if (!draft || !baseline)
+    return (
+      <p role="alert" className="ws-alert">
+        {error || t("wsSimNoSource")}
+      </p>
+    );
+  const eligibility = String(selectedResult?.eligibility ?? "");
+  const badgeOf = (value: string): Status =>
+    (["ELIGIBLE", "REVIEW_REQUIRED", "BLOCKED", "INSUFFICIENT_DATA"].includes(
+      value,
+    )
+      ? value
+      : "NOT_EVALUATED") as Status;
+  const origCost = totalCost(
+    baseline.scenarios.find((s) => s.type === selected),
+  );
+  const cost = totalCost(selectedDraft, draft.currency);
+  const delay = String(selectedDraft?.estimated_delay_minutes ?? 0);
+  const costProv = [
+    ...new Set(
+      costCategories
+        .map((c) => sourceProvenance(selectedDraft?.costs[c].source))
+        .filter(Boolean),
+    ),
+  ] as ("estimated" | "entered")[];
+  const acc = normAcceptance(selectedDraft?.receiver_acceptance);
+  const canPropose =
+    current?.kind === "saved" &&
+    !!selectedResult &&
+    ["ELIGIBLE", "REVIEW_REQUIRED"].includes(eligibility);
+  const summaryLine = `${delay} ${t("unitMin")} · ${formatAmount(cost)} ${draft.currency}`;
+  const saveState = saving
+    ? t("wsSimSaving")
+    : current?.kind === "saved"
+      ? t("wsSimSavedResult")
+      : current
+        ? t("wsSimPreviewNotSaved")
+        : t("wsSimDraftNotCurrent");
+  return (
+    <section
+      className="simulation-workbench ws-sim"
+      role="region"
+      aria-label={t("wsSimExplorer")}
+    >
+      <div className="ws-sim-head">
+        <div>
+          <h2>{t("wsSimTitle")}</h2>
+          <p className="context-label">
+            {shipmentLabel || shipmentId} /{" "}
+            {baselineRun
+              ? `${t("wsSimBaselineRun")} ${baselineRun.slice(0, 8)}`
+              : t("wsSimNewBaseline")}
+            .{" "}
+            {sameAssumptions(draft, baseline)
+              ? t("wsSimUnchanged")
+              : t("wsSimModified")}
           </p>
-          {!current && !saving && valid && (
-            <button type="button" onClick={() => setRetry((v) => v + 1)}>
-              Retry preview
-            </button>
-          )}
+        </div>
+        <span className="badge">{saveState}</span>
+      </div>
+      {error && (
+        <p role="alert" className="ws-alert">
+          {error}
+        </p>
+      )}
+      <div className="studio-body ws-sim-body">
+        <div className="rail" role="group" aria-label={t("scenarioGroup")}>
+          <p className="rail-title">{t("railTitle")}</p>
+          {draft.scenarios.map((s, i) => {
+            const name = t(scenarioKey[s.type]);
+            const r = current?.items.find((v) => v.type === s.type);
+            return (
+              <button
+                key={s.type}
+                type="button"
+                className="rail-item"
+                aria-pressed={s.type === selected}
+                aria-label={name}
+                onClick={() => chooseScenario(s.type)}
+              >
+                <kbd aria-hidden="true">{i + 1}</kbd>
+                <span className="rail-name" aria-hidden="true">
+                  <span className="full">{name}</span>
+                  <span className="short">{t(scenarioShortKey[s.type])}</span>
+                </span>
+                <span className="rail-meta num" aria-hidden="true">
+                  {s.estimated_delay_minutes} {t("unitMin")} &middot;{" "}
+                  {formatAmount(totalCost(s, draft.currency))}
+                </span>
+                {r && (
+                  <span className="rail-elig" aria-hidden="true">
+                    <StatusBadge status={badgeOf(String(r.eligibility))} />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="studio-stage">
+          <Scene
+            scenario={selected}
+            origin={origin}
+            destination={destination}
+            context={
+              current?.kind === "saved" && selectedResult
+                ? `${shipmentLabel || shipmentId} / ${t("wsSimRun")} ${current.run.slice(0, 8)}`
+                : `${shipmentLabel || shipmentId} / ${t("wsSimDraftPreview")}`
+            }
+            cost={cost}
+            delay={delay}
+            currency={draft.currency}
+            acceptance={selectedDraft?.receiver_acceptance}
+            blocked={eligibility === "BLOCKED"}
+            compact
+          />
+        </div>
+        <aside
+          className="inspector"
+          data-open={sheet}
+          aria-label={t("resultTitle")}
+        >
           <button
             type="button"
-            disabled={saving || !valid}
-            onClick={() => void save()}
+            className="sheet-handle"
+            aria-expanded={sheet}
+            aria-controls="ws-sheet-body"
+            onClick={() => setSheet((v) => !v)}
           >
-            {baselineRun ? "Recalculate as a new run" : "Run simulation"}
+            <span className="sheet-grip" aria-hidden="true" />
+            <span className="sheet-summary num">{summaryLine}</span>
+            <span className="sheet-toggle">
+              {sheet ? t("sheetClose") : t("sheetOpen")}
+            </span>
           </button>
-          {current?.kind === "saved" &&
-            selectedResult &&
-            ["ELIGIBLE", "REVIEW_REQUIRED"].includes(
-              String(selectedResult.eligibility),
-            ) && (
+          <div id="ws-sheet-body" className="sheet-body">
+            <div className="result-card">
+              <h2>{t("resultTitle")}</h2>
+              <div className="scene-impact">
+                <ImpactBand
+                  label={t("resultDelay")}
+                  value={delay}
+                  baseline={String(
+                    baseline.scenarios.find((s) => s.type === selected)
+                      ?.estimated_delay_minutes ?? 0,
+                  )}
+                  unit={t("unitMin")}
+                  chip={<ProvenanceChip kind="estimated" />}
+                  unavailable={t("resultUnavailable")}
+                  baselineWord={t("resultBaseline")}
+                  checkInput={t("wsCheckInput")}
+                />
+                <ImpactBand
+                  label={t("resultCost")}
+                  value={cost}
+                  baseline={origCost}
+                  unit={draft.currency}
+                  money
+                  chip={
+                    <>
+                      {costProv.map((p) => (
+                        <ProvenanceChip key={p} kind={p} />
+                      ))}
+                    </>
+                  }
+                  unavailable={t("resultUnavailable")}
+                  baselineWord={t("resultBaseline")}
+                  checkInput={t("wsCheckInput")}
+                />
+              </div>
+              <dl className="result-rows">
+                <div>
+                  <dt>{t("resultEligibility")}</dt>
+                  <dd>
+                    <StatusBadge status={badgeOf(eligibility)} />
+                    {!selectedResult && (
+                      <span className="ws-dim"> {t("wsAwaiting")}</span>
+                    )}
+                  </dd>
+                </div>
+                {selectedResult && (
+                  <>
+                    <div>
+                      <dt>{t("wsEngineCost")}</dt>
+                      <dd className="num">
+                        {String(selectedResult.direct_incremental_cost)}{" "}
+                        {draft.currency} <ProvenanceChip kind="calculated" />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t("wsRanking")}</dt>
+                      <dd className="num">
+                        {selectedResult.ranking_score == null
+                          ? t("wsExcluded")
+                          : String(selectedResult.ranking_score)}
+                      </dd>
+                    </div>
+                  </>
+                )}
+                <div>
+                  <dt>{t("resultReceiver")}</dt>
+                  <dd>
+                    <span className="acceptance-state" data-state={acc}>
+                      {acceptanceSymbol[acc]} {t("receiverWord")}:{" "}
+                      {t(acceptanceKey[acc])} ({t("assumedWord")})
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+              {selectedResult && (
+                <>
+                  <h3 className="ws-h3">{t("wsReasons")}</h3>
+                  <RuleList rules={selectedResult.rule_results} />
+                  {((selectedResult.missing_information ?? []) as string[])
+                    .length > 0 && (
+                    <p className="scene-missing">
+                      {t("wsMissingEvidence")}:{" "}
+                      {(selectedResult.missing_information as string[]).join(
+                        ", ",
+                      )}
+                    </p>
+                  )}
+                </>
+              )}
+              <p className="result-note">{t("wsEligibilityEngineNote")}</p>
+            </div>
+            <FactorControls
+              value={draft}
+              baseline={baseline}
+              selected={selected}
+              onChange={change}
+              disabled={saving}
+              baselineLabel={
+                baselineRun
+                  ? `${t("wsSimSavedRunLabel")} ${baselineRun.slice(0, 8)}`
+                  : t("wsSimDefaultsLabel")
+              }
+            />
+            <div className="ws-actions ws-sim-actions">
+              <p role="status" className="ws-status-line">
+                {!valid
+                  ? t("wsSimFix")
+                  : saving
+                    ? t("wsSimProcessing")
+                    : current
+                      ? current.kind === "saved"
+                        ? t("wsSimMatchesSaved")
+                        : t("wsSimMatchesPreview")
+                      : previewStatus || t("wsSimWaitingCalc")}
+              </p>
+              {!current && !saving && valid && (
+                <button
+                  type="button"
+                  className="quiet"
+                  onClick={() => setRetry((v) => v + 1)}
+                >
+                  {t("wsSimRetryPreview")}
+                </button>
+              )}
               <button
                 type="button"
-                disabled={saving}
-                onClick={() => {
-                  onPropose({ run: current.run, scenario: selectedResult });
-                  document.getElementById("review")?.focus();
-                  document.getElementById("review")?.scrollIntoView();
-                }}
+                disabled={saving || !valid}
+                onClick={() => void save()}
               >
-                Prepare proposal
+                {baselineRun ? t("wsSimRecalc") : t("wsSimRunBtn")}
               </button>
-            )}
-        </div>
+              {canPropose && selectedResult && (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() =>
+                    onPropose({ run: current!.run, scenario: selectedResult })
+                  }
+                >
+                  {t("wsPrepareProposal")}
+                </button>
+              )}
+              {current?.kind === "saved" &&
+                selectedResult &&
+                eligibility === "BLOCKED" && (
+                  <Callout tone="block" title={t("statusBlocked")}>
+                    {t("wsBlockScenarioBlocked")}
+                  </Callout>
+                )}
+              {current?.kind === "saved" &&
+                selectedResult &&
+                eligibility === "INSUFFICIENT_DATA" && (
+                  <Callout tone="warn" title={t("statusInsufficient")}>
+                    {t("wsBlockScenarioUnknown")}
+                  </Callout>
+                )}
+            </div>
+          </div>
+        </aside>
       </div>
-      <details>
-        <summary>Compare calculated alternatives</summary>
+      {timeline}
+      <details className="ws-compare" open>
+        <summary>{t("wsCompare")}</summary>
         {!current ? (
-          <p>
-            Results for the previous assumptions are hidden until the current
-            calculation succeeds.
-          </p>
+          <p>{t("wsCompareHidden")}</p>
         ) : (
-          <table>
-            <caption>
-              {current.kind === "saved" ? "Saved" : "Unsaved preview"} scenario
-              comparison
-            </caption>
-            <thead>
-              <tr>
-                <th>Scenario</th>
-                <th>Cost</th>
-                <th>Delay</th>
-                <th>Eligibility</th>
-                <th>Ranking score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {current.items.map((s) => (
-                <tr key={String(s.type)} data-selected={s.type === selected}>
-                  <td>
-                    <button
-                      type="button"
-                      aria-pressed={s.type === selected}
-                      onClick={() => chooseScenario(String(s.type))}
-                    >
-                      {scenarioNames[String(s.type)]}
-                    </button>
-                  </td>
-                  <td>
-                    {String(s.direct_incremental_cost)} {draft.currency}
-                  </td>
-                  <td>{String(s.additional_delay_minutes)} min</td>
-                  <td>{String(s.eligibility)}</td>
-                  <td>
-                    {s.ranking_score == null
-                      ? "Excluded"
-                      : String(s.ranking_score)}
-                  </td>
+          <div className="ws-table-wrap">
+            <table className="ws-table">
+              <caption>
+                {current.kind === "saved"
+                  ? t("wsCompareSaved")
+                  : t("wsComparePreview")}
+              </caption>
+              <thead>
+                <tr>
+                  <th>{t("wsScenario")}</th>
+                  <th>{t("resultEligibility")}</th>
+                  <th>{t("resultCost")}</th>
+                  <th>{t("resultDelay")}</th>
+                  <th>{t("wsRanking")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {current.items.map((s) => (
+                  <tr key={String(s.type)} data-selected={s.type === selected}>
+                    <td data-label={t("wsScenario")}>
+                      <button
+                        type="button"
+                        className="quiet"
+                        aria-pressed={s.type === selected}
+                        onClick={() => chooseScenario(String(s.type))}
+                      >
+                        {t(scenarioKey[String(s.type)])}
+                      </button>
+                    </td>
+                    <td data-label={t("resultEligibility")}>
+                      <StatusBadge status={badgeOf(String(s.eligibility))} />
+                    </td>
+                    <td data-label={t("resultCost")} className="num">
+                      {String(s.direct_incremental_cost)} {draft.currency}{" "}
+                      <ProvenanceChip kind="calculated" />
+                    </td>
+                    <td data-label={t("resultDelay")} className="num">
+                      {String(s.additional_delay_minutes)} {t("unitMin")}
+                    </td>
+                    <td data-label={t("wsRanking")} className="num">
+                      {s.ranking_score == null
+                        ? t("wsExcluded")
+                        : String(s.ranking_score)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </details>
       <details>
-        <summary>Selected scenario evidence and traceability</summary>
-        <p>
-          Only the backend determines eligibility. Delay does not model
-          temperature deterioration; ranking weights do not change evidence.
-        </p>
+        <summary>{t("wsSelectedEvidence")}</summary>
+        <p>{t("wsEvidenceNote")}</p>
         <EvidenceView
-          value={selectedResult || { status: "Current result unavailable" }}
+          value={selectedResult || { status: t("wsCurrentUnavailable") }}
         />
-        <h4>Baseline assumptions</h4>
+        <h3 className="ws-h4">{t("wsBaselineAssumptions")}</h3>
         <EvidenceView value={baseline} />
       </details>
     </section>
