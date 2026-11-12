@@ -7,23 +7,26 @@ import {
 import type { ReactNode } from "react";
 import "./globals.css";
 import { I18nProvider } from "./i18n-provider";
-import { SiteFooter, SiteHeader, SkipLink } from "./site-chrome";
+import { SiteFooter, SiteHeader } from "./site-chrome";
 
+// Sans is one variable file (all weights). Thai glyphs come from Plex Sans Thai,
+// loaded only on pages that contain Thai text (unicode-range) and only the two
+// weights the UI uses. Mono keeps the two weights numbers use.
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   variable: "--font-plex-sans",
   display: "swap",
 });
 const plexThai = IBM_Plex_Sans_Thai({
-  subsets: ["thai", "latin"],
-  weight: ["400", "500", "600", "700"],
+  subsets: ["thai"],
+  weight: ["400", "600"],
   variable: "--font-plex-thai",
   display: "swap",
+  preload: false,
 });
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "600"],
   variable: "--font-plex-mono",
   display: "swap",
 });
@@ -50,9 +53,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <I18nProvider>
-          <SkipLink />
           <SiteHeader />
-          <div id="content">{children}</div>
+          {children}
           <SiteFooter />
         </I18nProvider>
       </body>

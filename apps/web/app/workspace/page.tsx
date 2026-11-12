@@ -6,10 +6,92 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { money } from "../decision-summary";
 import Link from "next/link";
-import { api, write, type Item } from "./api";
+import "./workspace.css";
+import { money } from "../decision-summary";
+import { useI18n } from "../i18n-provider";
+import type { DictKey } from "../i18n";
+import { api, write, ApiError, type Item } from "./api";
+import {
+  AnalysisBadge,
+  Callout,
+  OpStatusBadge,
+  Skeleton,
+  useErrorText,
+  useFmt,
+} from "./ui";
+
+const STATUSES = [
+  "DRAFT",
+  "READY",
+  "IN_TRANSIT",
+  "ARRIVED",
+  "CLOSED",
+  "CANCELLED",
+] as const;
+const STATUS_KEY: Record<string, DictKey> = {
+  DRAFT: "wsOpDraft",
+  READY: "wsOpReady",
+  IN_TRANSIT: "wsOpTransit",
+  ARRIVED: "wsOpArrived",
+  CLOSED: "wsOpClosed",
+  CANCELLED: "wsOpCancelled",
+};
+type FieldErrors = Partial<
+  Record<
+    | "reference"
+    | "product"
+    | "origin"
+    | "destination"
+    | "departure"
+    | "arrival"
+    | "value",
+    string
+  >
+>;
+
+/** Stored output of the shipment's latest completed analysis; echoed by the API, never computed here. */
+type Evidence = {
+  classification: string | null;
+  unknown_seconds: number | null;
+  excursion_count: number | null;
+  coverage_window_known: boolean | null;
+} | null;
+
+function EvidenceCell({ evidence }: { evidence: Evidence | undefined }) {
+  const { t } = useI18n();
+  if (!evidence) return <AnalysisBadge value={undefined} />;
+  const unknown = evidence.unknown_seconds;
+  return (
+    <>
+      <AnalysisBadge value={evidence.classification} />
+      {evidence.coverage_window_known === false && (
+        <small className="ws-dim ws-ev-line">
+          <span className="ws-hatch" aria-hidden="true" />{" "}
+          {t("wsEvWindowUnknown")}
+        </small>
+      )}
+      {typeof unknown === "number" && (
+        <small
+          className={unknown > 0 ? "ws-ev-line ws-ev-unknown" : "ws-ev-line"}
+        >
+          {unknown > 0 && <span className="ws-hatch" aria-hidden="true" />}{" "}
+          {t("wsEvUnknown").replace("{n}", String(Math.ceil(unknown / 60)))}
+        </small>
+      )}
+      {typeof evidence.excursion_count === "number" && (
+        <small className="ws-dim ws-ev-line">
+          {t("wsEvExcursions").replace("{n}", String(evidence.excursion_count))}
+        </small>
+      )}
+    </>
+  );
+}
+
 export default function Workspace() {
+  const { t } = useI18n();
+  const errText = useErrorText();
+  const fmt = useFmt();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("");
   const [creating, setCreating] = useState(false);
@@ -24,9 +106,11 @@ export default function Workspace() {
   const [members, setMembers] = useState<Item[]>([]);
   const [shipmentRows, setShipments] = useState<Item[]>([]);
   const [products, setProducts] = useState<Item[]>([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState("");
   const scope = JSON.stringify([org, query, filter]);
   const shipments = dataKey === scope ? shipmentRows : [];
   const dashboard = dataKey === scope ? dashboardData : null;
@@ -35,7 +119,7 @@ export default function Workspace() {
       const request = ++requestVersion.current;
       const key = JSON.stringify([org, query, filter]);
       setBusy(true);
-      setError("");
+      setError(null);
       try {
         const me = await api("/auth/me");
         if (request !== requestVersion.current) return;
@@ -74,7 +158,7 @@ export default function Workspace() {
           setDataKey(key);
         }
       } catch (e) {
-        if (request === requestVersion.current) setError(String(e));
+        if (request === requestVersion.current) setError(e);
       } finally {
         if (request === requestVersion.current) setBusy(false);
       }
@@ -106,15 +190,40 @@ export default function Workspace() {
       );
       window.location.assign(result.authorization_url);
     } catch (e) {
-      setError(String(e));
+      setError(e);
       setBusy(false);
     }
   }
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const text = (name: string) => String(form.get(name) ?? "").trim();
+    const next: FieldErrors = {};
+    if (!text("reference")) next.reference = t("wsFormRequired");
+    if (!text("product")) next.product = t("wsFormRequired");
+    if (!text("origin")) next.origin = t("wsFormRequired");
+    if (!text("destination")) next.destination = t("wsFormRequired");
+    if (!text("departure")) next.departure = t("wsFormRequired");
+    if (!text("arrival")) next.arrival = t("wsFormRequired");
+    else if (
+      text("departure") &&
+      new Date(text("arrival")) <= new Date(text("departure"))
+    )
+      next.arrival = t("wsFormArrivalAfter");
+    const value = text("value");
+    if (!value) next.value = t("wsFormRequired");
+    else if (!/^\d+(\.\d{1,2})?$/.test(value)) next.value = t("wsFormValue");
+    setFormError("");
+    setFieldErrors(next);
+    const first = Object.keys(next)[0];
+    if (first) {
+      event.currentTarget
+        .querySelector<HTMLElement>(`[name="${first}"]`)
+        ?.focus();
+      return;
+    }
     setBusy(true);
     const operation = requestVersion.current;
-    const form = new FormData(event.currentTarget);
     try {
       await api(
         "/shipments",
@@ -136,44 +245,82 @@ export default function Workspace() {
       setCreating(false);
       await load();
     } catch (e) {
-      setError(String(e));
+      if (e instanceof ApiError && e.code === "DUPLICATE_REFERENCE")
+        setFieldErrors({ reference: errText(e) });
+      else setFormError(errText(e));
     } finally {
       setBusy(false);
     }
   }
   const roles = (members.find((m) => m.organization_id === org)?.roles ||
     []) as string[];
+  const canCreate = roles.some((r) => ["ADMIN", "LOGISTICS"].includes(r));
+  const status = error instanceof ApiError ? error.status : 0;
+  const firstLoad = !loaded && busy && !error;
+  const signedOut = !loaded && !firstLoad && (status === 401 || !error);
+  const denied = status === 403;
+  const productName = (id: unknown) =>
+    String(products.find((p) => p.id === id)?.name ?? "");
+  const loading = !!org && dataKey !== scope && !error;
+  const empty =
+    !!org && !busy && dataKey === scope && !error && shipments.length === 0;
+  const filtered = !!query || !!filter;
+
   return (
-    <main>
-      <div className="page-heading">
+    <main className="ws" id="content">
+      <header className="ws-head">
         <div>
-          <h1>Shipment queue</h1>
-          <p>Open a shipment to inspect evidence and continue its review.</p>
+          <h1>{t("wsListTitle")}</h1>
+          <p>{t("wsListLead")}</p>
         </div>
-        {org && (
-          <button
-            disabled={busy || dataKey !== scope}
-            onClick={() => setCreating(!creating)}
-          >
-            {creating ? "Close new shipment" : "Create shipment"}
-          </button>
-        )}
-      </div>
-      {error && (
-        <p role="alert">
-          {error} <button onClick={() => void load()}>Retry</button>
-        </p>
-      )}
-      {busy && <p role="status">Loading...</p>}
-      {!loaded ? (
-        <button disabled={busy} onClick={() => void login()}>
-          Sign in with identity provider
-        </button>
-      ) : (
-        <>
-          <details className="account-menu">
-            <summary>Account</summary>
+        <div className="ws-head-actions">
+          {loaded && (
+            <label className="ws-org">
+              <span>{t("wsOrganization")}</span>
+              <select
+                aria-label={t("wsOrganization")}
+                value={org}
+                onChange={(e) => {
+                  if (e.target.value === org) return;
+                  requestVersion.current++;
+                  setDataKey("");
+                  setError(null);
+                  setShipments([]);
+                  setProducts([]);
+                  setDashboard(null);
+                  setCreating(false);
+                  setOrg(e.target.value);
+                }}
+              >
+                <option value="">{t("wsSelectOrganization")}</option>
+                {members.map((m) => (
+                  <option
+                    key={String(m.organization_id)}
+                    value={String(m.organization_id)}
+                  >
+                    {organizationNames[String(m.organization_id)] ||
+                      t("wsOrganization")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {org && canCreate && (
             <button
+              disabled={busy || dataKey !== scope}
+              aria-expanded={creating}
+              onClick={() => {
+                setCreating(!creating);
+                setFieldErrors({});
+                setFormError("");
+              }}
+            >
+              {creating ? t("wsCloseCreate") : t("wsCreateShipment")}
+            </button>
+          )}
+          {loaded && (
+            <button
+              type="button"
               className="quiet"
               onClick={async () => {
                 try {
@@ -183,202 +330,408 @@ export default function Workspace() {
                   setShipments([]);
                   setDashboard(null);
                 } catch (e) {
-                  setError(String(e));
+                  setError(e);
                 }
               }}
             >
-              Sign out
+              {t("wsSignOut")}
             </button>
-            <Link href="/studio">Open sample workspace</Link>
-          </details>
-          <label>
-            Organization
-            <select
-              aria-label="Organization"
-              value={org}
-              onChange={(e) => {
-                if (e.target.value === org) return;
-                requestVersion.current++;
-                setDataKey("");
-                setError("");
-                setShipments([]);
-                setProducts([]);
-                setDashboard(null);
-                setOrg(e.target.value);
-              }}
-            >
-              <option value="">Select organization</option>
-              {members.map((m) => (
-                <option
-                  key={String(m.organization_id)}
-                  value={String(m.organization_id)}
-                >
-                  {organizationNames[String(m.organization_id)] ||
-                    "Organization"}
-                </option>
-              ))}
-            </select>
-          </label>
-        </>
+          )}
+        </div>
+      </header>
+
+      {error !== null && !denied && !(signedOut && status === 401) && (
+        <div role="alert" className="ws-alert">
+          <span>{errText(error)}</span>
+          <button className="quiet" onClick={() => void load()}>
+            {t("wsRetry")}
+          </button>
+        </div>
       )}
+
+      {denied && (
+        <Callout tone="block" title={t("wsDeniedTitle")}>
+          {t("wsDeniedBody")}
+        </Callout>
+      )}
+
+      {firstLoad && (
+        <div role="status" aria-live="polite">
+          <p className="ws-dim">{t("wsLoadingList")}</p>
+          <Skeleton />
+        </div>
+      )}
+
+      {signedOut && (
+        <div className="ws-empty">
+          <h2>{t("wsSignInTitle")}</h2>
+          <p>{t("wsSignInBody")}</p>
+          <button disabled={busy} onClick={() => void login()}>
+            {t("wsSignIn")}
+          </button>
+          <Link href="/studio" className="ws-link">
+            {t("wsOpenSample")}
+          </Link>
+        </div>
+      )}
+
+      {loaded && !org && !error && (
+        <div className="ws-empty">
+          <h2>{t("wsPickOrgTitle")}</h2>
+          <p>{t("wsPickOrgBody")}</p>
+        </div>
+      )}
+
       {org && (
         <>
           {dashboard && (
-            <div className="queue-summary">
-              <span>
-                Pending QA reviews{" "}
-                <strong>{String(dashboard.pending_qa)}</strong>
-              </span>
+            <dl className="ws-stats" aria-label={t("wsStatsLabel")}>
+              <div>
+                <dt>{t("wsPendingQa")}</dt>
+                <dd className="num">{String(dashboard.pending_qa)}</dd>
+              </div>
               {Object.entries(
                 dashboard.shipment_counts as Record<string, number>,
-              ).map(([status, count]) => (
-                <span key={status}>
-                  {status.replaceAll("_", " ").toLowerCase()}{" "}
-                  <strong>{count}</strong>
-                </span>
+              ).map(([s, count]) => (
+                <div key={s}>
+                  <dt>{STATUS_KEY[s] ? t(STATUS_KEY[s]) : s}</dt>
+                  <dd className="num">{count}</dd>
+                </div>
               ))}
-            </div>
+            </dl>
           )}
-          <div className="queue-filters">
+
+          <div className="ws-filters">
             <label>
-              Search all shipments
+              <span>{t("wsSearch")}</span>
               <input
                 type="search"
                 value={query}
                 onChange={(e) => {
                   requestVersion.current++;
-                  setError("");
+                  setError(null);
                   setQuery(e.target.value);
                   sessionStorage.setItem("queue-query", e.target.value);
                 }}
-                placeholder="Reference or route"
+                placeholder={t("wsSearchHint")}
               />
             </label>
             <label>
-              Operational status
+              <span>{t("wsStatus")}</span>
               <select
                 value={filter}
                 onChange={(e) => {
                   requestVersion.current++;
-                  setError("");
+                  setError(null);
                   setFilter(e.target.value);
                   sessionStorage.setItem("queue-filter", e.target.value);
                 }}
               >
-                <option value="">All statuses</option>
-                {[
-                  "DRAFT",
-                  "READY",
-                  "IN_TRANSIT",
-                  "ARRIVED",
-                  "CLOSED",
-                  "CANCELLED",
-                ].map((status) => (
-                  <option key={status}>{status}</option>
+                <option value="">{t("wsAllStatuses")}</option>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {t(STATUS_KEY[s])}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
-          <ul className="shipment-list">
-            {shipments.map((s) => (
-              <li key={String(s.id)}>
-                <div>
-                  <Link href={`/workspace/shipments/${s.id}?org=${org}`}>
-                    {String(s.reference)}
-                  </Link>
-                  <p>
-                    {String((s.origin as Item)?.name || "Origin")} /{" "}
-                    {String((s.destination as Item)?.name || "Destination")}
-                  </p>
-                </div>
-                <span className="badge">
-                  {String(s.status).replaceAll("_", " ")}
-                </span>
-                <span>
-                  <small>Cargo value</small>
-                  <br />
-                  {money(s.cargo_value, s.currency)}
-                </span>
-                <Link href={`/workspace/shipments/${s.id}?org=${org}`}>
-                  {s.status === "DRAFT"
-                    ? "Prepare evidence"
-                    : s.status === "CANCELLED" || s.status === "CLOSED"
-                      ? "View history"
-                      : "Inspect shipment"}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {!busy && dataKey === scope && !error && shipments.length === 0 && (
-            <p>No shipments match this search.</p>
-          )}
-          {dataKey === scope && nextCursor && (
-            <button disabled={busy} onClick={() => void load(nextCursor)}>
-              Load more shipments
-            </button>
-          )}
-          {org && dataKey !== scope && !error && (
-            <p role="status">Loading this organization and search...</p>
-          )}
-          <p className="notice">
-            Queue status is operational, not a safety assessment. Open a
-            shipment for evidence and policy results.
-          </p>
+
           {creating && dataKey === scope && (
-            <div>
-              <h2>Create shipment</h2>
-              {roles.some((r) => ["ADMIN", "LOGISTICS"].includes(r)) ? (
-                <form className="shipment-form" onSubmit={create}>
-                  <label>
-                    Reference
-                    <input name="reference" required />
-                  </label>
-                  <label>
-                    Product
-                    <select aria-label="Product" name="product" required>
-                      <option value="">Select product</option>
-                      {products.map((p) => (
-                        <option key={String(p.id)} value={String(p.id)}>
-                          {String(p.name)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Origin
-                    <input name="origin" required />
-                  </label>
-                  <label>
-                    Destination
-                    <input name="destination" required />
-                  </label>
-                  <label>
-                    Departure (local time)
-                    <input name="departure" type="datetime-local" required />
-                  </label>
-                  <label>
-                    Arrival (local time)
-                    <input name="arrival" type="datetime-local" required />
-                  </label>
-                  <label>
-                    Cargo value (THB)
-                    <input
-                      name="value"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </label>
-                  <button disabled={busy}>Create shipment</button>
+            <section className="ws-create" aria-labelledby="ws-create-h">
+              <h2 id="ws-create-h">{t("wsCreateTitle")}</h2>
+              {canCreate ? (
+                <form noValidate onSubmit={create}>
+                  {formError && (
+                    <p role="alert" className="ws-alert">
+                      {formError}
+                    </p>
+                  )}
+                  <Field
+                    name="reference"
+                    label={t("wsFieldReference")}
+                    error={fieldErrors.reference}
+                  />
+                  <Field
+                    name="product"
+                    label={t("wsFieldProduct")}
+                    error={fieldErrors.product}
+                    hint={products.length ? undefined : t("wsNoProducts")}
+                  >
+                    {(p) => (
+                      <select {...p}>
+                        <option value="">{t("wsSelectProduct")}</option>
+                        {products.map((p) => (
+                          <option key={String(p.id)} value={String(p.id)}>
+                            {String(p.name)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </Field>
+                  <Field
+                    name="origin"
+                    label={t("wsFieldOrigin")}
+                    error={fieldErrors.origin}
+                  />
+                  <Field
+                    name="destination"
+                    label={t("wsFieldDestination")}
+                    error={fieldErrors.destination}
+                  />
+                  <Field
+                    name="departure"
+                    label={t("wsFieldDeparture")}
+                    error={fieldErrors.departure}
+                    type="datetime-local"
+                  />
+                  <Field
+                    name="arrival"
+                    label={t("wsFieldArrival")}
+                    error={fieldErrors.arrival}
+                    type="datetime-local"
+                  />
+                  <Field
+                    name="value"
+                    label={t("wsFieldValue")}
+                    error={fieldErrors.value}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                  />
+                  <div className="ws-form-actions">
+                    <button disabled={busy}>{t("wsCreateShipment")}</button>
+                    <button
+                      type="button"
+                      className="quiet"
+                      onClick={() => setCreating(false)}
+                    >
+                      {t("wsCancel")}
+                    </button>
+                  </div>
                 </form>
               ) : (
-                <p>Your role can view shipments but cannot create them.</p>
+                <Callout tone="warn">{t("wsCannotCreate")}</Callout>
+              )}
+            </section>
+          )}
+
+          {loading && (
+            <div role="status" aria-live="polite">
+              <p className="ws-dim">{t("wsLoadingList")}</p>
+              <Skeleton />
+            </div>
+          )}
+
+          {!loading && shipments.length > 0 && (
+            <div
+              className="ws-table-wrap"
+              role="region"
+              aria-label={t("wsListTitle")}
+              tabIndex={0}
+            >
+              <table className="ws-table">
+                <caption className="sr-only">{t("wsListTitle")}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("wsColShipment")}</th>
+                    <th scope="col">{t("wsColProduct")}</th>
+                    <th scope="col">{t("wsColRoute")}</th>
+                    <th scope="col">{t("wsColStatus")}</th>
+                    <th scope="col">{t("wsColEvidence")}</th>
+                    <th scope="col" className="ws-right">
+                      {t("wsColValue")}
+                    </th>
+                    <th scope="col">{t("wsColActivity")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shipments.map((s) => (
+                    <tr key={String(s.id)}>
+                      <td data-label={t("wsColShipment")}>
+                        <Link
+                          href={`/workspace/shipments/${s.id}?org=${org}`}
+                          className="ws-ref"
+                        >
+                          {String(s.reference)}
+                        </Link>
+                        <small className="ws-dim">
+                          {s.status === "DRAFT"
+                            ? t("wsActionPrepare")
+                            : s.status === "CANCELLED" || s.status === "CLOSED"
+                              ? t("wsActionHistory")
+                              : t("wsActionInspect")}
+                        </small>
+                      </td>
+                      <td data-label={t("wsColProduct")}>
+                        {productName(s.product_id) || (
+                          <span className="ws-dim">—</span>
+                        )}
+                      </td>
+                      <td data-label={t("wsColRoute")}>
+                        {String((s.origin as Item)?.name || t("nodeOrigin"))}
+                        <span aria-hidden="true"> → </span>
+                        <span className="sr-only"> {t("wsTo")} </span>
+                        {String(
+                          (s.destination as Item)?.name || t("nodeReceiver"),
+                        )}
+                      </td>
+                      <td data-label={t("wsColStatus")}>
+                        <OpStatusBadge status={String(s.status)} />
+                      </td>
+                      <td data-label={t("wsColEvidence")}>
+                        <EvidenceCell evidence={s.evidence as Evidence} />
+                      </td>
+                      <td data-label={t("wsColValue")} className="ws-right num">
+                        {money(s.cargo_value, s.currency, t("wsNotCalculated"))}
+                      </td>
+                      <td data-label={t("wsColActivity")} className="ws-dim">
+                        {s.last_activity_at
+                          ? fmt.dateTime(s.last_activity_at)
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {empty && (
+            <div className="ws-empty">
+              <svg
+                viewBox="0 0 120 56"
+                width="120"
+                height="56"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 40h30M52 40h24M92 40h22"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity="0.5"
+                />
+                <circle
+                  cx="44"
+                  cy="40"
+                  r="3"
+                  fill="currentColor"
+                  opacity="0.35"
+                />
+                <circle
+                  cx="84"
+                  cy="40"
+                  r="3"
+                  fill="currentColor"
+                  opacity="0.35"
+                />
+              </svg>
+              {filtered ? (
+                <>
+                  <h2>{t("wsNoMatchTitle")}</h2>
+                  <p>{t("wsNoMatch")}</p>
+                  <button
+                    className="quiet"
+                    onClick={() => {
+                      setQuery("");
+                      setFilter("");
+                      sessionStorage.removeItem("queue-query");
+                      sessionStorage.removeItem("queue-filter");
+                    }}
+                  >
+                    {t("wsClearFilters")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2>{t("wsEmptyTitle")}</h2>
+                  <p>{t("wsEmptyBody")}</p>
+                  {canCreate ? (
+                    <button
+                      onClick={() => {
+                        setCreating(true);
+                        setFieldErrors({});
+                      }}
+                    >
+                      {t("wsCreateFirst")}
+                    </button>
+                  ) : (
+                    <p>{t("wsCannotCreate")}</p>
+                  )}
+                </>
               )}
             </div>
           )}
+
+          {dataKey === scope && nextCursor && (
+            <button
+              className="quiet ws-more"
+              disabled={busy}
+              onClick={() => void load(nextCursor)}
+            >
+              {t("wsLoadMore")}
+            </button>
+          )}
+          <p className="ws-note">{t("wsListNote")}</p>
         </>
       )}
     </main>
+  );
+}
+
+type InputProps = {
+  id: string;
+  name: string;
+  "aria-invalid": boolean;
+  "aria-describedby": string | undefined;
+};
+/** Labelled field with an inline error directly below it. */
+function Field({
+  name,
+  label,
+  error,
+  hint,
+  type = "text",
+  step,
+  min,
+  children,
+}: {
+  name: string;
+  label: string;
+  error?: string;
+  hint?: string;
+  type?: string;
+  step?: string;
+  min?: string;
+  children?: (props: InputProps) => React.ReactNode;
+}) {
+  const id = `f-${name}`;
+  const props: InputProps = {
+    id,
+    name,
+    "aria-invalid": !!error,
+    "aria-describedby": error ? `${id}-err` : hint ? `${id}-hint` : undefined,
+  };
+  return (
+    <div className="ws-field">
+      <label htmlFor={id}>{label}</label>
+      {children ? (
+        children(props)
+      ) : (
+        <input {...props} type={type} step={step} min={min} />
+      )}
+      {hint && !error && (
+        <small id={`${id}-hint`} className="ws-dim">
+          {hint}
+        </small>
+      )}
+      {error && (
+        <span className="field-error" id={`${id}-err`}>
+          {error}
+        </span>
+      )}
+    </div>
   );
 }

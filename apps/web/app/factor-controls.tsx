@@ -1,14 +1,31 @@
 "use client";
 import { useId, useState } from "react";
+import { useI18n } from "./i18n-provider";
+import type { DictKey } from "./i18n";
+import { ProvenanceChip } from "./ui/provenance-chip";
 import {
   type Assumptions,
   type CostCategory,
   costCategories,
   totalCost,
   draftErrors,
-  costLabels,
   formatAmount,
 } from "./simulation-assumptions";
+
+const COST_KEYS: Record<CostCategory, DictKey> = {
+  additional_transport: "fcCostTransport",
+  inspection: "fcCostInspection",
+  holding: "fcCostHolding",
+  handling: "fcCostHandling",
+  disposal: "fcCostDisposal",
+  other: "fcCostOther",
+};
+const TAB_KEYS: Record<string, DictKey> = {
+  Delay: "fcTabDelay",
+  Cost: "fcTabCost",
+  Receiver: "fcTabReceiver",
+  Advanced: "fcTabAdvanced",
+};
 export default function FactorControls({
   value,
   baseline,
@@ -27,12 +44,13 @@ export default function FactorControls({
   demo?: boolean;
 }) {
   const id = useId();
+  const { t } = useI18n();
   const [group, setGroup] = useState("Delay");
   const errors = draftErrors(value);
   const [category, setCategory] = useState<CostCategory>("other");
   const scenario = value.scenarios.find((s) => s.type === selected);
   const original = baseline.scenarios.find((s) => s.type === selected);
-  if (!scenario) return <p>No assumptions exist for this scenario.</p>;
+  if (!scenario) return <p>{t("fcNone")}</p>;
   function edit(patch: Partial<typeof scenario>) {
     onChange({
       ...value,
@@ -67,8 +85,8 @@ export default function FactorControls({
   );
   return (
     <fieldset className="factor-controls" disabled={disabled}>
-      <legend>Adjust assumptions</legend>
-      <div className="factor-tabs" role="group" aria-label="Factor groups">
+      <legend>{t("sheetOpen")}</legend>
+      <div className="factor-tabs" role="group" aria-label={t("fcGroups")}>
         {["Delay", "Cost", "Receiver", "Advanced"].map((name) => (
           <button
             type="button"
@@ -76,7 +94,7 @@ export default function FactorControls({
             aria-pressed={group === name}
             onClick={() => setGroup(name)}
           >
-            {name}
+            {t(TAB_KEYS[name])}
             {(
               name === "Delay"
                 ? errors[`${selected}.delay`]
@@ -94,9 +112,9 @@ export default function FactorControls({
 
       <div hidden={group !== "Delay"}>
         <label>
-          Additional delay (minutes)
+          {t("fcDelayLabel")}
           <input
-            aria-label="Additional delay slider"
+            aria-label={t("fcDelaySlider")}
             type="range"
             min="0"
             max={delayMax}
@@ -115,7 +133,7 @@ export default function FactorControls({
           />
           <input
             type="number"
-            aria-label="Additional delay (minutes)"
+            aria-label={t("fcDelayLabel")}
             aria-invalid={!!errors[`${selected}.delay`]}
             aria-describedby={`${id}-delay-error`}
             min="0"
@@ -136,31 +154,31 @@ export default function FactorControls({
           />
         </label>
         <span className="field-error" id={`${id}-delay-error`}>
-          {errors[`${selected}.delay`]}
+          {errors[`${selected}.delay`] ? t("fcErrDelay") : ""}
         </span>
         <small>
-          Baseline {original?.estimated_delay_minutes ?? 0} min · No temperature
-          deterioration model.
+          {t("resultBaseline")} {original?.estimated_delay_minutes ?? 0}{" "}
+          {t("unitMin")} · {t("fcNoModel")}
         </small>
       </div>
       <div hidden={group !== "Cost"}>
         <label>
-          Cost component
+          {t("fcCostComponent")}
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as CostCategory)}
           >
             {costCategories.map((c) => (
               <option key={c} value={c}>
-                {costLabels[c]}
+                {t(COST_KEYS[c])}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Component estimate ({value.currency})
+          {t("fcComponentEstimate")} ({value.currency})
           <input
-            aria-label="Cost component slider"
+            aria-label={t("fcCostSlider")}
             type="range"
             min="0"
             max={costMax}
@@ -171,7 +189,7 @@ export default function FactorControls({
           <input
             type="text"
             inputMode="decimal"
-            aria-label="Cost component amount"
+            aria-label={t("fcCostAmount")}
             aria-invalid={!!errors[`${selected}.${category}`]}
             aria-describedby={`${id}-cost-error`}
             min="0"
@@ -182,41 +200,38 @@ export default function FactorControls({
           />
         </label>
         <span className="field-error" id={`${id}-cost-error`}>
-          {errors[`${selected}.${category}`]}
+          {errors[`${selected}.${category}`]
+            ? value.currency === "JPY"
+              ? t("fcErrYen")
+              : t("fcErrAmount")
+            : ""}
         </span>
         <small>
-          Total {formatAmount(totalCost(scenario, value.currency))}{" "}
-          {value.currency} · Baseline{" "}
+          {t("fcTotal")} {formatAmount(totalCost(scenario, value.currency))}{" "}
+          {value.currency} · {t("resultBaseline")}{" "}
           {formatAmount(totalCost(original, value.currency))} {value.currency}
         </small>
       </div>
       <div hidden={group !== "Receiver"}>
         <label>
-          Receiver acceptance assumption
+          {t("fcReceiverLabel")}
           <select
             value={scenario.receiver_acceptance}
             onChange={(e) => edit({ receiver_acceptance: e.target.value })}
           >
-            <option value="UNKNOWN">Unknown</option>
-            <option value="ACCEPTED">Assume accepted</option>
-            <option value="REJECTED">Assume rejected</option>
+            <option value="UNKNOWN">{t("fcRecvUnknown")}</option>
+            <option value="ACCEPTED">{t("fcRecvAccepted")}</option>
+            <option value="REJECTED">{t("fcRecvRejected")}</option>
           </select>
         </label>
-        <small>
-          This is an assumption, not confirmation from the receiver.
-        </small>
+        <small>{t("fcRecvNote")}</small>
       </div>
       <div hidden={group !== "Advanced"}>
-        {demo && (
-          <p className="notice">
-            Preference only in this demo. Weights do not calculate a ranking
-            here. Use the connected workspace for engine comparison.
-          </p>
-        )}
+        {demo && <p className="notice">{t("fcDemoNote")}</p>}
         <label>
-          Cost weight (0–1)
+          {t("fcWeight")}
           <input
-            aria-label="Cost weight slider"
+            aria-label={t("fcWeightSlider")}
             type="range"
             min="0"
             max="1"
@@ -234,7 +249,7 @@ export default function FactorControls({
           />
           <input
             type="number"
-            aria-label="Cost weight (0–1)"
+            aria-label={t("fcWeight")}
             aria-invalid={!!errors.weights}
             aria-describedby={`${id}-weight-error`}
             min="0"
@@ -254,11 +269,11 @@ export default function FactorControls({
           />
         </label>
         <span className="field-error" id={`${id}-weight-error`}>
-          {errors.weights}
+          {errors.weights ? t("fcErrWeights") : ""}
         </span>
         <small>
-          Delay weight {value.ranking_weights.delay}. Weights affect ranking
-          only, never evidence or eligibility.
+          {t("fcDelayWeight")} {value.ranking_weights.delay}.{" "}
+          {t("fcWeightNote")}
         </small>
       </div>
       <button
@@ -266,25 +281,37 @@ export default function FactorControls({
         className="quiet"
         onClick={() => onChange(structuredClone(baseline))}
       >
-        Reset to baseline
+        {t("fcReset")}
       </button>
       <details>
-        <summary>Estimate details and limits</summary>
-        <p>Baseline: {baselineLabel}. Edited values are user estimates.</p>
+        <summary>{t("fcDetails")}</summary>
         <p>
-          Delay: 0–525,600 whole minutes. Cost slider range: 0–
-          {costMax.toLocaleString("en-US")} {value.currency}; use the amount
-          field for precise estimates. This editing range is not a policy limit.
+          {t("resultBaseline")}: {baselineLabel}. {t("fcEditedNote")}
+        </p>
+        <p>
+          {t("fcLimits")
+            .replace("{max}", costMax.toLocaleString("en-US"))
+            .replace("{cur}", value.currency)}
         </p>
         <dl className="cost-breakdown">
           {costCategories.map((c) => (
             <div key={c}>
-              <dt>{costLabels[c]}</dt>
+              <dt>{t(COST_KEYS[c])}</dt>
               <dd>
-                {scenario.costs[c].amount} {value.currency} ·{" "}
-                {scenario.costs[c].source === "USER_ESTIMATE"
-                  ? "User estimate"
-                  : scenario.costs[c].source.toLowerCase().replaceAll("_", " ")}
+                <span className="num">
+                  {scenario.costs[c].amount} {value.currency}
+                </span>{" "}
+                {scenario.costs[c].source === "USER_ESTIMATE" ? (
+                  <>
+                    <ProvenanceChip kind="estimated" /> {t("fcUserEstimate")}
+                  </>
+                ) : scenario.costs[c].source === "CONFIRMED" ? (
+                  <>
+                    <ProvenanceChip kind="entered" /> {t("fcConfirmed")}
+                  </>
+                ) : (
+                  scenario.costs[c].source.toLowerCase().replaceAll("_", " ")
+                )}
               </dd>
             </div>
           ))}
