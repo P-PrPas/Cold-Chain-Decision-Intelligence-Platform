@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import "./studio.css";
-import { useT } from "../i18n-provider";
-import { useTheme } from "../prefs";
-import { ProvenanceChip } from "../ui/provenance-chip";
-import { formatAmount } from "../simulation-assumptions";
+import { useT } from "@/i18n/provider";
+import { useTheme } from "@/lib/prefs";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
+import { formatAmount } from "@/lib/simulation-assumptions";
 import type { CameraMode, Diorama, DioramaConfig } from "./diorama";
 import { useReducedMotion, useTime } from "./hooks";
 import type { Player } from "./player";

@@ -1,4 +1,4 @@
-import type { DictKey } from "../i18n";
+import type { DictKey } from "@/i18n";
 
 /** One screenshot: its alt text and the numbered steps that match the callout markers. */
 export type FigureDef = { alt: DictKey; steps: DictKey[] };

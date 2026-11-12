@@ -8,9 +8,9 @@ import {
 } from "react";
 import Link from "next/link";
 import "./workspace.css";
-import { money } from "../decision-summary";
-import { useI18n } from "../i18n-provider";
-import type { DictKey } from "../i18n";
+import { money } from "@/components/decision-summary";
+import { useI18n } from "@/i18n/provider";
+import type { DictKey } from "@/i18n";
 import { api, write, ApiError, type Item } from "./api";
 import {
   AnalysisBadge,

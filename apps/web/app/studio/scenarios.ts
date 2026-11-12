@@ -1,4 +1,4 @@
-import type { DictKey } from "../i18n";
+import type { DictKey } from "@/i18n";
 
 export const scenarioKey: Record<string, DictKey> = {
   CONTINUE_DELIVERY: "scnContinue",

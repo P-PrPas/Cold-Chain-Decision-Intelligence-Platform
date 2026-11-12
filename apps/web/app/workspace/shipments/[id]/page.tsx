@@ -6,21 +6,23 @@ import "../../workspace.css";
 import DecisionPanel, {
   type DecisionView,
   type ProposalSource,
-} from "../../decision-panel";
-import SimulationPanel, { type SimStatus } from "../../simulation-panel";
-import AnalysisPanel from "../../analysis-panel";
-import TemperaturePanel from "../../temperature-panel";
-import EvidenceTimeline from "../../evidence-timeline";
-import Stepper from "../../step-nav";
+} from "@/app/workspace/decision-panel";
+import SimulationPanel, {
+  type SimStatus,
+} from "@/app/workspace/simulation-panel";
+import AnalysisPanel from "@/app/workspace/analysis-panel";
+import TemperaturePanel from "@/app/workspace/temperature-panel";
+import EvidenceTimeline from "@/app/workspace/evidence-timeline";
+import Stepper from "@/app/workspace/step-nav";
 import {
   deriveSteps,
   initialStep,
   type StepId,
   type StepInput,
-} from "../../stepper";
-import { api, write, ApiError, type Item } from "../../api";
-import { money } from "../../../decision-summary";
-import { useI18n } from "../../../i18n-provider";
+} from "@/app/workspace/stepper";
+import { api, write, ApiError, type Item } from "@/app/workspace/api";
+import { money } from "@/components/decision-summary";
+import { useI18n } from "@/i18n/provider";
 import {
   Callout,
   OpStatusBadge,
@@ -28,7 +30,7 @@ import {
   useErrorText,
   useFmt,
   useStatusLabel,
-} from "../../ui";
+} from "@/app/workspace/ui";
 
 const TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["READY", "CANCELLED"],

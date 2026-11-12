@@ -1,4 +1,4 @@
-import type { DictKey } from "../i18n";
+import type { DictKey } from "@/i18n";
 
 export const STEP_IDS = [
   "evidence",

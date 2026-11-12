@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { dictionaries, type Dict, type DictKey, type Lang } from "./i18n";
-import { setLang, useLang } from "./prefs";
+import { dictionaries, type Dict, type DictKey, type Lang } from "./index";
+import { setLang, useLang } from "@/lib/prefs";
 
 type Ctx = {
   lang: Lang;

@@ -6,8 +6,8 @@ import {
 } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { I18nProvider } from "./i18n-provider";
-import { SiteFooter, SiteHeader } from "./site-chrome";
+import { I18nProvider } from "@/i18n/provider";
+import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 
 // Sans is one variable file (all weights). Thai glyphs come from Plex Sans Thai,
 // loaded only on pages that contain Thai text (unicode-range) and only the two

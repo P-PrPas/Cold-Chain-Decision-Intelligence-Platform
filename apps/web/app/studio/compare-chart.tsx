@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useT } from "../i18n-provider";
-import { formatAmount } from "../simulation-assumptions";
+import { useT } from "@/i18n/provider";
+import { formatAmount } from "@/lib/simulation-assumptions";
 import { placePoints, ticks, type ChartPoint } from "./chart-scale";
 import { scenarioKey, scenarioShortKey } from "./scenarios";
 

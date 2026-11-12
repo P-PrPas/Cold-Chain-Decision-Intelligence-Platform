@@ -1,8 +1,8 @@
 "use client";
-import { EvidenceView } from "../evidence-view";
+import { EvidenceView } from "@/components/evidence-view";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useI18n } from "../i18n-provider";
-import { ProvenanceChip } from "../ui/provenance-chip";
+import { useI18n } from "@/i18n/provider";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
 import { api, type Item } from "./api";
 import EvidenceTimeline from "./evidence-timeline";
 import { Callout, useErrorText } from "./ui";

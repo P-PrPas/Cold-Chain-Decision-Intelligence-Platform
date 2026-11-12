@@ -19,7 +19,7 @@ import {
 } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { dictionaries } from "../../apps/web/app/i18n";
+import { dictionaries } from "../../apps/web/i18n";
 
 const web = "http://localhost:3000";
 const api = "http://localhost:8000/api/v1";

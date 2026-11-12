@@ -1,20 +1,20 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { EvidenceView } from "../evidence-view";
+import { EvidenceView } from "@/components/evidence-view";
 import { api, write, type Item } from "./api";
-import Scene from "../scene";
-import FactorControls from "../factor-controls";
-import { ImpactBand } from "../impact-band";
-import { useI18n } from "../i18n-provider";
+import Scene from "@/components/scene";
+import FactorControls from "@/components/factor-controls";
+import { ImpactBand } from "@/components/impact-band";
+import { useI18n } from "@/i18n/provider";
 import {
   acceptanceKey,
   acceptanceSymbol,
   normAcceptance,
   scenarioKey,
   scenarioShortKey,
-} from "../studio/scenarios";
-import { ProvenanceChip } from "../ui/provenance-chip";
-import { StatusBadge, type Status } from "../ui/status-badge";
+} from "@/app/studio/scenarios";
+import { ProvenanceChip } from "@/components/ui/provenance-chip";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import {
   type Assumptions,
   costCategories,
@@ -23,7 +23,7 @@ import {
   totalCost,
   sameAssumptions,
   draftErrors,
-} from "../simulation-assumptions";
+} from "@/lib/simulation-assumptions";
 import { Callout, RuleList, sourceProvenance, useErrorText } from "./ui";
 
 export type SimStatus = {
